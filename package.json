@@ -1,0 +1,32 @@
+{
+  "name": "eloria",
+  "private": true,
+  "packageManager": "pnpm@12.8.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:mobile": "pnpm --filter @eloria/mobile dev",
+    "dev:api": "pnpm --filter @eloria/api dev",
+    "dev:inngest": "npx inngest-cli@latest dev -u http://localhost:8787/api/inngest",
+    "db:start": "supabase start",
+    "db:reset": "supabase db reset",
+    "db:types": "supabase gen types typescript --local > packages/shared/src/db.types.ts",
+    "db:types:linked": "supabase gen types typescript --linked --schema public > packages/shared/src/db.types.ts",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "eval:story": "pnpm --filter @eloria/prompts eval"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.9",
+    "turbo": "^2.11.6",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.0"
+  }
+}

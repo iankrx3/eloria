@@ -1,0 +1,17 @@
+packages:
+  - apps/*
+  - packages/*
+
+# React Native·Expo 네이티브 모듈은 심볼릭 링크 구조에서 자주 깨지므로 호이스팅 방식으로 설치한다.
+nodeLinker: hoisted
+
+# 배포된 지 얼마 안 된 버전을 막는 pnpm 공급망 정책의 예외(설치 시 pnpm이 추가함).
+minimumReleaseAgeExclude:
+  - inngest@4.21.1
+
+# 설치 스크립트 허용 목록(pnpm 10+는 기본 차단)
+allowBuilds:
+  esbuild: true
+  protobufjs: false
+  '@parcel/watcher': true
+  unrs-resolver: true
