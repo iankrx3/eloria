@@ -1,0 +1,21 @@
+{
+  "name": "@eloria/prompts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run --passWithNoTests",
+    "eval": "node -e \"console.error('eval:story는 M2에서 구현합니다(docs/AI_PIPELINE.md 5절).'); process.exit(1)\""
+  },
+  "dependencies": {
+    "@eloria/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.3"
+  }
+}
