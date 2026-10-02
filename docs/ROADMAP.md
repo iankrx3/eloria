@@ -17,11 +17,11 @@
 - [x] CLAUDE.md의 명령어 표 스크립트 전부 구현 (`db:*`는 Docker 설치 후 실행 확인 필요, `eval:story`는 M2까지 안내 메시지만 출력)
 - [ ] `eas.json` 프로필(development, preview, production), `app.config.ts`(환경별 번들 ID, expo-audio 백그라운드 플러그인, 알림, 카카오 플러그인) — 카카오 플러그인만 남음(네이티브 앱 키 필요)
 - [x] 로컬 Supabase + 첫 마이그레이션: profiles, quiz_answers, people, desires, consents, app_config + RLS + `pnpm db:types` — staging에 적용하고 `pnpm db:types:linked`로 타입 생성. RLS(본인 행만, 비로그인 차단, 타인 user_id 쓰기 거부)를 staging에서 확인. 로컬 Docker 환경은 아직 없음
-- [ ] 앱 Supabase 클라이언트(secure-store 세션), 익명 로그인 — 코드 완료(D-10), 개발 빌드에서 미확인
+- [x] 앱 Supabase 클라이언트(secure-store 세션), 익명 로그인 — Android 개발 빌드 실기기에서 익명 세션·API 연결 확인(2026-10-02). iOS 미확인
 - [ ] Apple·Kakao·Google 로그인과 익명 계정 연결. 방식을 `DECISIONS.md`에 기록
 - [x] API 서버 JWT 검증 미들웨어, 에러 형식, `/v1/health`
 - [ ] Inngest 연결, 빈 함수 1개 실행 확인 — `system-ping` 함수 서빙 확인, dev server에서 실행은 미확인
-- [ ] GitHub Actions CI: typecheck, lint, test — 워크플로 작성 완료, GitHub 원격 저장소 연결 후 확인
+- [x] GitHub Actions CI: typecheck, lint, test
 - **완료 기준**: iOS·Android 개발 빌드에서 익명 → 소셜 계정 연결까지 되고 CI가 녹색
 
 ## M2. 생성 루프와 플레이어 (2~3주차)
