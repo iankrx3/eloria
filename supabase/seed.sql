@@ -1,0 +1,2 @@
+-- 로컬 개발용 시드. 원가 한도 기본값은 packages/shared/src/config/limits.ts에 있고,
+-- app_config에는 운영 중 바꿔야 할 값만 넣는다.
