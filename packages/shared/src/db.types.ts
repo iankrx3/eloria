@@ -92,6 +92,77 @@ export type Database = {
         }
         Relationships: []
       }
+      generation_jobs: {
+        Row: {
+          attempts: number
+          created_at: string
+          error: string | null
+          est_cost_usd: number | null
+          finished_at: string | null
+          id: string
+          image_count: number | null
+          input_tokens: number | null
+          kind: string
+          model: string | null
+          output_tokens: number | null
+          provider: string | null
+          started_at: string | null
+          status: string
+          step: string
+          story_id: string | null
+          tts_chars: number | null
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          error?: string | null
+          est_cost_usd?: number | null
+          finished_at?: string | null
+          id?: string
+          image_count?: number | null
+          input_tokens?: number | null
+          kind: string
+          model?: string | null
+          output_tokens?: number | null
+          provider?: string | null
+          started_at?: string | null
+          status?: string
+          step: string
+          story_id?: string | null
+          tts_chars?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          error?: string | null
+          est_cost_usd?: number | null
+          finished_at?: string | null
+          id?: string
+          image_count?: number | null
+          input_tokens?: number | null
+          kind?: string
+          model?: string | null
+          output_tokens?: number | null
+          provider?: string | null
+          started_at?: string | null
+          status?: string
+          step?: string
+          story_id?: string | null
+          tts_chars?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "generation_jobs_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       people: {
         Row: {
           created_at: string
@@ -174,7 +245,22 @@ export type Database = {
           tone?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_preferred_soundscape_id_fkey"
+            columns: ["preferred_soundscape_id"]
+            isOneToOne: false
+            referencedRelation: "soundscapes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profiles_preferred_voice_id_fkey"
+            columns: ["preferred_voice_id"]
+            isOneToOne: false
+            referencedRelation: "voices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       quiz_answers: {
         Row: {
@@ -203,9 +289,219 @@ export type Database = {
         }
         Relationships: []
       }
+      soundscapes: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          key: string
+          loop_duration_sec: number | null
+          storage_path: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          key: string
+          loop_duration_sec?: number | null
+          storage_path: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          loop_duration_sec?: number | null
+          storage_path?: string
+        }
+        Relationships: []
+      }
+      stories: {
+        Row: {
+          created_at: string
+          desire_id: string | null
+          error_code: string | null
+          id: string
+          kind: string
+          parent_story_id: string | null
+          prompt_version: string | null
+          revision_request: string | null
+          scene_plan: Json | null
+          script: string | null
+          script_chars: number | null
+          status: string
+          title: string | null
+          updated_at: string
+          user_id: string | null
+          version: number
+          voice_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          desire_id?: string | null
+          error_code?: string | null
+          id?: string
+          kind: string
+          parent_story_id?: string | null
+          prompt_version?: string | null
+          revision_request?: string | null
+          scene_plan?: Json | null
+          script?: string | null
+          script_chars?: number | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+          version?: number
+          voice_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          desire_id?: string | null
+          error_code?: string | null
+          id?: string
+          kind?: string
+          parent_story_id?: string | null
+          prompt_version?: string | null
+          revision_request?: string | null
+          scene_plan?: Json | null
+          script?: string | null
+          script_chars?: number | null
+          status?: string
+          title?: string | null
+          updated_at?: string
+          user_id?: string | null
+          version?: number
+          voice_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stories_desire_id_fkey"
+            columns: ["desire_id"]
+            isOneToOne: false
+            referencedRelation: "desires"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stories_parent_story_id_fkey"
+            columns: ["parent_story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stories_voice_id_fkey"
+            columns: ["voice_id"]
+            isOneToOne: false
+            referencedRelation: "voices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      story_assets: {
+        Row: {
+          bytes: number | null
+          content_hash: string | null
+          created_at: string
+          duration_sec: number | null
+          id: string
+          mime: string
+          model: string | null
+          provider: string | null
+          storage_path: string
+          story_id: string
+          type: string
+        }
+        Insert: {
+          bytes?: number | null
+          content_hash?: string | null
+          created_at?: string
+          duration_sec?: number | null
+          id?: string
+          mime: string
+          model?: string | null
+          provider?: string | null
+          storage_path: string
+          story_id: string
+          type: string
+        }
+        Update: {
+          bytes?: number | null
+          content_hash?: string | null
+          created_at?: string
+          duration_sec?: number | null
+          id?: string
+          mime?: string
+          model?: string | null
+          provider?: string | null
+          storage_path?: string
+          story_id?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_assets_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voices: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean
+          key: string
+          language: string
+          model: string
+          owner_user_id: string | null
+          preview_path: string | null
+          provider_voice_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean
+          key: string
+          language?: string
+          model: string
+          owner_user_id?: string | null
+          preview_path?: string | null
+          provider_voice_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean
+          key?: string
+          language?: string
+          model?: string
+          owner_user_id?: string | null
+          preview_path?: string | null
+          provider_voice_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      generation_quota: {
+        Row: {
+          daily_used: number | null
+          month: string | null
+          revisions_used: number | null
+          stories_used: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
