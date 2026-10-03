@@ -24,6 +24,8 @@ export default function RootLayout() {
           >
             <Stack.Screen name="(onboarding)" />
             <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+            <Stack.Screen name="manifest/[id]/progress" options={{ gestureEnabled: false }} />
+            <Stack.Screen name="story/[storyId]/text" options={{ presentation: 'modal' }} />
           </Stack>
         </AuthProvider>
       </QueryClientProvider>
