@@ -64,8 +64,9 @@ export interface PipelineRepo {
   ): Promise<string | null>;
 }
 
-const audioPath = (userId: string, storyId: string, assetId: string) =>
-  `${userId}/${storyId}/${assetId}.mp3`;
+const audioPath = (userId: string, storyId: string, assetId: string, ext: string) =>
+  `${userId}/${storyId}/${assetId}.${ext}`;
+const extFor = (mime: string) => (mime === 'audio/wav' ? 'wav' : 'mp3');
 
 export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
   return {
@@ -182,7 +183,7 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
       if (!hit) return false;
 
       const assetId = crypto.randomUUID();
-      const path = audioPath(userId, storyId, assetId);
+      const path = audioPath(userId, storyId, assetId, extFor(hit.mime));
       const { error: copyError } = await db.storage
         .from('story-audio')
         .copy(hit.storage_path, path);
@@ -205,7 +206,7 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
 
     async saveAudio({ userId, storyId, bytes, mime, durationSec, contentHash, provider, model }) {
       const assetId = crypto.randomUUID();
-      const path = audioPath(userId, storyId, assetId);
+      const path = audioPath(userId, storyId, assetId, extFor(mime));
       const { error: uploadError } = await db.storage
         .from('story-audio')
         .upload(path, bytes, { contentType: mime, upsert: false });

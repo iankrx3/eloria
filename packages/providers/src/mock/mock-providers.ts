@@ -1,6 +1,6 @@
 import type { SafetyVerdict, ScenePlan } from '@eloria/shared';
 import type { Providers, StoryContext, Usage } from '../types';
-import { silentMp3 } from './silent-mp3';
+import { chimeWav } from './chime-wav';
 
 const usage = (extra: Partial<Usage> = {}): Usage => ({
   provider: 'mock',
@@ -106,16 +106,17 @@ export function createMockProviders(opts: { delayMs?: number } = {}): Providers 
       },
     },
     tts: {
-      model: 'mock',
+      // 모델 이름이 음성 캐시 키에 들어간다. 소리 형식을 바꾸면 이름도 바꿔 예전 파일을 재사용하지 않게 한다.
+      model: 'mock-chime',
       async synthesize({ text }) {
         await wait();
         // 실제 낭독 속도(한국어 약 초당 7자)를 흉내 내되 개발 중 파일이 커지지 않게 60초로 자른다.
-        const { bytes, durationSec } = silentMp3(Math.min(60, Math.max(5, text.length / 7)));
+        const { bytes, durationSec } = chimeWav(Math.min(60, Math.max(5, text.length / 7)));
         return {
           audio: bytes,
-          mime: 'audio/mpeg',
+          mime: 'audio/wav',
           durationSec,
-          usage: usage({ ttsChars: text.length }),
+          usage: usage({ model: 'mock-chime', ttsChars: text.length }),
         };
       },
     },

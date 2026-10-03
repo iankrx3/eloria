@@ -88,7 +88,9 @@ describe('runStoryPipeline', () => {
     ]);
     expect(fake.state.calls).toEqual(['review-input', 'plan', 'write', 'review', 'tts']);
     expect(fake.state.script).toContain('서아');
-    expect(fake.state.audioHashes).toEqual([audioCacheKey('mock', 'default', fake.state.script!)]);
+    expect(fake.state.audioHashes).toEqual([
+      audioCacheKey('mock-chime', 'default', fake.state.script!),
+    ]);
     expect(fake.state.job).toMatchObject({ step: 'finish', status: 'succeeded' });
   });
 

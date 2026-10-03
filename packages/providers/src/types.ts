@@ -40,7 +40,12 @@ export interface TtsProvider {
   synthesize(input: {
     text: string;
     voiceId: string;
-  }): Promise<{ audio: Uint8Array; mime: 'audio/mpeg'; durationSec: number; usage: Usage }>;
+  }): Promise<{
+    audio: Uint8Array;
+    mime: 'audio/mpeg' | 'audio/wav';
+    durationSec: number;
+    usage: Usage;
+  }>;
 }
 
 export type Providers = { story: StoryModel; tts: TtsProvider };

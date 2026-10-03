@@ -1,6 +1,7 @@
 import { safetyVerdictSchema, scenePlanSchema } from '@eloria/shared';
 import { describe, expect, it } from 'vitest';
 import { createMockProviders } from './mock-providers';
+import { chimeWav } from './chime-wav';
 import { silentMp3 } from './silent-mp3';
 
 const ctx = {
@@ -36,13 +37,14 @@ describe('mock providers', () => {
     expect((await p.story.reviewSafety('바다가 보이는 집')).verdict.verdict).toBe('pass');
   });
 
-  it('TTS는 재생 가능한 MP3 프레임을 돌려준다', async () => {
+  it('TTS는 들리는 차임 WAV를 돌려준다', async () => {
     const { audio, mime, durationSec, usage } = await p.tts.synthesize({
       text: '가'.repeat(70),
       voiceId: 'v',
     });
-    expect(mime).toBe('audio/mpeg');
-    expect([audio[0], audio[1]]).toEqual([0xff, 0xfb]);
+    expect(mime).toBe('audio/wav');
+    expect(String.fromCharCode(...audio.slice(0, 4))).toBe('RIFF');
+    expect(audio.slice(44).some((b) => b !== 0)).toBe(true); // 무음이 아님
     expect(durationSec).toBeGreaterThanOrEqual(10);
     expect(usage.ttsChars).toBe(70);
   });
@@ -53,5 +55,17 @@ describe('silentMp3', () => {
     const { bytes, durationSec } = silentMp3(1);
     expect(durationSec).toBeGreaterThanOrEqual(1);
     expect(bytes.length % 417).toBe(0);
+  });
+});
+
+describe('chimeWav', () => {
+  it('16kHz 모노 16비트 PCM 헤더와 요청한 길이', () => {
+    const { bytes, durationSec } = chimeWav(2);
+    const view = new DataView(bytes.buffer);
+    expect(view.getUint32(24, true)).toBe(16000);
+    expect(view.getUint16(22, true)).toBe(1);
+    expect(view.getUint16(34, true)).toBe(16);
+    expect(durationSec).toBe(2);
+    expect(bytes.length).toBe(44 + 2 * 16000 * 2);
   });
 });
