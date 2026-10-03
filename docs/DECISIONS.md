@@ -32,6 +32,8 @@
 | D-26 | 2026-10-03 | 생성 요청 분당 한도(3회)는 API 프로세스 메모리의 사용자별 시간창으로 센다 | 지금은 단일 인스턴스 개발 단계. 비용 한도는 `generation_quota`(DB)로 따로 판단하므로 이 제한은 남용 방지용 | Upstash 등 외부 저장소(Vercel 다중 인스턴스 배포 시 재검토) |
 | D-27 | 2026-10-03 | 음성 캐시가 적중하면 기존 파일을 새 스토리의 사용자 폴더로 복사(storage copy)하고 TTS는 부르지 않는다 | 비공개 버킷은 본인 폴더만 읽는 RLS(DATA_MODEL 6절)를 유지하면서 재생성 비용을 없앰 | 다른 사용자 경로를 서명 URL로 공유 |
 | D-28 | 2026-10-03 | 생성 파이프라인 본체는 Inngest와 분리한 함수(`runStoryPipeline(deps, event, step)`), 외부 호출은 `packages/providers` 인터페이스 뒤에 둔다 | 저장소·어댑터를 가짜로 바꿔 단계·상태 전이·검수 분기를 단위 테스트, mock/live 교체가 쉬움 | Inngest 함수 안에 직접 구현 |
+| D-29 | 2026-10-03 | expo-audio 57.0.5에 pnpm 패치(`patches/expo-audio@57.0.5.patch`)로 Android ExoPlayer `setHandleAudioBecomingNoisy(true)`를 켠다 | Android에서 이어폰·블루투스가 끊겨도 재생이 계속됨(iOS는 expo-audio가 이미 정지). 한 줄 변경이라 별도 네이티브 모듈보다 단순. expo-audio를 올릴 때 패치를 다시 확인하거나 업스트림 반영 시 제거 | 이어폰 분리 브로드캐스트를 받는 로컬 Expo 모듈 |
+| D-30 | 2026-10-03 | mock TTS는 2초마다 차임이 울리는 WAV(16kHz 모노)를 만든다(모델 이름 `mock-chime`) | 무음 MP3로는 재생·백그라운드·이어폰 분리를 귀로 확인할 수 없음. 실제 음성은 MP3(AI_PIPELINE 7절)이고 저장 경로 확장자는 mime을 따른다 | 사전 녹음 샘플 파일을 저장소에 포함 |
 
 ## 확인 후 기록할 항목
 
