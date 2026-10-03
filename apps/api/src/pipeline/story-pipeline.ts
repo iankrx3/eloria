@@ -38,6 +38,8 @@ function toStoryContext(ctx: StoryJobContext, tone: StoryContext['tone']): Story
     futureSelf: ctx.quiz.future_self,
     recentFeeling: ctx.quiz.recent_feeling,
     oneYearChange: ctx.quiz.one_year_change,
+    likes: ctx.likes,
+    dislikes: ctx.dislikes,
   };
 }
 

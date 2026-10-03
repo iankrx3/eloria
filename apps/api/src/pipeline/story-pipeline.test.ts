@@ -24,6 +24,8 @@ function createFakePipelineRepo(opts: { cachedAudio?: boolean } = {}) {
     displayName: '서아',
     profileTone: 'calm',
     preferredVoiceId: null,
+    likes: ['바다 산책'],
+    dislikes: [],
     people: [{ name: '민준', relation: 'partner' }],
     quiz: { day_start: 'seaside' },
   };
@@ -88,6 +90,7 @@ describe('runStoryPipeline', () => {
     ]);
     expect(fake.state.calls).toEqual(['review-input', 'plan', 'write', 'review', 'tts']);
     expect(fake.state.script).toContain('서아');
+    expect(fake.state.script).toContain('바다 산책'); // Personal 좋아하는 것이 반영됨
     expect(fake.state.audioHashes).toEqual([
       audioCacheKey('mock-chime', 'default', fake.state.script!),
     ]);

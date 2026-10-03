@@ -74,6 +74,11 @@ function scriptFor(plan: ScenePlan, ctx: StoryContext): string {
     '깊게 숨을 들이마십니다. 익숙한 공기, 잔잔한 음악, 그리고 아무것도 서두르지 않아도 되는 여유.',
     '따뜻한 커피를 내리고 창밖을 바라봅니다. 오늘 해야 할 일들이 설렘으로 다가옵니다.' + with_,
     `${name}, 당신은 지금 이 하루를 충분히 누리고 있습니다.`,
+    ...(ctx.likes?.length
+      ? [
+          `좋아하는 것들, ${ctx.likes.slice(0, 3).join(', ')}. 오늘 하루에도 자연스럽게 곁에 있습니다.`,
+        ]
+      : []),
     plan.identityStatements.join(' '),
     '오늘도 그 하루를 살아 봐요. 고맙습니다, 이 아침에게, 그리고 당신 자신에게.',
   ].join('\n\n');

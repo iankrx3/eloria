@@ -20,6 +20,9 @@ export type StoryContext = {
   futureSelf?: string[];
   recentFeeling?: string;
   oneYearChange?: string;
+  /** Personal(PRD F-11): 장면에 자연스럽게 넣을 것과 피할 것 */
+  likes?: string[];
+  dislikes?: string[];
 };
 
 export interface StoryModel {

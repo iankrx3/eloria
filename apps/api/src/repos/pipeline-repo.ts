@@ -14,6 +14,8 @@ export type StoryJobContext = {
   displayName: string | null;
   profileTone: 'calm' | 'excited' | 'powerful' | null;
   preferredVoiceId: string | null;
+  likes: string[];
+  dislikes: string[];
   people: { name: string; relation: string }[];
   quiz: Partial<QuizAnswers>;
 };
@@ -83,7 +85,7 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
       const [profile, people, quiz] = await Promise.all([
         db
           .from('profiles')
-          .select('display_name, tone, preferred_voice_id')
+          .select('display_name, tone, preferred_voice_id, likes, dislikes')
           .eq('id', userId)
           .single(),
         db.from('people').select('name, relation').eq('user_id', userId),
@@ -101,6 +103,8 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
         displayName: profile.data.display_name,
         profileTone: tone === 'calm' || tone === 'excited' || tone === 'powerful' ? tone : null,
         preferredVoiceId: profile.data.preferred_voice_id,
+        likes: profile.data.likes,
+        dislikes: profile.data.dislikes,
         people: people.data,
         quiz: collectQuizAnswers(quiz.data),
       };
