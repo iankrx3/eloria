@@ -7,6 +7,7 @@ export * from './api/quiz';
 export * from './case';
 export * from './config/defaults';
 export * from './config/limits';
+export * from './profile';
 export * from './quiz';
 export * from './story';
 export * from './db.types';
