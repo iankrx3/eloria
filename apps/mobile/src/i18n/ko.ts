@@ -37,9 +37,109 @@ export const ko = {
     linkAccount: '계정 연결하기',
     restartOnboarding: '온보딩 다시 보기(개발용)',
   },
+  quiz: {
+    back: '이전',
+    skip: '건너뛰기',
+    multiHint: '여러 개 고를 수 있어요.',
+    maxHint: (max: number) => `최대 ${max}개까지 고를 수 있어요.`,
+    saveFailed: '답변을 저장하지 못했어요. 다시 시도해 주세요.',
+    counter: (length: number, max: number) => `${length} / ${max}`,
+    questions: {
+      name: {
+        title: '어떻게 불러 드릴까요?',
+        helper: '스토리 속에서 이 이름으로 불러 드릴게요.',
+        placeholder: '이름 또는 애칭',
+      },
+      desired_life: {
+        title: '지금 가장 바라는 삶은\n무엇인가요?',
+        options: {
+          wealth: '경제적 자유',
+          love: '사랑하는 관계',
+          career: '커리어 & 성공',
+          health: '건강한 나',
+          confidence: '자신감',
+        },
+      },
+      relationship_status: {
+        title: '지금, 당신의 연애 상태는\n어떤가요?',
+        options: {
+          single: '싱글이에요',
+          dating: '연애 중이에요',
+          complicated: '조금 복잡해요',
+          married: '결혼했어요',
+        },
+      },
+      people: {
+        title: '미래에 함께하고 싶은 사람이\n있나요?',
+        helper: '이름과 관계를 알려 주시면 스토리에 함께 등장해요. 건너뛰어도 괜찮아요.',
+        namePlaceholder: '이름',
+        add: '추가하기',
+        remove: (name: string) => `${name} 삭제`,
+        relations: {
+          partner: '연인·배우자',
+          family: '가족',
+          friend: '친구',
+          pet: '반려동물',
+          other: '기타',
+        },
+      },
+      day_start: {
+        title: '꿈꾸는 하루는\n어디서 시작되나요?',
+        options: {
+          seoul_city: '서울 도심',
+          seaside: '바닷가',
+          abroad: '해외 도시',
+          nature: '조용한 자연',
+        },
+      },
+      one_year_change: {
+        title: '1년 뒤, 가장 달라져 있고 싶은 것은\n무엇인가요?',
+        placeholder: '예: 아침마다 여유롭게 커피를 내리는 나',
+      },
+      recent_feeling: {
+        title: '요즘 가장 자주 드는\n감정은 무엇인가요?',
+        helper: '스토리의 분위기를 맞추는 데만 써요.',
+        options: {
+          anxious: '불안',
+          tired: '지침',
+          excited: '설렘',
+          impatient: '조급함',
+          calm: '평온',
+        },
+      },
+      future_self: {
+        title: '미래의 나는\n어떤 사람인가요?',
+        options: {
+          relaxed: '여유로운',
+          confident: '당당한',
+          kind: '다정한',
+          free: '자유로운',
+          successful: '성공한',
+        },
+      },
+      tone: {
+        title: '스토리는 어떤 톤이\n좋으세요?',
+        options: { calm: '차분하게', excited: '설레게', powerful: '힘 있게' },
+      },
+      listen_time: {
+        title: '주로 언제\n듣고 싶나요?',
+        helper: '이 시간에 맞춰 알림을 보내 드려요.',
+        options: { morning: '아침에 눈 뜨자마자', commute: '출퇴근길', night: '잠들기 전' },
+      },
+      voice: {
+        title: '어떤 목소리가\n좋으세요?',
+        helper: '미리듣기는 보이스가 준비되면 열려요.',
+        options: { voice_a: '차분한 목소리', voice_b: '따뜻한 목소리', voice_c: '또렷한 목소리' },
+      },
+      notification: {
+        title: '매일 그 하루를\n잊지 않도록 알려 드릴까요?',
+        helper: '정한 시간에 오늘의 스토리를 알려 드려요. 언제든 설정에서 끌 수 있어요.',
+        allow: '알림 받기',
+      },
+    },
+  },
   onboarding: {
     progress: (step: number, total: number) => `${step} / ${total}`,
-    quizPlaceholder: '질문 화면은 다음 작업에서 채워져요.',
     firstManifestTitle: '가장 먼저 그려 보고 싶은\n미래는 무엇인가요?',
     firstManifestBody: '꿈 입력과 첫 스토리 생성은 다음 작업에서 이어져요.',
     paywallTitle: 'Eloria와 함께\n매일 그 하루를 살아 봐요',

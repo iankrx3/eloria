@@ -7,7 +7,8 @@ import type { Href } from 'expo-router';
  */
 export const QUIZ_TOTAL = QUIZ_QUESTIONS.length;
 
-export const ONBOARDING_START: Href = '/quiz/1';
+// 퀴즈 진입점은 이어하기 화면이다(답하지 않은 첫 문항으로 보낸다).
+export const ONBOARDING_START: Href = '/quiz';
 
 /** 퀴즈 단계 문자열을 1~QUIZ_TOTAL 사이 정수로 바꾼다. 잘못된 값은 1로 본다. */
 export function parseQuizStep(raw: string | string[] | undefined): number {
