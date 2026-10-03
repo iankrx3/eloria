@@ -4,6 +4,7 @@ import { SymbolView } from 'expo-symbols';
 import { useState, type ComponentProps } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { PrimaryButton } from '@/components/primary-button';
+import { registerPushToken } from '@/features/notifications/push';
 import { ko } from '@/i18n/ko';
 import tokens from '@/theme/tokens.json';
 import { OptionCard } from './option-card';
@@ -260,6 +261,7 @@ export function NotificationStep({ scaffold, pending, onSubmit }: StepProps<{ gr
     setAsking(true);
     try {
       const { granted } = await Notifications.requestPermissionsAsync();
+      if (granted) void registerPushToken();
       onSubmit({ granted });
     } finally {
       setAsking(false);

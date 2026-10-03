@@ -4,10 +4,17 @@ import { ActivityIndicator, View } from 'react-native';
 import { PrimaryButton } from '@/components/primary-button';
 import { useAuth } from '@/features/auth/auth-provider';
 import { TabBar } from '@/features/navigation/tab-bar';
+import { useNotificationNavigation } from '@/features/notifications/use-push';
 import { ONBOARDING_START } from '@/features/onboarding/flow';
 import { useProfile } from '@/features/profile/use-profile';
 import { ko } from '@/i18n/ko';
 import tokens from '@/theme/tokens.json';
+
+/** 알림을 눌러 연 화면으로 보낸다. 온보딩·세션 확인을 통과한 뒤에만 그린다. */
+function NotificationNavigator() {
+  useNotificationNavigation();
+  return null;
+}
 
 /**
  * 앱의 "/"는 홈 탭이다. 온보딩을 마치지 않았으면 퀴즈로 보낸다.
@@ -37,17 +44,20 @@ export default function TabsLayout() {
   if (!profile.data.onboardingCompletedAt) return <Redirect href={ONBOARDING_START} />;
 
   return (
-    <Tabs
-      tabBar={(props) => <TabBar {...props} />}
-      screenOptions={{
-        headerShown: false,
-        sceneStyle: { backgroundColor: tokens.colors.dawn },
-      }}
-    >
-      <Tabs.Screen name="index" />
-      <Tabs.Screen name="library" />
-      <Tabs.Screen name="rituals" />
-      <Tabs.Screen name="me" />
-    </Tabs>
+    <>
+      <NotificationNavigator />
+      <Tabs
+        tabBar={(props) => <TabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+          sceneStyle: { backgroundColor: tokens.colors.dawn },
+        }}
+      >
+        <Tabs.Screen name="index" />
+        <Tabs.Screen name="library" />
+        <Tabs.Screen name="rituals" />
+        <Tabs.Screen name="me" />
+      </Tabs>
+    </>
   );
 }

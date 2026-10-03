@@ -30,3 +30,9 @@ Thumbs.db
 
 # 에디터·에이전트 도구 로컬 설정
 .serena/
+
+# FCM 설정(EAS 환경 변수로 주입)
+google-services.json
+GoogleService-Info.plist
+# Firebase 서비스 계정 키(FCM V1, eas credentials로만 업로드)
+*-firebase-adminsdk-*.json

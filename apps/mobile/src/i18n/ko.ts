@@ -103,6 +103,10 @@ export const ko = {
     title: '리추얼',
     body: '매일의 확언과 카테고리별 스토리를 이곳에서 들을 수 있어요.',
   },
+  notifications: {
+    // Android 설정 > 알림에 보이는 채널 이름
+    storyChannel: '스토리 준비 알림',
+  },
   me: {
     title: '마이',
     subtitle: '여기 적은 내용은 다음 스토리부터 반영돼요.',

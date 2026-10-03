@@ -24,6 +24,10 @@ const variant = VARIANTS[APP_ENV];
 const KAKAO_NATIVE_APP_KEY =
   process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY || '4b62d2588fe1de72e3fc6d4a258f4afc';
 
+// FCM(Android 푸시) 설정 파일. 레포에 두지 않고 EAS의 file 타입 환경 변수 GOOGLE_SERVICES_JSON으로
+// 받는다(docs/SETUP.md 푸시). 없으면 푸시 없이 빌드된다.
+const GOOGLE_SERVICES_FILE = process.env.GOOGLE_SERVICES_JSON;
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: variant.name,
@@ -40,6 +44,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   android: {
     package: variant.id,
+    ...(GOOGLE_SERVICES_FILE ? { googleServicesFile: GOOGLE_SERVICES_FILE } : {}),
     adaptiveIcon: {
       backgroundColor: '#F3ECF6',
       foregroundImage: './assets/android-icon-foreground.png',

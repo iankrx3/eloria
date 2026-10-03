@@ -6,7 +6,16 @@ import { useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PlayerProvider } from '@/audio/player-provider';
 import { AuthProvider } from '@/features/auth/auth-provider';
+import { configureNotifications } from '@/features/notifications/push';
+import { usePushRegistration } from '@/features/notifications/use-push';
 import tokens from '@/theme/tokens.json';
+
+configureNotifications();
+
+function PushRegistration() {
+  usePushRegistration();
+  return null;
+}
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
@@ -15,6 +24,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          <PushRegistration />
           <PlayerProvider>
             <StatusBar style="dark" />
             <Stack
