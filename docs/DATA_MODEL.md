@@ -89,7 +89,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 **subscriptions**: user_id unique, status text(active, trialing, grace, expired, none), product_id, store text(app_store, play_store), period_end timestamptz, rc_app_user_id, updated_from_event_id
 **webhook_events**: source text(revenuecat, elevenlabs), event_id text unique, payload jsonb, processed_at
 **generation_jobs**: user_id, story_id null, kind text(story, revision, daily, affirmation_audio, cover, library), step text, status text(pending, running, succeeded, failed), attempts int, provider text, model text, input_tokens int, output_tokens int, tts_chars int, image_count int, est_cost_usd numeric(10,5), error text, started_at, finished_at — RLS만 켜고 정책 없음(사용자 접근 불가, service role 전용)
-**generation_quota** (뷰): user_id, month, stories_used, daily_used, revisions_used — `generation_jobs`에서 스토리 단위(`count(distinct story_id)`)로 집계. `security_invoker`, anon·authenticated 권한 없음(서버 전용)
+**generation_quota** (뷰): user_id, month, stories_used, daily_used, revisions_used — `generation_jobs`의 스토리별 전체 진행 행(`provider is null`, 생성 요청 때 하나씩 생김)을 세어 집계(마이그레이션 20261004090000). 스토리를 지워도 `story_id`만 null이 되고 행은 남아 사용량이 줄지 않는다. `security_invoker`, anon·authenticated 권한 없음(서버 전용)
 **push_tokens**: user_id, token text unique, platform, updated_at
 **promo_codes**: code unique, grants text(free_month 등), max_uses, used_count, creator_name, expires_at
 **referrals**: code, user_id, redeemed_at

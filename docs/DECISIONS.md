@@ -34,6 +34,8 @@
 | D-28 | 2026-10-03 | 생성 파이프라인 본체는 Inngest와 분리한 함수(`runStoryPipeline(deps, event, step)`), 외부 호출은 `packages/providers` 인터페이스 뒤에 둔다 | 저장소·어댑터를 가짜로 바꿔 단계·상태 전이·검수 분기를 단위 테스트, mock/live 교체가 쉬움 | Inngest 함수 안에 직접 구현 |
 | D-29 | 2026-10-03 | expo-audio 57.0.5에 pnpm 패치(`patches/expo-audio@57.0.5.patch`)로 Android ExoPlayer `setHandleAudioBecomingNoisy(true)`를 켠다 | Android에서 이어폰·블루투스가 끊겨도 재생이 계속됨(iOS는 expo-audio가 이미 정지). 한 줄 변경이라 별도 네이티브 모듈보다 단순. expo-audio를 올릴 때 패치를 다시 확인하거나 업스트림 반영 시 제거 | 이어폰 분리 브로드캐스트를 받는 로컬 Expo 모듈 |
 | D-30 | 2026-10-03 | mock TTS는 2초마다 차임이 울리는 WAV(16kHz 모노)를 만든다(모델 이름 `mock-chime`) | 무음 MP3로는 재생·백그라운드·이어폰 분리를 귀로 확인할 수 없음. 실제 음성은 MP3(AI_PIPELINE 7절)이고 저장 경로 확장자는 mime을 따른다 | 사전 녹음 샘플 파일을 저장소에 포함 |
+| D-31 | 2026-10-04 | 스토리 삭제는 API(`DELETE /v1/stories/:id`)로만, 생성이 끝난 것만 허용. 파일 → 행 순서로 지우고 빈 꿈도 지운다. 생성 기록은 남기고 한도는 기록 행으로 센다 | 생성 중 삭제 시 파이프라인이 올린 파일이 주인 없이 남음. 삭제로 한도를 되돌리는 허점 방지. 꿈 원문은 개인 데이터라 스토리가 없으면 남기지 않음 | 앱이 RLS로 직접 삭제(파일이 남음) |
+| D-32 | 2026-10-04 | Android의 채워진 하트는 View로 그린다(`FilledHeart`) | expo-symbols Android는 Material Symbols Outlined 글꼴이라 채워진 아이콘(FILL)이 없음. 새 네이티브 의존성·빌드 없이 해결 | react-native-svg 아이콘(새 빌드 필요) |
 
 ## 확인 후 기록할 항목
 

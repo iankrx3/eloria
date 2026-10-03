@@ -21,6 +21,7 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | RATE_LIMITED | 429 | 분당 요청 초과 |
 | VALIDATION_FAILED | 400 | zod 검증 실패 |
 | NOT_FOUND | 404 | |
+| CONFLICT | 409 | 지금 상태에서는 할 수 없음(예: 생성 중인 스토리 삭제) |
 | INTERNAL | 500 | |
 
 ## 2. 엔드포인트
@@ -33,6 +34,7 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | POST `/v1/desires/:id/stories` | 같은 꿈의 새 버전 | `{ tone? }` | `202 { storyId }` |
 | POST `/v1/stories/:id/revise` | 스토리 수정 | `{ request }`(≤200자) | `202 { storyId }` |
 | POST `/v1/stories/:id/retry` | 실패한 단계 재시도 | — | `202` |
+| DELETE `/v1/stories/:id` | 스토리 삭제(본인 것, 생성이 끝난 것만). 음성·표지 파일과 행을 지우고, 남은 스토리가 없는 꿈도 지운다. 생성 기록은 남긴다 | — | `204`, 생성 중이면 `409 CONFLICT` |
 | GET `/v1/stories/:id/media` | 서명 URL 발급 | — | `{ audioUrl, coverUrl, expiresAt }` |
 | POST `/v1/daily` | 오늘의 순간 즉시 생성(없을 때) | — | `200 { storyId }` 또는 `202` |
 | POST `/v1/affirmations/:id/audio` | 확언 음성(캐시 우선) | `{ voiceKey? }` | `{ audioUrl }` |
