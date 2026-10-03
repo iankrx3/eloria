@@ -33,6 +33,7 @@ export async function connectKakao(): Promise<KakaoConnectResult> {
     return { kind: 'signed-in' };
   }
 
+  // 카카오 계정에 이메일이 없으면 Supabase가 email_address_invalid로 거부한다(D-23).
   const linked = await supabase.auth.linkIdentity(credentials);
   if (!linked.error) return { kind: 'linked' };
   if (linked.error.code !== 'identity_already_exists') throw linked.error;
