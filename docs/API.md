@@ -27,8 +27,8 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 
 | 메서드·경로 | 용도 | 요청 | 응답 |
 | --- | --- | --- | --- |
-| POST `/v1/quiz/answers` | 퀴즈 답변 저장(upsert) | `{ questionKey, answer }` | `204` |
-| POST `/v1/quiz/complete` | 퀴즈 완료, 프로필 반영 | — | `{ profile }` |
+| POST `/v1/quiz/answers` | 퀴즈 답변 저장(upsert). 답은 문항별 형식(`quizAnswerSchemas`)으로 검증 | `{ questionKey, answer }` | `204` |
+| POST `/v1/quiz/complete` | 퀴즈 완료, 프로필 반영(이름·연애 상태·톤·듣는 시간·알림 기본값, 소중한 사람은 퀴즈 답으로 교체) | — | `{ profile }` |
 | POST `/v1/manifests` | 꿈 등록 + 첫 스토리 생성 | `{ text, category?, voiceKey?, tone? }` | `202 { desireId, storyId }` |
 | POST `/v1/desires/:id/stories` | 같은 꿈의 새 버전 | `{ tone? }` | `202 { storyId }` |
 | POST `/v1/stories/:id/revise` | 스토리 수정 | `{ request }`(≤200자) | `202 { storyId }` |
