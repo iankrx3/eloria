@@ -39,6 +39,8 @@ export function canPlayStory(status: StoryStatus) {
 /** Inngest 이벤트 `story/generate.requested`의 데이터(docs/API.md 4절) */
 export const storyGenerateRequestedSchema = z.object({
   storyId: z.uuid(),
+  /** 사용자당 동시 생성 수 제한의 키(API.md 4절) */
+  userId: z.uuid(),
   tone: z.enum(['calm', 'excited', 'powerful']).optional(),
   voiceKey: z.string().max(40).optional(),
 });

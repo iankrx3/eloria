@@ -1,3 +1,5 @@
+export * from './ai/safety-verdict';
+export * from './ai/scene-plan';
 export * from './api/errors';
 export * from './api/health';
 export * from './api/manifests';
