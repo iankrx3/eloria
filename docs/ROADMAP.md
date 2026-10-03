@@ -32,7 +32,7 @@
 - [x] `POST /v1/manifests`, Inngest `generateStory`(plan → write → review → tts), 상태 전이와 `generation_jobs` 기록 — mock 어댑터로 staging에서 queued → ready까지 확인(음성 업로드·서명 URL·generation_jobs 기록). 무료·구독 한도 검사는 M5
 - [x] 앱 내비게이션 뼈대: 온보딩 그룹(퀴즈·첫 꿈·계정 연결·페이월 자리), 하단 탭 4개(D-24), 온보딩 미완료 시 퀴즈로 리디렉트(D-25)
 - [x] 퀴즈 화면 12문항(데이터 기반), 답변 자동 저장·이어하기 — `POST /v1/quiz/answers|complete`, staging에서 저장·완료·people 반영 확인. 보이스 미리듣기는 voices 준비 후(Q-08)
-- [ ] 홈 꿈 입력, 생성 진행 화면(Realtime 구독, 텍스트 먼저 읽기)
+- [x] 홈 꿈 입력, 생성 진행 화면(Realtime 구독, 텍스트 먼저 읽기) — 홈·온보딩 공용 꿈 입력창, 오브 애니메이션(동작 줄이기 대응), 전체 스토리 보기, 위기 신호 시 상담 전화 안내. Android 실기기 확인(2026-10-03)
 - [ ] 플레이어: 재생·10초 이동·진행 바·반복·전체 스토리 보기, 잠금화면 메타데이터, 백그라운드 재생
 - [ ] 배경 사운드 2트랙 믹서 + 실기기 검증 결과를 `DECISIONS.md`에 기록(대안 A/B 포함)
 - [ ] [사람] 모델 3종 × 보이스 3~5종 블라인드 청취, 한국어 5분 분량 글자 수 실측 → `limits.ts` 갱신
