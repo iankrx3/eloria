@@ -30,6 +30,7 @@
 - [ ] `packages/providers`: Gemini(구조화 출력), ElevenLabs TTS, 비용 계산, 재시도·타임아웃
 - [ ] `packages/prompts`: scene-plan v1, story v1, safety v1 + 평가 세트 30개 + `pnpm eval:story`
 - [ ] `POST /v1/manifests`, Inngest `generateStory`(plan → write → review → tts), 상태 전이와 `generation_jobs` 기록
+- [x] 앱 내비게이션 뼈대: 온보딩 그룹(퀴즈·첫 꿈·계정 연결·페이월 자리), 하단 탭 4개(D-24), 온보딩 미완료 시 퀴즈로 리디렉트(D-25)
 - [ ] 퀴즈 화면 12문항(데이터 기반), 답변 자동 저장·이어하기
 - [ ] 홈 꿈 입력, 생성 진행 화면(Realtime 구독, 텍스트 먼저 읽기)
 - [ ] 플레이어: 재생·10초 이동·진행 바·반복·전체 스토리 보기, 잠금화면 메타데이터, 백그라운드 재생

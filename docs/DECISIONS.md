@@ -27,6 +27,8 @@
 | D-21 | 2026-10-03 | 카카오 계정이 이미 다른 Eloria 계정에 연결돼 있으면(`identity_already_exists`) 그 계정으로 로그인하고 익명 계정 데이터는 옮기지 않는다(임시) | 재설치·기기 변경 사용자의 복귀 경로가 우선. 데이터 이관은 Q-07 | 연결 거부 후 안내만 |
 | D-22 | 2026-10-03 | Supabase Auth 이메일 확인(`enable_confirmations`)을 끈다 | 이메일 로그인이 없는 앱(익명·소셜만). 켜 두면 소셜 계정 연결 때 확인 메일을 보내 기본 SMTP 발송 한도(429 `over_email_send_rate_limit`)에 걸림 | 커스텀 SMTP 설정 |
 | D-23 | 2026-10-03 | 카카오 `account_email`을 필수 동의로 받는다(개인 개발자 비즈 앱 전환) | Supabase는 익명 계정에 이메일 없는 ID 토큰을 연결하면 `email_address_invalid`로 거부함(staging 실기기 확인). 이메일이 있어야 D-19 방식(익명 계정에 연결, 데이터 유지)이 동작 | 이메일 없이 새 계정 가입 후 익명 데이터를 서버에서 이관 |
+| D-24 | 2026-10-03 | 하단 탭은 JS 탭(`expo-router/tabs`)과 직접 그린 탭 바. 아이콘은 `expo-symbols`(iOS SF Symbols, Android Material Symbols) | 미니 플레이어를 iOS·Android 모두 탭 위에 고정해야 함. NativeTabs의 BottomAccessory는 iOS 26 전용 | NativeTabs(`expo-router/unstable-native-tabs`) |
+| D-25 | 2026-10-03 | 온보딩 완료(`profiles.onboarding_completed_at`)는 앱이 RLS 본인 수정으로 직접 기록. 홈 탭 레이아웃이 이 값으로 퀴즈 리디렉트 | 권한·원가와 무관한 사용자 자신의 상태. 퀴즈 답변의 프로필 반영은 `POST /v1/quiz/complete`(API.md)에서 따로 함 | 서버 API로만 기록 |
 
 ## 확인 후 기록할 항목
 
