@@ -57,7 +57,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 | script_chars | int | |
 | voice_id | uuid null → voices | tts 단계에서 정한다(voices 시드 전에도 생성 흐름을 돌리려고 null 허용) |
 | prompt_version | text | 예: story@2026-10-01 |
-| error_code | text null | 예: ENQUEUE_FAILED, SAFETY_BLOCKED |
+| error_code | text null | ENQUEUE_FAILED, SAFETY_BLOCKED, SAFETY_CRISIS(도움 안내 화면), TTS_FAILED(텍스트는 계속 읽기 가능), GENERATION_FAILED |
 | updated_at | timestamptz | 공통 트리거 |
 
 `stories`는 Realtime 발행(`supabase_realtime`)에 들어 있다. 생성 진행 화면이 상태 변화를 구독한다. RLS: 본인 스토리와 `kind = library`만 select. 제약: library는 `user_id`가 null, 그 외는 not null.

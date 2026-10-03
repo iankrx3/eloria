@@ -30,6 +30,8 @@
 | D-24 | 2026-10-03 | 하단 탭은 JS 탭(`expo-router/tabs`)과 직접 그린 탭 바. 아이콘은 `expo-symbols`(iOS SF Symbols, Android Material Symbols) | 미니 플레이어를 iOS·Android 모두 탭 위에 고정해야 함. NativeTabs의 BottomAccessory는 iOS 26 전용 | NativeTabs(`expo-router/unstable-native-tabs`) |
 | D-25 | 2026-10-03 | 온보딩 완료(`profiles.onboarding_completed_at`)는 앱이 RLS 본인 수정으로 직접 기록. 홈 탭 레이아웃이 이 값으로 퀴즈 리디렉트 | 권한·원가와 무관한 사용자 자신의 상태. 퀴즈 답변의 프로필 반영은 `POST /v1/quiz/complete`(API.md)에서 따로 함 | 서버 API로만 기록 |
 | D-26 | 2026-10-03 | 생성 요청 분당 한도(3회)는 API 프로세스 메모리의 사용자별 시간창으로 센다 | 지금은 단일 인스턴스 개발 단계. 비용 한도는 `generation_quota`(DB)로 따로 판단하므로 이 제한은 남용 방지용 | Upstash 등 외부 저장소(Vercel 다중 인스턴스 배포 시 재검토) |
+| D-27 | 2026-10-03 | 음성 캐시가 적중하면 기존 파일을 새 스토리의 사용자 폴더로 복사(storage copy)하고 TTS는 부르지 않는다 | 비공개 버킷은 본인 폴더만 읽는 RLS(DATA_MODEL 6절)를 유지하면서 재생성 비용을 없앰 | 다른 사용자 경로를 서명 URL로 공유 |
+| D-28 | 2026-10-03 | 생성 파이프라인 본체는 Inngest와 분리한 함수(`runStoryPipeline(deps, event, step)`), 외부 호출은 `packages/providers` 인터페이스 뒤에 둔다 | 저장소·어댑터를 가짜로 바꿔 단계·상태 전이·검수 분기를 단위 테스트, mock/live 교체가 쉬움 | Inngest 함수 안에 직접 구현 |
 
 ## 확인 후 기록할 항목
 

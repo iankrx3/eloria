@@ -27,9 +27,9 @@
 ## M2. 생성 루프와 플레이어 (2~3주차)
 
 - [x] 마이그레이션: stories, story_assets, voices, soundscapes, generation_jobs, 스토리지 버킷과 정책 — staging 적용, Realtime(stories), 서버 전용 `generation_quota` 뷰
-- [ ] `packages/providers`: Gemini(구조화 출력), ElevenLabs TTS, 비용 계산, 재시도·타임아웃
+- [ ] `packages/providers`: Gemini(구조화 출력), ElevenLabs TTS, 비용 계산, 재시도·타임아웃 — 어댑터 인터페이스(StoryModel·TtsProvider)와 mock 어댑터 완료. Gemini·ElevenLabs live 어댑터는 유료 키 후
 - [ ] `packages/prompts`: scene-plan v1, story v1, safety v1 + 평가 세트 30개 + `pnpm eval:story`
-- [ ] `POST /v1/manifests`, Inngest `generateStory`(plan → write → review → tts), 상태 전이와 `generation_jobs` 기록 — `POST /v1/manifests` 완료(행 생성·이벤트 발행·분당 3회 제한, staging 확인). `generateStory` 남음. 무료·구독 한도 검사는 M5
+- [x] `POST /v1/manifests`, Inngest `generateStory`(plan → write → review → tts), 상태 전이와 `generation_jobs` 기록 — mock 어댑터로 staging에서 queued → ready까지 확인(음성 업로드·서명 URL·generation_jobs 기록). 무료·구독 한도 검사는 M5
 - [x] 앱 내비게이션 뼈대: 온보딩 그룹(퀴즈·첫 꿈·계정 연결·페이월 자리), 하단 탭 4개(D-24), 온보딩 미완료 시 퀴즈로 리디렉트(D-25)
 - [x] 퀴즈 화면 12문항(데이터 기반), 답변 자동 저장·이어하기 — `POST /v1/quiz/answers|complete`, staging에서 저장·완료·people 반영 확인. 보이스 미리듣기는 voices 준비 후(Q-08)
 - [ ] 홈 꿈 입력, 생성 진행 화면(Realtime 구독, 텍스트 먼저 읽기)
