@@ -38,7 +38,7 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | GET `/v1/stories/:id/media` | 서명 URL 발급 | — | `{ audioUrl, coverUrl, expiresAt }` |
 | POST `/v1/daily` | 오늘의 순간 즉시 생성(없을 때) | — | `200 { storyId }` 또는 `202` |
 | POST `/v1/affirmations/:id/audio` | 확언 음성(캐시 우선) | `{ voiceKey? }` | `{ audioUrl }` |
-| POST `/v1/push-tokens` | 푸시 토큰 등록 | `{ token, platform }` | `204` |
+| POST `/v1/push-tokens` | 푸시 토큰 등록(Expo 푸시 토큰, 멱등). 같은 토큰이 다른 계정에 있으면 지금 사용자로 옮긴다 | `{ token, platform }` | `204` |
 | POST `/v1/promo/redeem` | 크리에이터 코드 | `{ code }` | `{ grant }` |
 | POST `/v1/account/delete` | 계정 삭제 요청 | — | `202` |
 
@@ -56,7 +56,7 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 
 | 이벤트 | 함수 | 동시성·재시도 |
 | --- | --- | --- |
-| `story/generate.requested` { storyId } | `generateStory`: plan → write → review → (tts ‖ cover 요청) | 사용자당 동시 2, 전체 동시성은 ElevenLabs 플랜 한도 이하, step별 재시도 3 |
+| `story/generate.requested` { storyId } | `generateStory`: plan → write → review → (tts ‖ cover 요청) → finish → notify(완료 푸시, 실패해도 스토리는 ready) | 사용자당 동시 2, 전체 동시성은 ElevenLabs 플랜 한도 이하, step별 재시도 3 |
 | `story/revise.requested` { storyId } | `reviseStory`: write(원본+요청) → review → tts, 표지 재사용 | 위와 동일 |
 | `story/cover.completed` { storyId, generationId } | `saveCover`: 다운로드 → storage → status 갱신 | 재시도 5 |
 | `daily/tick` (cron `0 * * * *`) | `scheduleDaily`: 대상 사용자 조회 → `daily/generate.requested` fan-out | — |
@@ -66,3 +66,5 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | `library/seed.requested` (수동) | `seedLibrary`: 카테고리별 콘텐츠 생성 | 관리자 전용 |
 
 모든 함수는 시작·종료·실패를 `generation_jobs`에 기록한다.
+
+**푸시**: Expo 푸시 서비스(`packages/providers/src/push`)로 보낸다. data는 `packages/shared`의 `pushDataSchema`(`{ type: "story_ready", storyId }`), Android 채널은 `stories`, 문구는 `PUSH_COPY`. 서버는 앱 상태를 모르므로 항상 보내고, 앱이 앞에 있으면 앱이 배너를 숨긴다. 응답 티켓이 `DeviceNotRegistered`면 토큰을 지운다. 영수증(receipt) 조회는 아직 하지 않는다.

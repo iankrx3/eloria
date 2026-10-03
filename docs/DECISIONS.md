@@ -36,6 +36,7 @@
 | D-30 | 2026-10-03 | mock TTS는 2초마다 차임이 울리는 WAV(16kHz 모노)를 만든다(모델 이름 `mock-chime`) | 무음 MP3로는 재생·백그라운드·이어폰 분리를 귀로 확인할 수 없음. 실제 음성은 MP3(AI_PIPELINE 7절)이고 저장 경로 확장자는 mime을 따른다 | 사전 녹음 샘플 파일을 저장소에 포함 |
 | D-31 | 2026-10-04 | 스토리 삭제는 API(`DELETE /v1/stories/:id`)로만, 생성이 끝난 것만 허용. 파일 → 행 순서로 지우고 빈 꿈도 지운다. 생성 기록은 남기고 한도는 기록 행으로 센다 | 생성 중 삭제 시 파이프라인이 올린 파일이 주인 없이 남음. 삭제로 한도를 되돌리는 허점 방지. 꿈 원문은 개인 데이터라 스토리가 없으면 남기지 않음 | 앱이 RLS로 직접 삭제(파일이 남음) |
 | D-32 | 2026-10-04 | Android의 채워진 하트는 View로 그린다(`FilledHeart`) | expo-symbols Android는 Material Symbols Outlined 글꼴이라 채워진 아이콘(FILL)이 없음. 새 네이티브 의존성·빌드 없이 해결 | react-native-svg 아이콘(새 빌드 필요) |
+| D-33 | 2026-10-04 | 푸시는 Expo 푸시 서비스(FCM V1·APNs 대행)로 보내고, 생성 완료 푸시는 파이프라인 마지막 `notify` step에서 실패를 삼킨다. 앱이 앞에 있으면 배너를 숨기고, 알림 탭은 탭 레이아웃(온보딩 통과 후)에서 처리한다. `google-services.json`은 레포에 두지 않고 EAS file 환경 변수 `GOOGLE_SERVICES_JSON`으로 넣는다 | 스택(expo-notifications)과 맞고 FCM·APNs 자격 증명을 EAS가 관리. 푸시 실패로 `onFailure`가 ready 스토리를 실패로 바꾸면 안 됨. 진행 화면이 이미 Realtime으로 바뀌므로 앞에서는 중복 안내 | FCM·APNs 직접 연동, Supabase Edge Function에서 발송 |
 
 ## 확인 후 기록할 항목
 

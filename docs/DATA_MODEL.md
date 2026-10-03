@@ -90,7 +90,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 **webhook_events**: source text(revenuecat, elevenlabs), event_id text unique, payload jsonb, processed_at
 **generation_jobs**: user_id, story_id null, kind text(story, revision, daily, affirmation_audio, cover, library), step text, status text(pending, running, succeeded, failed), attempts int, provider text, model text, input_tokens int, output_tokens int, tts_chars int, image_count int, est_cost_usd numeric(10,5), error text, started_at, finished_at — RLS만 켜고 정책 없음(사용자 접근 불가, service role 전용)
 **generation_quota** (뷰): user_id, month, stories_used, daily_used, revisions_used — `generation_jobs`의 스토리별 전체 진행 행(`provider is null`, 생성 요청 때 하나씩 생김)을 세어 집계(마이그레이션 20261004090000). 스토리를 지워도 `story_id`만 null이 되고 행은 남아 사용량이 줄지 않는다. `security_invoker`, anon·authenticated 권한 없음(서버 전용)
-**push_tokens**: user_id, token text unique, platform, updated_at
+**push_tokens**: user_id, token text unique(Expo 푸시 토큰, 기기당 하나라 다른 계정으로 로그인하면 행이 그 사용자로 옮겨 감), platform text(ios, android), created_at, updated_at — 본인 select만, 쓰기는 service role(마이그레이션 20261004110000)
 **promo_codes**: code unique, grants text(free_month 등), max_uses, used_count, creator_name, expires_at
 **referrals**: code, user_id, redeemed_at
 **deletion_requests**: user_id, requested_at, completed_at null

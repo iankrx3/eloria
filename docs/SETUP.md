@@ -48,7 +48,7 @@ Expo Go는 쓰지 않는다. 결제·카카오 로그인·백그라운드 오디
 | `PROVIDER_MODE` | API | `live`(기본) 또는 `mock`. mock은 외부 AI를 호출하지 않는다. 프로덕션 금지 |
 | `INNGEST_DEV` | API | 로컬은 `1`(dev server 사용) |
 | `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` | API | 배포 환경 |
-| `EXPO_ACCESS_TOKEN` | API | 푸시 발송 |
+| `EXPO_ACCESS_TOKEN` | API | 푸시 발송. expo.dev에서 푸시 보안(Enhanced Security)을 켰을 때만 필요 |
 | `SENTRY_DSN` | API | |
 
 ## 4. 외부 서비스 설정 메모
@@ -62,4 +62,5 @@ Expo Go는 쓰지 않는다. 결제·카카오 로그인·백그라운드 오디
 - **ElevenLabs**: 워크스페이스 웹훅을 generation 이벤트에 구독, URL `/v1/webhooks/elevenlabs`. API 키에 TTS와 Image(Flows) 권한 부여.
 - **Inngest**: 앱 URL을 `<API>/api/inngest`로 등록.
 - **EAS**: `eas.json`의 development 프로필은 `developmentClient: true`. 카카오 네이티브 앱 키는 공개값이라 `app.config.ts`에 기본값으로 있다(EAS CLI는 .env를 읽지 않고 설정을 평가한다).
+- **푸시(Android, FCM V1)**: Firebase 프로젝트에 Android 앱(패키지명 `com.o3c.eloria.dev`, 이후 preview·prod도 같은 프로젝트에 추가) 등록 → `google-services.json` 다운로드(레포에 넣지 않음) → `cd apps/mobile && eas env:set --name GOOGLE_SERVICES_JSON --type file --value <경로> --environment development --visibility secret`(preview·production도 같은 방식) → Firebase 콘솔 프로젝트 설정 > 서비스 계정 > 새 비공개 키 생성 → `eas credentials` → Android → development → Google Service Account → Manage your Google Service Account Key for Push Notifications (FCM V1) → JSON 업로드. 그 뒤 새 개발 빌드가 필요하다. iOS(APNs)는 Apple 계정이 생기면 `eas credentials`가 키를 만든다.
 - **Kakao Developers**: 카카오 로그인 ON, OpenID Connect ON, 개인 개발자 비즈 앱 전환 후 동의항목 `카카오계정(이메일)`을 필수로(D-23). 플랫폼 Android에 패키지명(`com.o3c.eloria.dev` 등)과 키 해시(EAS 키스토어 SHA-1의 base64), iOS에 번들 ID 등록. REST API 키의 Redirect URI에 `https://<project-ref>.supabase.co/auth/v1/callback`.
