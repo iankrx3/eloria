@@ -3,9 +3,11 @@ import { serve as serveInngest } from 'inngest/hono';
 import { functions, inngest } from './inngest';
 import { errorJson, handleError } from './lib/errors';
 import { requireAuth, type AuthVariables, type TokenVerifier } from './middleware/auth';
+import type { QuizRepo } from './repos/quiz-repo';
 import { health } from './routes/health';
+import { createQuizRoutes } from './routes/quiz';
 
-export type AppDeps = { verifyToken: TokenVerifier };
+export type AppDeps = { verifyToken: TokenVerifier; quizRepo: QuizRepo };
 
 export function createApp(deps: AppDeps) {
   const app = new Hono();
@@ -17,8 +19,9 @@ export function createApp(deps: AppDeps) {
 
   const v1 = new Hono<{ Variables: AuthVariables }>();
   v1.route('/health', health);
-  // health를 제외한 /v1 경로는 모두 Supabase JWT가 필요하다. 라우트는 M2부터 이 아래에 추가한다.
+  // health를 제외한 /v1 경로는 모두 Supabase JWT가 필요하다.
   v1.use('*', requireAuth(deps.verifyToken));
+  v1.route('/quiz', createQuizRoutes(deps.quizRepo));
   app.route('/v1', v1);
 
   return app;

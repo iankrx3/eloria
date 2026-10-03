@@ -1,36 +1,25 @@
 import { apiErrorResponseSchema, healthResponseSchema } from '@eloria/shared';
 import { Hono } from 'hono';
-import { SignJWT } from 'jose';
 import { describe, expect, it } from 'vitest';
 import { createApp } from './app';
 import { handleError } from './lib/errors';
-import { createSupabaseVerifier, requireAuth, type AuthVariables } from './middleware/auth';
+import { requireAuth, type AuthVariables } from './middleware/auth';
+import { createFakeQuizRepo, sign, verifyToken } from './test/fakes';
 
-const SUPABASE_URL = 'http://127.0.0.1:54321';
-const SECRET = 'test-secret-at-least-32-characters-long';
-const verifyToken = createSupabaseVerifier({ supabaseUrl: SUPABASE_URL, jwtSecret: SECRET });
-
-function sign(claims: Record<string, unknown>, opts: { issuer?: string; expiresIn?: string } = {}) {
-  return new SignJWT(claims)
-    .setProtectedHeader({ alg: 'HS256' })
-    .setIssuer(opts.issuer ?? `${SUPABASE_URL}/auth/v1`)
-    .setAudience('authenticated')
-    .setExpirationTime(opts.expiresIn ?? '1h')
-    .sign(new TextEncoder().encode(SECRET));
-}
+const app = () => createApp({ verifyToken, quizRepo: createFakeQuizRepo().repo });
 
 /** 인증 미들웨어만 붙인 테스트용 앱 */
 function protectedApp() {
-  const app = new Hono<{ Variables: AuthVariables }>();
-  app.onError(handleError);
-  app.use('*', requireAuth(verifyToken));
-  app.get('/me', (c) => c.json(c.get('user')));
-  return app;
+  const p = new Hono<{ Variables: AuthVariables }>();
+  p.onError(handleError);
+  p.use('*', requireAuth(verifyToken));
+  p.get('/me', (c) => c.json(c.get('user')));
+  return p;
 }
 
 describe('GET /v1/health', () => {
   it('토큰 없이 ok를 돌려준다', async () => {
-    const res = await createApp({ verifyToken }).request('/v1/health');
+    const res = await app().request('/v1/health');
     expect(res.status).toBe(200);
     expect(healthResponseSchema.safeParse(await res.json()).success).toBe(true);
   });
@@ -67,7 +56,7 @@ describe('requireAuth', () => {
 
 describe('없는 경로', () => {
   it('NOT_FOUND 형식으로 404', async () => {
-    const res = await createApp({ verifyToken }).request('/nope');
+    const res = await app().request('/nope');
     expect(res.status).toBe(404);
     expect(apiErrorResponseSchema.parse(await res.json()).error.code).toBe('NOT_FOUND');
   });

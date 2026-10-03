@@ -199,6 +199,9 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.3
         version: 2.1.3(hono@4.13.12)
+      '@supabase/supabase-js':
+        specifier: ^2.117.2
+        version: 2.117.2(@opentelemetry/api@1.9.1)
       hono:
         specifier: ^4.13.12
         version: 4.13.12

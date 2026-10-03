@@ -12,6 +12,7 @@
   "dependencies": {
     "@eloria/shared": "workspace:*",
     "@hono/node-server": "^2.1.3",
+    "@supabase/supabase-js": "^2.117.2",
     "hono": "^4.13.12",
     "inngest": "^4.21.1",
     "jose": "^6.2.12",
