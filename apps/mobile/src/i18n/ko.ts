@@ -49,10 +49,24 @@ export const ko = {
   story: {
     back: '닫기',
   },
+  player: {
+    listen: '들어보기',
+    play: '재생',
+    pause: '일시정지',
+    back10: '10초 뒤로',
+    forward10: '10초 앞으로',
+    repeat: '반복 재생',
+    fullText: '전체 스토리 보기',
+    close: '닫기',
+    seek: '재생 위치',
+    remaining: (time: string) => `-${time}`,
+    loadFailed: '음성을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
+    notReady: '아직 목소리를 입히는 중이에요. 조금 뒤에 다시 들어 주세요.',
+    openPlayer: (title: string) => `${title} 플레이어 열기`,
+  },
   safety: {
     supportTitle: '지금 많이 힘드신가요?',
-    supportBody:
-      '혼자 견디지 않아도 괜찮아요. 지금 바로 이야기를 들어 줄 수 있는 곳이 있어요.',
+    supportBody: '혼자 견디지 않아도 괜찮아요. 지금 바로 이야기를 들어 줄 수 있는 곳이 있어요.',
     supportSuicideLine: '자살예방상담전화 109',
     supportSuicideLineDetail: '24시간, 무료',
     supportMentalLine: '정신건강위기상담전화 1577-0199',

@@ -21,8 +21,7 @@ export default function ManifestProgress() {
   const state = story.data ? progressState(story.data.status, story.data.errorCode) : undefined;
   useStoryRealtime(storyId, state?.kind === 'working');
 
-  const openText = () =>
-    router.push({ pathname: '/story/[storyId]/text', params: { storyId } });
+  const openText = () => router.push({ pathname: '/story/[storyId]/text', params: { storyId } });
   const leave = () =>
     inOnboarding
       ? router.replace({ pathname: '/link-account', params: { next: '/paywall' } })
@@ -50,7 +49,11 @@ export default function ManifestProgress() {
       <SafeAreaView className="flex-1 bg-dawn">
         <ScrollView contentContainerClassName="gap-6 px-gutter py-8">
           <CrisisSupport />
-          <PrimaryButton variant="ghost" label={ko.progress.tryAgain} onPress={() => router.back()} />
+          <PrimaryButton
+            variant="ghost"
+            label={ko.progress.tryAgain}
+            onPress={() => router.back()}
+          />
         </ScrollView>
       </SafeAreaView>
     );
@@ -86,11 +89,24 @@ export default function ManifestProgress() {
         {state.kind === 'working' && state.canReadFirst && (
           <PrimaryButton label={ko.progress.readFirst} onPress={openText} />
         )}
-        {(state.kind === 'done' || (state.kind === 'failed' && state.canRead)) && (
+        {state.kind === 'done' && (
+          <>
+            <PrimaryButton
+              label={ko.player.listen}
+              onPress={() => router.push({ pathname: '/player/[storyId]', params: { storyId } })}
+            />
+            <PrimaryButton variant="ghost" label={ko.progress.read} onPress={openText} />
+          </>
+        )}
+        {state.kind === 'failed' && state.canRead && (
           <PrimaryButton label={ko.progress.read} onPress={openText} />
         )}
         {state.kind === 'blocked' || (state.kind === 'failed' && !state.canRead) ? (
-          <PrimaryButton variant="ghost" label={ko.progress.tryAgain} onPress={() => router.back()} />
+          <PrimaryButton
+            variant="ghost"
+            label={ko.progress.tryAgain}
+            onPress={() => router.back()}
+          />
         ) : (
           (state.kind === 'done' || !inOnboarding) && (
             <PrimaryButton

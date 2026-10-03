@@ -26,6 +26,9 @@ describe('progressState', () => {
 
   it('음성만 실패하면 읽기는 열어 둔다', () => {
     expect(progressState('text_ready', 'TTS_FAILED')).toEqual({ kind: 'failed', canRead: true });
-    expect(progressState('failed', 'GENERATION_FAILED')).toEqual({ kind: 'failed', canRead: false });
+    expect(progressState('failed', 'GENERATION_FAILED')).toEqual({
+      kind: 'failed',
+      canRead: false,
+    });
   });
 });

@@ -35,7 +35,10 @@ export function Orb({ breathing }: { breathing: boolean }) {
 
   return (
     <View accessible={false} className="h-48 w-48 items-center justify-center">
-      <Animated.View style={style} className="h-44 w-44 items-center justify-center rounded-full bg-dawn-2">
+      <Animated.View
+        style={style}
+        className="h-44 w-44 items-center justify-center rounded-full bg-dawn-2"
+      >
         <View className="h-32 w-32 items-center justify-center rounded-full bg-surface">
           <View className="h-16 w-16 rounded-full bg-glow" />
         </View>

@@ -36,13 +36,11 @@ export default function StoryText() {
               {story.data.title}
             </Text>
           )}
-          {story.data
-            .script!.split(/\n\s*\n/)
-            .map((paragraph, i) => (
-              <Text key={i} className="text-[18px] leading-[30px] text-plum-deep">
-                {paragraph.trim()}
-              </Text>
-            ))}
+          {story.data.script!.split(/\n\s*\n/).map((paragraph, i) => (
+            <Text key={i} className="text-[18px] leading-[30px] text-plum-deep">
+              {paragraph.trim()}
+            </Text>
+          ))}
         </ScrollView>
       )}
     </SafeAreaView>
