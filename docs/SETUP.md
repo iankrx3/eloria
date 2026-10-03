@@ -62,4 +62,4 @@ Expo Go는 쓰지 않는다. 결제·카카오 로그인·백그라운드 오디
 - **ElevenLabs**: 워크스페이스 웹훅을 generation 이벤트에 구독, URL `/v1/webhooks/elevenlabs`. API 키에 TTS와 Image(Flows) 권한 부여.
 - **Inngest**: 앱 URL을 `<API>/api/inngest`로 등록.
 - **EAS**: `eas.json`의 development 프로필은 `developmentClient: true`. 카카오 네이티브 앱 키는 공개값이라 `app.config.ts`에 기본값으로 있다(EAS CLI는 .env를 읽지 않고 설정을 평가한다).
-- **Kakao Developers**: 카카오 로그인 ON, OpenID Connect ON. 플랫폼 Android에 패키지명(`com.o3c.eloria.dev` 등)과 키 해시(EAS 키스토어 SHA-1의 base64), iOS에 번들 ID 등록. REST API 키의 Redirect URI에 `https://<project-ref>.supabase.co/auth/v1/callback`.
+- **Kakao Developers**: 카카오 로그인 ON, OpenID Connect ON, 개인 개발자 비즈 앱 전환 후 동의항목 `카카오계정(이메일)`을 필수로(D-23). 플랫폼 Android에 패키지명(`com.o3c.eloria.dev` 등)과 키 해시(EAS 키스토어 SHA-1의 base64), iOS에 번들 ID 등록. REST API 키의 Redirect URI에 `https://<project-ref>.supabase.co/auth/v1/callback`.
