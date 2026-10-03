@@ -29,3 +29,13 @@ export function groupByDesire(stories: readonly LibraryStory[]): StorySection[] 
   }
   return [...sections.values()];
 }
+
+/** 생성이 끝나 지울 수 있는 상태인지(서버의 CONFLICT 규칙과 같다) */
+export function canDeleteStory(status: StoryStatus, errorCode: string | null) {
+  return (
+    status === 'failed' ||
+    status === 'audio_ready' ||
+    status === 'ready' ||
+    (status === 'text_ready' && errorCode !== null)
+  );
+}

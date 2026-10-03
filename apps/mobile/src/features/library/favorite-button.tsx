@@ -1,5 +1,6 @@
 import { SymbolView } from 'expo-symbols';
-import { Pressable } from 'react-native';
+import { Platform, Pressable } from 'react-native';
+import { FilledHeart } from '@/components/filled-heart';
 import { ko } from '@/i18n/ko';
 import { useFavorites, useToggleFavorite } from './use-library';
 
@@ -27,15 +28,20 @@ export function FavoriteButton({ storyId, color, activeColor, size = 22 }: Props
       onPress={() => toggle.mutate({ storyId, liked: !liked })}
       className="h-12 w-12 items-center justify-center"
     >
-      <SymbolView
-        name={
-          liked
-            ? { ios: 'heart.fill', android: 'favorite' }
-            : { ios: 'heart', android: 'favorite_border' }
-        }
-        size={size}
-        tintColor={liked ? activeColor : color}
-      />
+      {liked && Platform.OS === 'android' ? (
+        // Android 아이콘 글꼴에는 채워진 하트가 없어 직접 그린다.
+        <FilledHeart size={size} color={activeColor} />
+      ) : (
+        <SymbolView
+          name={
+            liked
+              ? { ios: 'heart.fill', android: 'favorite' }
+              : { ios: 'heart', android: 'favorite' }
+          }
+          size={size}
+          tintColor={liked ? activeColor : color}
+        />
+      )}
     </Pressable>
   );
 }

@@ -87,6 +87,13 @@ export const ko = {
     minutes: (min: number) => `${min}분`,
     seconds: (sec: number) => `${sec}초`,
     openStory: (title: string) => `${title} 열기`,
+    more: (title: string) => `${title} 더보기`,
+    deleteTitle: '이 스토리를 지울까요?',
+    deleteBody: '음성과 글이 함께 지워지고 되돌릴 수 없어요.',
+    deleteConfirm: '지우기',
+    deleteCancel: '취소',
+    deleteFailed: '스토리를 지우지 못했어요. 잠시 후 다시 시도해 주세요.',
+    deleteBusy: '스토리를 만드는 중에는 지울 수 없어요. 완성된 뒤에 다시 시도해 주세요.',
   },
   favorite: {
     add: '좋아요',

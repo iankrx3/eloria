@@ -1,6 +1,7 @@
 import { storyStatusSchema } from '@eloria/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/auth-provider';
+import { authedApi } from '@/lib/authed-api';
 import { supabase } from '@/lib/supabase';
 import type { LibraryStory } from './group-stories';
 
@@ -91,5 +92,14 @@ export function useToggleFavorite() {
       if (context?.previous) queryClient.setQueryData(key, context.previous);
     },
     onSettled: () => queryClient.invalidateQueries({ queryKey: key }),
+  });
+}
+
+/** 스토리 삭제(DELETE /v1/stories/:id). 음성 파일까지 서버가 지운다. */
+export function useDeleteStory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (storyId: string) => authedApi(`/v1/stories/${storyId}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['library'] }),
   });
 }

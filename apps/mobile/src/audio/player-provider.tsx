@@ -16,6 +16,8 @@ type PlayerContextValue = {
   playTrack: (track: Track, url: string) => void;
   togglePlay: () => void;
   seekBy: (seconds: number) => void;
+  /** 이 스토리가 플레이어에 올라가 있으면 멈추고 내린다(스토리 삭제 시). */
+  unloadIfCurrent: (storyId: string) => void;
 };
 
 const PlayerContext = createContext<PlayerContextValue | null>(null);
@@ -74,9 +76,20 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     [player, status.duration],
   );
 
+  const unloadIfCurrent = useCallback(
+    (storyId: string) => {
+      if (track?.storyId !== storyId) return;
+      player.pause();
+      player.clearLockScreenControls();
+      player.replace(null);
+      setTrack(null);
+    },
+    [player, track?.storyId, setTrack],
+  );
+
   const value = useMemo(
-    () => ({ player, status, playTrack, togglePlay, seekBy }),
-    [player, status, playTrack, togglePlay, seekBy],
+    () => ({ player, status, playTrack, togglePlay, seekBy, unloadIfCurrent }),
+    [player, status, playTrack, togglePlay, seekBy, unloadIfCurrent],
   );
   return <PlayerContext.Provider value={value}>{children}</PlayerContext.Provider>;
 }

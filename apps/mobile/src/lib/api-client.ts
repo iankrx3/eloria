@@ -13,7 +13,7 @@ export class ApiClientError extends Error {
 }
 
 type RequestOptions<T extends z.ZodType> = {
-  method?: 'GET' | 'POST';
+  method?: 'GET' | 'POST' | 'DELETE';
   body?: unknown;
   /** 응답 본문을 검증할 스키마. 204처럼 본문이 없으면 생략한다. */
   schema?: T;
