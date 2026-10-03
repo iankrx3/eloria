@@ -8,7 +8,42 @@ export const ko = {
   common: {
     retry: '다시 시도',
     loading: '불러오는 중이에요',
+    next: '다음',
+    continue: '계속하기',
+    later: '나중에 할게요',
+    comingSoon: '곧 만나요',
     genericError: '미래를 그리는 데 조금 더 시간이 필요해요. 잠시 후 다시 시도해 주세요.',
+  },
+  tabs: {
+    home: '홈',
+    library: '라이브러리',
+    rituals: '리추얼',
+    me: '마이',
+  },
+  home: {
+    title: '오늘, 어떤 미래를\n그려볼까요?',
+    placeholder: '원하는 삶을 자유롭게 적어보세요…',
+  },
+  library: {
+    title: '라이브러리',
+    body: '내가 만든 스토리와 좋아요한 스토리가 이곳에 모여요.',
+  },
+  rituals: {
+    title: '리추얼',
+    body: '매일의 확언과 카테고리별 스토리를 이곳에서 들을 수 있어요.',
+  },
+  me: {
+    title: '마이',
+    linkAccount: '계정 연결하기',
+    restartOnboarding: '온보딩 다시 보기(개발용)',
+  },
+  onboarding: {
+    progress: (step: number, total: number) => `${step} / ${total}`,
+    quizPlaceholder: '질문 화면은 다음 작업에서 채워져요.',
+    firstManifestTitle: '가장 먼저 그려 보고 싶은\n미래는 무엇인가요?',
+    firstManifestBody: '꿈 입력과 첫 스토리 생성은 다음 작업에서 이어져요.',
+    paywallTitle: 'Eloria와 함께\n매일 그 하루를 살아 봐요',
+    paywallBody: '구독 화면은 결제 연결 단계(M5)에서 완성돼요.',
   },
   dev: {
     title: '개발 상태',
@@ -20,7 +55,9 @@ export const ko = {
     apiOk: '연결됨',
     apiFail: '연결 실패',
     userId: '사용자 ID',
-    linkAccount: '계정 연결하기',
+    onboarding: '온보딩',
+    onboardingDone: '완료',
+    onboardingTodo: '진행 전',
   },
   linkAccount: {
     title: '그려 온 미래를\n간직해 둘까요?',

@@ -5,6 +5,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from '@/features/auth/auth-provider';
+import tokens from '@/theme/tokens.json';
 
 export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
@@ -14,7 +15,16 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <StatusBar style="dark" />
-          <Stack screenOptions={{ headerShown: false }} />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              animation: 'fade',
+              contentStyle: { backgroundColor: tokens.colors.dawn },
+            }}
+          >
+            <Stack.Screen name="(onboarding)" />
+            <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+          </Stack>
         </AuthProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
