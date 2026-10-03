@@ -1,4 +1,4 @@
-import { toCamel } from '@eloria/shared';
+import { personalProfileSchema, toCamel, type PersonalProfile } from '@eloria/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -16,7 +16,7 @@ export function useProfile() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, display_name, onboarding_completed_at')
+        .select('id, display_name, tone, likes, dislikes, onboarding_completed_at')
         .eq('id', userId!)
         .single();
       if (error) throw error;
@@ -40,6 +40,34 @@ export function useSetOnboardingCompleted() {
       const { error } = await supabase
         .from('profiles')
         .update({ onboarding_completed_at: completed ? new Date().toISOString() : null })
+        .eq('id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: profileKey(userId) }),
+  });
+}
+
+/**
+ * 마이 탭 Personal 편집(PRD F-11). 사용자 자신의 데이터라 RLS 본인 수정으로 직접 쓰고,
+ * 쓰기 전에 공용 스키마로 검증한다. 다음 생성부터 반영된다.
+ */
+export function useUpdatePersonal() {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const userId = auth.status === 'signed-in' ? auth.session.user.id : undefined;
+
+  return useMutation({
+    mutationFn: async (patch: Partial<PersonalProfile>) => {
+      if (!userId) throw new Error('no session');
+      const v = personalProfileSchema.partial().parse(patch);
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          ...(v.displayName !== undefined && { display_name: v.displayName }),
+          ...(v.tone !== undefined && { tone: v.tone }),
+          ...(v.likes !== undefined && { likes: v.likes }),
+          ...(v.dislikes !== undefined && { dislikes: v.dislikes }),
+        })
         .eq('id', userId);
       if (error) throw error;
     },
