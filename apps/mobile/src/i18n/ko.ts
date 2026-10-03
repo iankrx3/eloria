@@ -20,5 +20,17 @@ export const ko = {
     apiOk: '연결됨',
     apiFail: '연결 실패',
     userId: '사용자 ID',
+    linkAccount: '계정 연결하기',
+  },
+  linkAccount: {
+    title: '그려 온 미래를\n간직해 둘까요?',
+    body: '계정을 연결하면 기기를 바꿔도 지금까지의 꿈과 스토리를 다시 들을 수 있어요.',
+    kakao: '카카오 로그인',
+    close: '닫기',
+    linked: '카카오 계정이 연결됐어요.',
+    switched: '이미 연결된 계정이 있어 그 계정으로 로그인했어요.',
+    signedIn: '카카오 계정으로 로그인했어요.',
+    cancelled: '카카오 로그인을 취소했어요.',
+    failed: '계정을 연결하지 못했어요. 잠시 후 다시 시도해 주세요.',
   },
 } as const;

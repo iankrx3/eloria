@@ -54,10 +54,12 @@ Expo Go는 쓰지 않는다. 결제·카카오 로그인·백그라운드 오디
 ## 4. 외부 서비스 설정 메모
 
 - **Supabase**: Auth에서 Anonymous, Apple, Kakao, Google 활성화. Kakao provider에는 REST API 키와 Client Secret, Redirect URI 등록.
+  - provider 키는 `supabase/.env`(git 제외)의 `SUPABASE_AUTH_EXTERNAL_KAKAO_CLIENT_ID`(`REST 키,네이티브 키`, D-20)·`..._SECRET`에 두고 `supabase config push`로 반영한다.
   - staging 프로젝트: `pprrnrnsyjkkpdebarcr`. `supabase link --project-ref pprrnrnsyjkkpdebarcr` 후 `supabase db push`, `pnpm db:types:linked`.
   - Auth 설정은 `supabase/config.toml`이 원천이다. `supabase config push`는 바뀌는 항목을 보여 주므로, 의도하지 않은 항목이 있으면 config.toml을 원격 값에 맞춘 뒤 반영한다.
   - 키 조회: `supabase projects api-keys --project-ref <ref> --reveal`(`--reveal` 없이는 secret 키가 축약돼 나온다). 새 형식 `sb_secret_` 키는 JWT가 아니므로 REST 호출 시 `apikey` 헤더에만 넣고 `Authorization: Bearer`에는 넣지 않는다.
 - **RevenueCat**: App Store Connect·Play Console 연결, entitlement `premium`, 상품 월간·연간, 웹훅 URL `/v1/webhooks/revenuecat`.
 - **ElevenLabs**: 워크스페이스 웹훅을 generation 이벤트에 구독, URL `/v1/webhooks/elevenlabs`. API 키에 TTS와 Image(Flows) 권한 부여.
 - **Inngest**: 앱 URL을 `<API>/api/inngest`로 등록.
-- **EAS**: `eas.json`의 development 프로필은 `developmentClient: true`.
+- **EAS**: `eas.json`의 development 프로필은 `developmentClient: true`. 카카오 네이티브 앱 키는 공개값이라 `app.config.ts`에 기본값으로 있다(EAS CLI는 .env를 읽지 않고 설정을 평가한다).
+- **Kakao Developers**: 카카오 로그인 ON, OpenID Connect ON. 플랫폼 Android에 패키지명(`com.o3c.eloria.dev` 등)과 키 해시(EAS 키스토어 SHA-1의 base64), iOS에 번들 ID 등록. REST API 키의 Redirect URI에 `https://<project-ref>.supabase.co/auth/v1/callback`.

@@ -1,5 +1,6 @@
 import { healthResponseSchema } from '@eloria/shared';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/features/auth/auth-provider';
@@ -59,6 +60,18 @@ export default function Index() {
           >
             <Text className="text-[16px] text-on-dusk">{ko.common.retry}</Text>
           </Pressable>
+        )}
+
+        {auth.status === 'signed-in' && auth.session.user.is_anonymous && (
+          <Link href="/link-account" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={ko.dev.linkAccount}
+              className="items-center rounded-full bg-plum py-3"
+            >
+              <Text className="text-[16px] text-on-dusk">{ko.dev.linkAccount}</Text>
+            </Pressable>
+          </Link>
         )}
       </View>
     </SafeAreaView>

@@ -19,6 +19,11 @@ const VARIANTS: Record<AppEnv, { id: string; name: string; scheme: string }> = {
 
 const variant = VARIANTS[APP_ENV];
 
+// 카카오 네이티브 앱 키는 앱 바이너리에 그대로 들어가는 공개값이라 기본값으로 둔다.
+// EAS CLI는 .env를 읽지 않고 이 파일을 평가하므로 환경 변수에만 의존하면 eas 명령이 실패한다.
+const KAKAO_NATIVE_APP_KEY =
+  process.env.EXPO_PUBLIC_KAKAO_NATIVE_APP_KEY || '4b62d2588fe1de72e3fc6d4a258f4afc';
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: variant.name,
@@ -61,7 +66,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-splash-screen',
       { image: './assets/splash-icon.png', imageWidth: 160, backgroundColor: '#F3ECF6' },
     ],
-    // 카카오 로그인 플러그인은 네이티브 앱 키를 받은 뒤 추가한다(ROADMAP M1).
+    ['@react-native-seoul/kakao-login', { kakaoAppKey: KAKAO_NATIVE_APP_KEY }],
+    [
+      'expo-build-properties',
+      // 카카오 Android SDK는 카카오 자체 Maven 저장소에서 받는다.
+      { android: { extraMavenRepos: ['https://devrepo.kakao.com/nexus/content/groups/public/'] } },
+    ],
   ],
   experiments: {
     typedRoutes: true,

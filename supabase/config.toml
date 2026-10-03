@@ -338,7 +338,7 @@ email_optional = false
 # 퀴즈는 익명 로그인으로 시작하고 페이월 직전에 소셜 계정을 연결한다(DECISIONS D-08).
 # 키는 커밋하지 않는다. supabase/.env 또는 셸 환경 변수로 넣는다.
 [auth.external.kakao]
-enabled = false
+enabled = true
 client_id = "env(SUPABASE_AUTH_EXTERNAL_KAKAO_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_EXTERNAL_KAKAO_SECRET)"
 redirect_uri = ""

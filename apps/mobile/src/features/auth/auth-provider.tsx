@@ -26,9 +26,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error && !cancelled) setState({ status: 'error', session: null, error });
     }
 
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+    // 카카오 연결(linkIdentity) 뒤에는 USER_UPDATED/SIGNED_IN으로 새 세션이 온다.
+    // 로그아웃되면 다시 익명 세션을 만든다.
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
-      if (session) setState({ status: 'signed-in', session });
+      if (session) {
+        setState({ status: 'signed-in', session });
+      } else if (event === 'SIGNED_OUT') {
+        setState({ status: 'loading', session: null });
+        void supabase.auth.signInAnonymously();
+      }
     });
 
     bootstrap().catch((e: unknown) => {

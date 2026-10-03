@@ -22,6 +22,9 @@
 | D-16 | 2026-10-02 | 환경별 번들 ID: `com.o3c.eloria.dev`, `.preview`, `com.o3c.eloria`(Q-05 확정 전 가칭) | 개발·스테이징·프로덕션 앱을 한 기기에 같이 설치 | 단일 번들 ID |
 | D-17 | 2026-10-02 | expo-audio 마이크 권한 비활성(`microphonePermission: false`, `recordAudioAndroid: false`) | 녹음 기능 없음. 불필요한 권한은 심사·사용자 신뢰에 불리 | 기본값(권한 요청) |
 | D-18 | 2026-10-02 | Supabase advisor의 `auth_allow_anonymous_sign_ins` 경고는 수용한다. 사용자 테이블 정책은 익명 사용자(authenticated 역할)도 본인 행만 접근 | D-08(익명으로 퀴즈 시작). staging에서 익명 사용자의 타인 행 조회·쓰기 거부를 확인. 생성 같은 비용 작업은 서버가 `is_anonymous`·한도로 판단 | 정책에 `is_anonymous = false` 조건 추가(퀴즈 저장 불가) |
+| D-19 | 2026-10-03 | 카카오 로그인은 네이티브 SDK(`@react-native-seoul/kakao-login`) → ID 토큰 → `supabase.auth.linkIdentity({ provider: 'kakao', token })`로 익명 계정에 연결. 의존성 추가: `@react-native-seoul/kakao-login`, `expo-build-properties`(카카오 Maven 저장소) | 카카오톡 앱 로그인 UX, 익명 계정의 퀴즈 데이터 유지(M1 "익명→소셜 연결 방식" 확인 항목) | 브라우저 OAuth(`linkIdentity` + `expo-web-browser`) |
+| D-20 | 2026-10-03 | Supabase 카카오 provider의 client_id에 `REST API 키,네이티브 앱 키`를 함께 넣는다 | 브라우저 OAuth는 첫 값(REST 키)을 쓰고, 네이티브 SDK ID 토큰의 audience는 네이티브 앱 키다. authorize 리디렉트가 REST 키만 쓰는 것으로 목록 처리를 확인. 실기기 ID 토큰 검증은 미확인 | ID 토큰 대신 브라우저 OAuth만 사용 |
+| D-21 | 2026-10-03 | 카카오 계정이 이미 다른 Eloria 계정에 연결돼 있으면(`identity_already_exists`) 그 계정으로 로그인하고 익명 계정 데이터는 옮기지 않는다(임시) | 재설치·기기 변경 사용자의 복귀 경로가 우선. 데이터 이관은 Q-07 | 연결 거부 후 안내만 |
 
 ## 확인 후 기록할 항목
 
