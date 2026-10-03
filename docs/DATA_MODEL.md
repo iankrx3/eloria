@@ -78,7 +78,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 
 **playlists**: user_id, title, desire_id null
 **playlist_items**: playlist_id, story_id, sort
-**favorites**: user_id, story_id, unique(user_id, story_id)
+**favorites**: user_id, story_id, unique(user_id, story_id) — RLS: 본인 select·delete, insert는 볼 수 있는 스토리(본인 또는 library)에만. 앱이 직접 쓴다(마이그레이션 20261003150000)
 **play_events**: user_id, story_id, event text(start, progress_25, progress_50, progress_75, progress_90, complete), position_sec, occurred_at, platform
 **gratitude_entries**: user_id, entry_date date, lines text[3], unique(user_id, entry_date)
 **wall_entries**: user_id, desire_id null, title, note, photo_path null, achieved_on date

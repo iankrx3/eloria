@@ -37,10 +37,7 @@ export interface StoryModel {
 export interface TtsProvider {
   /** 음성 모델 ID. 캐시 키와 비용 계산에 쓴다. */
   readonly model: string;
-  synthesize(input: {
-    text: string;
-    voiceId: string;
-  }): Promise<{
+  synthesize(input: { text: string; voiceId: string }): Promise<{
     audio: Uint8Array;
     mime: 'audio/mpeg' | 'audio/wav';
     durationSec: number;
