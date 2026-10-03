@@ -55,9 +55,12 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 | scene_plan | jsonb | `ScenePlan` 스키마(AI_PIPELINE 4.1) |
 | script | text | 최종 스크립트 |
 | script_chars | int | |
-| voice_id | uuid → voices | |
+| voice_id | uuid null → voices | tts 단계에서 정한다(voices 시드 전에도 생성 흐름을 돌리려고 null 허용) |
 | prompt_version | text | 예: story@2026-10-01 |
-| error_code | text null | |
+| error_code | text null | 예: ENQUEUE_FAILED, SAFETY_BLOCKED |
+| updated_at | timestamptz | 공통 트리거 |
+
+`stories`는 Realtime 발행(`supabase_realtime`)에 들어 있다. 생성 진행 화면이 상태 변화를 구독한다. RLS: 본인 스토리와 `kind = library`만 select. 제약: library는 `user_id`가 null, 그 외는 not null.
 
 **story_assets**: story_id, type text(audio, cover, mixed_audio), storage_path text, duration_sec numeric null, mime text, bytes int, content_hash text(캐시 키), provider text, model text
 
@@ -85,8 +88,8 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 
 **subscriptions**: user_id unique, status text(active, trialing, grace, expired, none), product_id, store text(app_store, play_store), period_end timestamptz, rc_app_user_id, updated_from_event_id
 **webhook_events**: source text(revenuecat, elevenlabs), event_id text unique, payload jsonb, processed_at
-**generation_jobs**: user_id, story_id null, kind text(story, revision, daily, affirmation_audio, cover, library), step text, status text(pending, running, succeeded, failed), attempts int, provider text, model text, input_tokens int, output_tokens int, tts_chars int, image_count int, est_cost_usd numeric(10,5), error text, started_at, finished_at
-**generation_quota** (뷰): user_id, month, stories_used, daily_used, revisions_used — `generation_jobs`에서 집계
+**generation_jobs**: user_id, story_id null, kind text(story, revision, daily, affirmation_audio, cover, library), step text, status text(pending, running, succeeded, failed), attempts int, provider text, model text, input_tokens int, output_tokens int, tts_chars int, image_count int, est_cost_usd numeric(10,5), error text, started_at, finished_at — RLS만 켜고 정책 없음(사용자 접근 불가, service role 전용)
+**generation_quota** (뷰): user_id, month, stories_used, daily_used, revisions_used — `generation_jobs`에서 스토리 단위(`count(distinct story_id)`)로 집계. `security_invoker`, anon·authenticated 권한 없음(서버 전용)
 **push_tokens**: user_id, token text unique, platform, updated_at
 **promo_codes**: code unique, grants text(free_month 등), max_uses, used_count, creator_name, expires_at
 **referrals**: code, user_id, redeemed_at
@@ -104,7 +107,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 | `soundscapes` | public | `{key}.mp3` |
 | `voice-previews` | public | `{voice_key}.mp3` |
 
-private 버킷은 첫 경로 세그먼트가 `auth.uid()`인 경우만 select를 허용하고, `library`·해시 경로는 서명 URL로만 내려준다.
+private 버킷은 첫 경로 세그먼트가 `auth.uid()`인 경우만 select를 허용하고, `library`·해시 경로는 서명 URL로만 내려준다. 현재 만든 버킷: `story-audio`, `story-covers`, `soundscapes`, `voice-previews`(마이그레이션 20261003120000). `affirmation-audio`, `wall-photos`는 해당 기능 때 만든다.
 
 ## 7. 변경 절차
 

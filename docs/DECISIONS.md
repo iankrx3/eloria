@@ -29,6 +29,7 @@
 | D-23 | 2026-10-03 | 카카오 `account_email`을 필수 동의로 받는다(개인 개발자 비즈 앱 전환) | Supabase는 익명 계정에 이메일 없는 ID 토큰을 연결하면 `email_address_invalid`로 거부함(staging 실기기 확인). 이메일이 있어야 D-19 방식(익명 계정에 연결, 데이터 유지)이 동작 | 이메일 없이 새 계정 가입 후 익명 데이터를 서버에서 이관 |
 | D-24 | 2026-10-03 | 하단 탭은 JS 탭(`expo-router/tabs`)과 직접 그린 탭 바. 아이콘은 `expo-symbols`(iOS SF Symbols, Android Material Symbols) | 미니 플레이어를 iOS·Android 모두 탭 위에 고정해야 함. NativeTabs의 BottomAccessory는 iOS 26 전용 | NativeTabs(`expo-router/unstable-native-tabs`) |
 | D-25 | 2026-10-03 | 온보딩 완료(`profiles.onboarding_completed_at`)는 앱이 RLS 본인 수정으로 직접 기록. 홈 탭 레이아웃이 이 값으로 퀴즈 리디렉트 | 권한·원가와 무관한 사용자 자신의 상태. 퀴즈 답변의 프로필 반영은 `POST /v1/quiz/complete`(API.md)에서 따로 함 | 서버 API로만 기록 |
+| D-26 | 2026-10-03 | 생성 요청 분당 한도(3회)는 API 프로세스 메모리의 사용자별 시간창으로 센다 | 지금은 단일 인스턴스 개발 단계. 비용 한도는 `generation_quota`(DB)로 따로 판단하므로 이 제한은 남용 방지용 | Upstash 등 외부 저장소(Vercel 다중 인스턴스 배포 시 재검토) |
 
 ## 확인 후 기록할 항목
 

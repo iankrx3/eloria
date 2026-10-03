@@ -20,16 +20,16 @@
 - [x] 앱 Supabase 클라이언트(secure-store 세션), 익명 로그인 — Android 개발 빌드 실기기에서 익명 세션·API 연결 확인(2026-10-02). iOS 미확인
 - [ ] Apple·Kakao·Google 로그인과 익명 계정 연결. 방식을 `DECISIONS.md`에 기록 — 카카오 완료(D-19~D-23): Android 실기기에서 익명 계정에 연결되고 같은 사용자 ID·프로필이 유지됨을 확인(2026-10-03). iOS 미확인. Google은 키 대기, Apple은 개발자 계정 필요
 - [x] API 서버 JWT 검증 미들웨어, 에러 형식, `/v1/health`
-- [ ] Inngest 연결, 빈 함수 1개 실행 확인 — `system-ping` 함수 서빙 확인, dev server에서 실행은 미확인
+- [x] Inngest 연결, 빈 함수 1개 실행 확인 — dev server에서 `system/ping` 실행 Completed(2026-10-03)
 - [x] GitHub Actions CI: typecheck, lint, test
 - **완료 기준**: iOS·Android 개발 빌드에서 익명 → 소셜 계정 연결까지 되고 CI가 녹색
 
 ## M2. 생성 루프와 플레이어 (2~3주차)
 
-- [ ] 마이그레이션: stories, story_assets, voices, soundscapes, generation_jobs, 스토리지 버킷과 정책
+- [x] 마이그레이션: stories, story_assets, voices, soundscapes, generation_jobs, 스토리지 버킷과 정책 — staging 적용, Realtime(stories), 서버 전용 `generation_quota` 뷰
 - [ ] `packages/providers`: Gemini(구조화 출력), ElevenLabs TTS, 비용 계산, 재시도·타임아웃
 - [ ] `packages/prompts`: scene-plan v1, story v1, safety v1 + 평가 세트 30개 + `pnpm eval:story`
-- [ ] `POST /v1/manifests`, Inngest `generateStory`(plan → write → review → tts), 상태 전이와 `generation_jobs` 기록
+- [ ] `POST /v1/manifests`, Inngest `generateStory`(plan → write → review → tts), 상태 전이와 `generation_jobs` 기록 — `POST /v1/manifests` 완료(행 생성·이벤트 발행·분당 3회 제한, staging 확인). `generateStory` 남음. 무료·구독 한도 검사는 M5
 - [x] 앱 내비게이션 뼈대: 온보딩 그룹(퀴즈·첫 꿈·계정 연결·페이월 자리), 하단 탭 4개(D-24), 온보딩 미완료 시 퀴즈로 리디렉트(D-25)
 - [x] 퀴즈 화면 12문항(데이터 기반), 답변 자동 저장·이어하기 — `POST /v1/quiz/answers|complete`, staging에서 저장·완료·people 반영 확인. 보이스 미리듣기는 voices 준비 후(Q-08)
 - [ ] 홈 꿈 입력, 생성 진행 화면(Realtime 구독, 텍스트 먼저 읽기)
