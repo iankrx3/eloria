@@ -1,4 +1,4 @@
-import type { StoryGenerateRequested } from '@eloria/shared';
+import type { StoryGenerateRequested, StoryStatus } from '@eloria/shared';
 import { SignJWT } from 'jose';
 import { createApp, type AppDeps } from '../app';
 import type { StoryEvents } from '../inngest/events';
@@ -61,7 +61,7 @@ export function createFakeStoryRepo() {
   const desires: { id: string; userId: string; text: string; category: string }[] = [];
   const stories = new Map<
     string,
-    { userId: string; desireId: string; status: string; errorCode?: string }
+    { userId: string; desireId: string; status: StoryStatus; errorCode?: string }
   >();
   let seq = 0;
   const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
@@ -77,6 +77,15 @@ export function createFakeStoryRepo() {
     async markFailed(storyId, errorCode) {
       const story = stories.get(storyId);
       if (story) Object.assign(story, { status: 'failed', errorCode });
+    },
+    async findOwnedStatus(userId, storyId) {
+      const story = stories.get(storyId);
+      return story && story.userId === userId
+        ? { status: story.status, errorCode: story.errorCode ?? null }
+        : null;
+    },
+    async deleteStory(_userId, storyId) {
+      stories.delete(storyId);
     },
   };
   return { repo, desires, stories };

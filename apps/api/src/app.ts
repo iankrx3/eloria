@@ -12,6 +12,7 @@ import type { StoryRepo } from './repos/story-repo';
 import { health } from './routes/health';
 import { createManifestRoutes } from './routes/manifests';
 import { createQuizRoutes } from './routes/quiz';
+import { createStoryRoutes } from './routes/stories';
 
 export type AppDeps = {
   verifyToken: TokenVerifier;
@@ -41,6 +42,7 @@ export function createApp(deps: AppDeps) {
   // health를 제외한 /v1 경로는 모두 Supabase JWT가 필요하다.
   v1.use('*', requireAuth(deps.verifyToken));
   v1.route('/quiz', createQuizRoutes(deps.quizRepo));
+  v1.route('/stories', createStoryRoutes(deps.storyRepo));
   v1.route(
     '/manifests',
     createManifestRoutes({

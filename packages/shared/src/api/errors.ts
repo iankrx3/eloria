@@ -8,6 +8,7 @@ export const apiErrorCodeSchema = z.enum([
   'RATE_LIMITED',
   'VALIDATION_FAILED',
   'NOT_FOUND',
+  'CONFLICT',
   'INTERNAL',
 ]);
 export type ApiErrorCode = z.infer<typeof apiErrorCodeSchema>;
@@ -19,6 +20,7 @@ export const API_ERROR_STATUS = {
   RATE_LIMITED: 429,
   VALIDATION_FAILED: 400,
   NOT_FOUND: 404,
+  CONFLICT: 409,
   INTERNAL: 500,
 } as const satisfies Record<ApiErrorCode, number>;
 
