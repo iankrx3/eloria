@@ -1,13 +1,25 @@
+import { LIMITS } from '@eloria/shared';
 import { Hono } from 'hono';
 import { serve as serveInngest } from 'inngest/hono';
 import { functions, inngest } from './inngest';
+import type { StoryEvents } from './inngest/events';
 import { errorJson, handleError } from './lib/errors';
+import { createRateLimiter, type RateLimiter } from './lib/rate-limit';
 import { requireAuth, type AuthVariables, type TokenVerifier } from './middleware/auth';
 import type { QuizRepo } from './repos/quiz-repo';
+import type { StoryRepo } from './repos/story-repo';
 import { health } from './routes/health';
+import { createManifestRoutes } from './routes/manifests';
 import { createQuizRoutes } from './routes/quiz';
 
-export type AppDeps = { verifyToken: TokenVerifier; quizRepo: QuizRepo };
+export type AppDeps = {
+  verifyToken: TokenVerifier;
+  quizRepo: QuizRepo;
+  storyRepo: StoryRepo;
+  storyEvents: StoryEvents;
+  /** 생성 요청 분당 한도. 기본값은 LIMITS.GENERATION_REQUESTS_PER_MINUTE */
+  generationLimiter?: RateLimiter;
+};
 
 export function createApp(deps: AppDeps) {
   const app = new Hono();
@@ -22,6 +34,16 @@ export function createApp(deps: AppDeps) {
   // health를 제외한 /v1 경로는 모두 Supabase JWT가 필요하다.
   v1.use('*', requireAuth(deps.verifyToken));
   v1.route('/quiz', createQuizRoutes(deps.quizRepo));
+  v1.route(
+    '/manifests',
+    createManifestRoutes({
+      repo: deps.storyRepo,
+      events: deps.storyEvents,
+      limiter:
+        deps.generationLimiter ??
+        createRateLimiter({ limit: LIMITS.GENERATION_REQUESTS_PER_MINUTE, windowMs: 60_000 }),
+    }),
+  );
   app.route('/v1', v1);
 
   return app;

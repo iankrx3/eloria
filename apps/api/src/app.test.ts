@@ -1,12 +1,11 @@
 import { apiErrorResponseSchema, healthResponseSchema } from '@eloria/shared';
 import { Hono } from 'hono';
 import { describe, expect, it } from 'vitest';
-import { createApp } from './app';
 import { handleError } from './lib/errors';
 import { requireAuth, type AuthVariables } from './middleware/auth';
-import { createFakeQuizRepo, sign, verifyToken } from './test/fakes';
+import { createTestApp, sign, verifyToken } from './test/fakes';
 
-const app = () => createApp({ verifyToken, quizRepo: createFakeQuizRepo().repo });
+const app = () => createTestApp();
 
 /** 인증 미들웨어만 붙인 테스트용 앱 */
 function protectedApp() {

@@ -1,6 +1,10 @@
+import type { StoryGenerateRequested } from '@eloria/shared';
 import { SignJWT } from 'jose';
+import { createApp, type AppDeps } from '../app';
+import type { StoryEvents } from '../inngest/events';
 import { createSupabaseVerifier } from '../middleware/auth';
 import type { ProfileRow, ProfileUpdate, QuizRepo } from '../repos/quiz-repo';
+import type { StoryRepo } from '../repos/story-repo';
 
 export const SUPABASE_URL = 'http://127.0.0.1:54321';
 const SECRET = 'test-secret-at-least-32-characters-long';
@@ -51,4 +55,51 @@ export function createFakeQuizRepo() {
     },
   };
   return { repo, answers, profiles, people };
+}
+
+export function createFakeStoryRepo() {
+  const desires: { id: string; userId: string; text: string; category: string }[] = [];
+  const stories = new Map<
+    string,
+    { userId: string; desireId: string; status: string; errorCode?: string }
+  >();
+  let seq = 0;
+  const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
+
+  const repo: StoryRepo = {
+    async createManifest(userId, { text, category }) {
+      const desireId = uuid();
+      const storyId = uuid();
+      desires.push({ id: desireId, userId, text, category });
+      stories.set(storyId, { userId, desireId, status: 'queued' });
+      return { desireId, storyId };
+    },
+    async markFailed(storyId, errorCode) {
+      const story = stories.get(storyId);
+      if (story) Object.assign(story, { status: 'failed', errorCode });
+    },
+  };
+  return { repo, desires, stories };
+}
+
+export function createFakeStoryEvents(opts: { fail?: boolean } = {}) {
+  const sent: StoryGenerateRequested[] = [];
+  const events: StoryEvents = {
+    async requestGeneration(data) {
+      if (opts.fail) throw new Error('inngest unavailable');
+      sent.push(data);
+    },
+  };
+  return { events, sent };
+}
+
+/** 테스트용 앱. 필요한 의존성만 바꿔 끼운다. */
+export function createTestApp(overrides: Partial<AppDeps> = {}) {
+  return createApp({
+    verifyToken,
+    quizRepo: createFakeQuizRepo().repo,
+    storyRepo: createFakeStoryRepo().repo,
+    storyEvents: createFakeStoryEvents().events,
+    ...overrides,
+  });
 }

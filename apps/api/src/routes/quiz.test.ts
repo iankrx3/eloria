@@ -1,14 +1,13 @@
 import { apiErrorResponseSchema, quizCompleteResponseSchema } from '@eloria/shared';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { createApp } from '../app';
-import { createFakeQuizRepo, sign, verifyToken } from '../test/fakes';
+import { createFakeQuizRepo, createTestApp, sign } from '../test/fakes';
 
 let fake: ReturnType<typeof createFakeQuizRepo>;
-let app: ReturnType<typeof createApp>;
+let app: ReturnType<typeof createTestApp>;
 
 beforeEach(() => {
   fake = createFakeQuizRepo();
-  app = createApp({ verifyToken, quizRepo: fake.repo });
+  app = createTestApp({ quizRepo: fake.repo });
 });
 
 async function post(path: string, userId: string, body?: unknown) {
