@@ -75,7 +75,22 @@ export const ko = {
   },
   library: {
     title: '라이브러리',
-    body: '내가 만든 스토리와 좋아요한 스토리가 이곳에 모여요.',
+    all: '전체',
+    liked: '좋아요',
+    empty: '아직 그린 미래가 없어요.\n홈에서 꿈을 한 줄 적어 보세요.',
+    emptyLiked: '좋아요한 스토리가 없어요.\n마음에 드는 스토리에 하트를 눌러 보세요.',
+    goHome: '꿈 그리러 가기',
+    otherStories: '오늘의 순간',
+    generating: '만드는 중',
+    failed: '만들지 못했어요',
+    untitled: '제목을 짓는 중',
+    minutes: (min: number) => `${min}분`,
+    seconds: (sec: number) => `${sec}초`,
+    openStory: (title: string) => `${title} 열기`,
+  },
+  favorite: {
+    add: '좋아요',
+    remove: '좋아요 취소',
   },
   rituals: {
     title: '리추얼',

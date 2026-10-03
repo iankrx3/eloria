@@ -2,6 +2,7 @@ import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { usePlayer } from '@/audio/player-provider';
+import { FavoriteButton } from '@/features/library/favorite-button';
 import { formatTime } from '@/audio/timeline';
 import { ko } from '@/i18n/ko';
 import tokens from '@/theme/tokens.json';
@@ -76,21 +77,18 @@ export function SeekBar() {
   );
 }
 
-/** 컨트롤: 10초 되감기 · 재생/일시정지(흰 원) · 10초 앞으로 · 반복 */
-export function PlayerControls() {
-  const { status, player, togglePlay, seekBy } = usePlayer();
+/** 컨트롤(DESIGN 4절): 좋아요 · 10초 되감기 · 재생/일시정지(흰 원) · 10초 앞으로 · 배경 사운드 */
+export function PlayerControls({ storyId }: { storyId: string }) {
+  const { status, togglePlay, seekBy } = usePlayer();
   const playing = status.playing;
 
   return (
     <View className="flex-row items-center justify-between">
-      <IconButton
-        icon={{ ios: 'repeat', android: player.loop ? 'repeat_on' : 'repeat' }}
-        label={ko.player.repeat}
-        active={status.loop}
+      <FavoriteButton
+        storyId={storyId}
+        color={tokens.colors['on-dusk']}
+        activeColor={tokens.colors.glow}
         size={24}
-        onPress={() => {
-          player.loop = !player.loop;
-        }}
       />
       <IconButton
         icon={{ ios: 'gobackward.10', android: 'replay_10' }}
@@ -121,5 +119,21 @@ export function PlayerControls() {
       {/* 배경 사운드 선택은 다음 작업(2트랙 믹서)에서 이 자리에 붙인다. */}
       <View className="h-12 w-12" />
     </View>
+  );
+}
+
+/** 반복 토글(DESIGN 4절: 전체 스토리 보기 칩 옆) */
+export function RepeatToggle() {
+  const { status, player } = usePlayer();
+  return (
+    <IconButton
+      icon={{ ios: 'repeat', android: status.loop ? 'repeat_on' : 'repeat' }}
+      label={ko.player.repeat}
+      active={status.loop}
+      size={22}
+      onPress={() => {
+        player.loop = !player.loop;
+      }}
+    />
   );
 }

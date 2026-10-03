@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayer } from '@/audio/player-provider';
 import { usePlayerStore } from '@/audio/player-store';
 import { paragraphAt, splitParagraphs } from '@/audio/timeline';
-import { PlayerControls, SeekBar } from '@/features/player/player-controls';
+import { PlayerControls, RepeatToggle, SeekBar } from '@/features/player/player-controls';
 import { useStory } from '@/features/story/use-story';
 import { useStoryAudio } from '@/features/story/use-story-audio';
 import { ko } from '@/i18n/ko';
@@ -77,25 +77,30 @@ export default function Player() {
               {subtitle}
             </Text>
           )}
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={ko.player.fullText}
-            onPress={() => router.push({ pathname: '/story/[storyId]/text', params: { storyId } })}
-            className="flex-row items-center gap-2 self-start rounded-full bg-on-dusk/15 px-4 py-2"
-          >
-            <SymbolView
-              name={{ ios: 'book', android: 'menu_book' }}
-              size={16}
-              tintColor={tokens.colors['on-dusk']}
-            />
-            <Text className="text-[13px] text-on-dusk">{ko.player.fullText}</Text>
-          </Pressable>
+          <View className="flex-row items-center justify-between">
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={ko.player.fullText}
+              onPress={() =>
+                router.push({ pathname: '/story/[storyId]/text', params: { storyId } })
+              }
+              className="flex-row items-center gap-2 self-start rounded-full bg-on-dusk/15 px-4 py-2"
+            >
+              <SymbolView
+                name={{ ios: 'book', android: 'menu_book' }}
+                size={16}
+                tintColor={tokens.colors['on-dusk']}
+              />
+              <Text className="text-[13px] text-on-dusk">{ko.player.fullText}</Text>
+            </Pressable>
+            <RepeatToggle />
+          </View>
         </View>
 
         <View className="gap-6">
           <Text className="text-[13px] text-on-dusk/80">{title}</Text>
           <SeekBar />
-          <PlayerControls />
+          <PlayerControls storyId={storyId} />
         </View>
       </SafeAreaView>
     </View>

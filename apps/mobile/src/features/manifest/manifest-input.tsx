@@ -1,5 +1,6 @@
 import { DESIRE_TEXT_MAX } from '@eloria/shared';
 import { SymbolView } from 'expo-symbols';
+import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
 import { ko } from '@/i18n/ko';
@@ -17,6 +18,7 @@ type Props = {
 export function ManifestInput({ onCreated, autoFocus = false }: Props) {
   const [text, setText] = useState('');
   const create = useCreateManifest();
+  const queryClient = useQueryClient();
   const trimmed = text.trim();
   const canSend = trimmed.length > 0 && !create.isPending;
 
@@ -27,6 +29,8 @@ export function ManifestInput({ onCreated, autoFocus = false }: Props) {
       {
         onSuccess: ({ storyId }) => {
           setText('');
+          // 라이브러리에 새 스토리가 바로 보이게 한다.
+          void queryClient.invalidateQueries({ queryKey: ['library'] });
           onCreated(storyId);
         },
         onError: (e) => {
