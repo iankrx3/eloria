@@ -155,6 +155,40 @@ describe('runStoryPipeline', () => {
     expect(cached.state.audioHashes).toEqual([]);
     expect(cached.state.status).toBe('ready');
   });
+
+  it('완료되면 장면 제목으로 푸시를 보내고, 푸시가 실패해도 ready로 끝난다', async () => {
+    const storyReady = vi.fn(async () => {});
+    await runStoryPipeline(
+      { repo: fake.repo, providers: createMockProviders(), notifier: { storyReady } },
+      event,
+      run as never,
+    );
+    expect(storyReady).toHaveBeenCalledWith(USER, STORY, expect.any(String));
+
+    const failing = createFakePipelineRepo();
+    const broken = vi.fn(async () => {
+      throw new Error('expo push 500');
+    });
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const result = await runStoryPipeline(
+      { repo: failing.repo, providers: createMockProviders(), notifier: { storyReady: broken } },
+      event,
+      run as never,
+    );
+    expect(result).toEqual({ outcome: 'ready' });
+    expect(failing.state.status).toBe('ready');
+  });
+
+  it('차단된 스토리는 푸시하지 않는다', async () => {
+    const storyReady = vi.fn(async () => {});
+    const providers = providersWithVerdicts({ verdict: 'block', reasons: ['self_harm'] });
+    await runStoryPipeline(
+      { repo: fake.repo, providers, notifier: { storyReady } },
+      event,
+      run as never,
+    );
+    expect(storyReady).not.toHaveBeenCalled();
+  });
 });
 
 describe('handlePipelineFailure', () => {

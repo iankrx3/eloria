@@ -3,6 +3,7 @@ import { SignJWT } from 'jose';
 import { createApp, type AppDeps } from '../app';
 import type { StoryEvents } from '../inngest/events';
 import { createSupabaseVerifier } from '../middleware/auth';
+import type { PushRepo } from '../repos/push-repo';
 import type { ProfileRow, ProfileUpdate, QuizRepo } from '../repos/quiz-repo';
 import type { StoryRepo } from '../repos/story-repo';
 
@@ -102,6 +103,22 @@ export function createFakeStoryEvents(opts: { fail?: boolean } = {}) {
   return { events, sent };
 }
 
+export function createFakePushRepo() {
+  const tokens = new Map<string, { userId: string; platform: string }>();
+  const repo: PushRepo = {
+    async upsertToken(userId, { token, platform }) {
+      tokens.set(token, { userId, platform });
+    },
+    async listTokens(userId) {
+      return [...tokens.entries()].filter(([, v]) => v.userId === userId).map(([t]) => t);
+    },
+    async deleteTokens(list) {
+      list.forEach((t) => tokens.delete(t));
+    },
+  };
+  return { repo, tokens };
+}
+
 /** 테스트용 앱. 필요한 의존성만 바꿔 끼운다. */
 export function createTestApp(overrides: Partial<AppDeps> = {}) {
   return createApp({
@@ -109,6 +126,7 @@ export function createTestApp(overrides: Partial<AppDeps> = {}) {
     quizRepo: createFakeQuizRepo().repo,
     storyRepo: createFakeStoryRepo().repo,
     storyEvents: createFakeStoryEvents().events,
+    pushRepo: createFakePushRepo().repo,
     ...overrides,
   });
 }

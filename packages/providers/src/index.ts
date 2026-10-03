@@ -4,6 +4,7 @@ import type { Providers } from './types';
 
 export * from './mode';
 export * from './pricing';
+export * from './push/expo-push';
 export * from './types';
 export { createMockProviders } from './mock/mock-providers';
 export { chimeWav } from './mock/chime-wav';

@@ -7,12 +7,18 @@ import {
   type StoryGenerateRequested,
 } from '@eloria/shared';
 import type { Providers, StoryContext, Usage } from '@eloria/providers';
+import type { StoryNotifier } from '../notifications/story-notifier';
 import type { PipelineRepo, StoryJobContext } from '../repos/pipeline-repo';
 
 /** Inngest의 step.run. 반환값은 JSON으로 직렬화되어 재시도 사이에 보존된다. */
 export type StepRunner = <T>(id: string, fn: () => Promise<T>) => Promise<T>;
 
-export type PipelineDeps = { repo: PipelineRepo; providers: Providers };
+export type PipelineDeps = {
+  repo: PipelineRepo;
+  providers: Providers;
+  /** 생성 완료 푸시. 없으면 보내지 않는다(테스트, 로컬). */
+  notifier?: StoryNotifier;
+};
 
 export type PipelineResult =
   { outcome: 'ready' } | { outcome: 'blocked'; errorCode: 'SAFETY_BLOCKED' | 'SAFETY_CRISIS' };
@@ -165,6 +171,20 @@ export async function runStoryPipeline(
     await repo.setStatus(storyId, 'ready');
     await repo.updateStoryJob(storyId, 'finish', 'succeeded');
   });
+
+  // 스토리는 이미 ready다. 푸시가 실패해도 함수 전체를 실패로 돌리지 않는다(onFailure가 상태를 바꾸지 않게).
+  const notifier = deps.notifier;
+  if (notifier) {
+    await step('notify', async () => {
+      try {
+        await notifier.storyReady(ctx.userId, storyId, plan.title);
+        return { sent: true };
+      } catch (error) {
+        console.warn('[notify] story_ready push failed', storyId, error);
+        return { sent: false };
+      }
+    });
+  }
   return { outcome: 'ready' };
 }
 
