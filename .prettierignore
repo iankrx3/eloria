@@ -3,3 +3,4 @@ packages/shared/src/db.types.ts
 **/.expo
 **/dist
 *.md
+.serena
