@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { createRateLimiter } from '../lib/rate-limit';
 import { createFakeStoryEvents, createFakeStoryRepo, createTestApp, sign } from '../test/fakes';
 
+const USER_1 = '11111111-1111-4111-8111-111111111111';
+const USER_2 = '22222222-2222-4222-8222-222222222222';
+
 async function postManifest(app: ReturnType<typeof createTestApp>, userId: string, body: unknown) {
   const token = await sign({ sub: userId });
   return app.request('/v1/manifests', {
@@ -18,22 +21,22 @@ describe('POST /v1/manifests', () => {
     const bus = createFakeStoryEvents();
     const app = createTestApp({ storyRepo: store.repo, storyEvents: bus.events });
 
-    const res = await postManifest(app, 'user-1', { text: '  청담동 자가  ', tone: 'calm' });
+    const res = await postManifest(app, USER_1, { text: '  청담동 자가  ', tone: 'calm' });
 
     expect(res.status).toBe(202);
     const { desireId, storyId } = manifestResponseSchema.parse(await res.json());
     expect(store.desires).toEqual([
-      { id: desireId, userId: 'user-1', text: '청담동 자가', category: 'other' },
+      { id: desireId, userId: USER_1, text: '청담동 자가', category: 'other' },
     ]);
-    expect(store.stories.get(storyId)).toMatchObject({ userId: 'user-1', status: 'queued' });
-    expect(bus.sent).toEqual([{ storyId, tone: 'calm', voiceKey: undefined }]);
+    expect(store.stories.get(storyId)).toMatchObject({ userId: USER_1, status: 'queued' });
+    expect(bus.sent).toEqual([{ storyId, userId: USER_1, tone: 'calm', voiceKey: undefined }]);
   });
 
   it('빈 꿈은 VALIDATION_FAILED로 거부하고 아무것도 만들지 않는다', async () => {
     const store = createFakeStoryRepo();
     const app = createTestApp({ storyRepo: store.repo });
 
-    const res = await postManifest(app, 'user-1', { text: '   ' });
+    const res = await postManifest(app, USER_1, { text: '   ' });
 
     expect(res.status).toBe(400);
     expect(apiErrorResponseSchema.parse(await res.json()).error.code).toBe('VALIDATION_FAILED');
@@ -45,12 +48,12 @@ describe('POST /v1/manifests', () => {
       generationLimiter: createRateLimiter({ limit: 2, windowMs: 60_000 }),
     });
 
-    expect((await postManifest(app, 'user-1', { text: 'a' })).status).toBe(202);
-    expect((await postManifest(app, 'user-1', { text: 'b' })).status).toBe(202);
-    const limited = await postManifest(app, 'user-1', { text: 'c' });
+    expect((await postManifest(app, USER_1, { text: 'a' })).status).toBe(202);
+    expect((await postManifest(app, USER_1, { text: 'b' })).status).toBe(202);
+    const limited = await postManifest(app, USER_1, { text: 'c' });
     expect(limited.status).toBe(429);
     expect(apiErrorResponseSchema.parse(await limited.json()).error.code).toBe('RATE_LIMITED');
-    expect((await postManifest(app, 'user-2', { text: 'd' })).status).toBe(202);
+    expect((await postManifest(app, USER_2, { text: 'd' })).status).toBe(202);
   });
 
   it('작업 큐에 넣지 못하면 스토리를 실패(ENQUEUE_FAILED)로 남기고 500', async () => {
@@ -60,7 +63,7 @@ describe('POST /v1/manifests', () => {
       storyEvents: createFakeStoryEvents({ fail: true }).events,
     });
 
-    const res = await postManifest(app, 'user-1', { text: '바다가 보이는 집' });
+    const res = await postManifest(app, USER_1, { text: '바다가 보이는 집' });
 
     expect(res.status).toBe(500);
     const [story] = [...store.stories.values()];

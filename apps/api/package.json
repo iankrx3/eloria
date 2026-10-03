@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@eloria/providers": "workspace:*",
     "@eloria/shared": "workspace:*",
     "@hono/node-server": "^2.1.3",
     "@supabase/supabase-js": "^2.117.2",

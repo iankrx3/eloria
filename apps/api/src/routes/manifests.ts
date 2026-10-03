@@ -32,6 +32,7 @@ export function createManifestRoutes(deps: {
     try {
       await deps.events.requestGeneration({
         storyId: created.storyId,
+        userId,
         tone: body.tone,
         voiceKey: body.voiceKey,
       });

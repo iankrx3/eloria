@@ -1,4 +1,3 @@
-import { ping } from './functions/ping';
-
 export { inngest } from './client';
-export const functions = [ping];
+export { ping } from './functions/ping';
+export { createGenerateStory } from './functions/generate-story';

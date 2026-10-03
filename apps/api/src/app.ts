@@ -1,7 +1,8 @@
 import { LIMITS } from '@eloria/shared';
 import { Hono } from 'hono';
 import { serve as serveInngest } from 'inngest/hono';
-import { functions, inngest } from './inngest';
+import type { InngestFunction } from 'inngest';
+import { inngest, ping } from './inngest';
 import type { StoryEvents } from './inngest/events';
 import { errorJson, handleError } from './lib/errors';
 import { createRateLimiter, type RateLimiter } from './lib/rate-limit';
@@ -19,6 +20,8 @@ export type AppDeps = {
   storyEvents: StoryEvents;
   /** 생성 요청 분당 한도. 기본값은 LIMITS.GENERATION_REQUESTS_PER_MINUTE */
   generationLimiter?: RateLimiter;
+  /** /api/inngest로 서빙할 함수. 서버는 실제 저장소·어댑터로 만든 함수를 넘긴다. */
+  inngestFunctions?: InngestFunction.Any[];
 };
 
 export function createApp(deps: AppDeps) {
@@ -27,7 +30,11 @@ export function createApp(deps: AppDeps) {
   app.onError(handleError);
   app.notFound((c) => errorJson(c, 'NOT_FOUND', '요청한 경로가 없습니다.'));
 
-  app.on(['GET', 'POST', 'PUT'], '/api/inngest', serveInngest({ client: inngest, functions }));
+  app.on(
+    ['GET', 'POST', 'PUT'],
+    '/api/inngest',
+    serveInngest({ client: inngest, functions: deps.inngestFunctions ?? [ping] }),
+  );
 
   const v1 = new Hono<{ Variables: AuthVariables }>();
   v1.route('/health', health);

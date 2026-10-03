@@ -193,6 +193,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@eloria/providers':
+        specifier: workspace:*
+        version: link:../../packages/providers
       '@eloria/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -362,6 +365,9 @@ importers:
         specifier: workspace:*
         version: link:../shared
     devDependencies:
+      '@types/node':
+        specifier: ^24.19.0
+        version: 24.19.0
       vitest:
         specifier: ^5.0.3
         version: 5.0.3(@opentelemetry/api@1.9.1)(@types/node@24.19.0)(jsdom@20.0.3(supports-color@8.1.1))(vite@8.3.2(@types/node@24.19.0)(esbuild@0.28.2)(jiti@1.21.7)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
