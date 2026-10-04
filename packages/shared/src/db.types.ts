@@ -192,6 +192,50 @@ export type Database = {
           },
         ]
       }
+      library_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          is_free: boolean
+          seed_key: string
+          sort: number
+          story_id: string
+          theme: string
+          tone: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          is_free?: boolean
+          seed_key: string
+          sort?: number
+          story_id: string
+          theme: string
+          tone: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          is_free?: boolean
+          seed_key?: string
+          sort?: number
+          story_id?: string
+          theme?: string
+          tone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "library_items_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: true
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       people: {
         Row: {
           created_at: string
