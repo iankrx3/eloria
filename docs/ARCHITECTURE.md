@@ -107,7 +107,9 @@ apps/mobile/
 - `setAudioModeAsync({ playsInSilentMode: true, shouldPlayInBackground: true, interruptionMode: 'doNotMix' })`.
 - 스토리 플레이어 = 잠금화면 활성 플레이어(`setActiveForLockScreen(true, { title, artist: 'Eloria', artworkUrl })`). Android는 이걸 켜지 않으면 백그라운드 약 3분 후 멈춘다.
 - 배경 사운드 = 두 번째 플레이어, 반복, 볼륨 0.0~0.5. 잠금화면 컨트롤은 스토리 플레이어만.
-- **검증 필요**: 2트랙 동시 재생이 iOS·Android 잠금화면 상태에서 유지되는지. 실패하면 대안 A(서버에서 스토리+배경 사운드 사전 믹스 버전 생성) 또는 대안 B(react-native-track-player 전환) 중 하나를 `DECISIONS.md`에 기록하고 진행.
+- 배경 사운드 플레이어는 스토리의 재생 상태를 따라간다(스토리가 멈추면 같이 멈춤). 오디오 포커스는 expo-audio가 앱 단위로 하나만 잡으므로 두 플레이어가 서로 멈추게 하지 않는다.
+- **검증 결과(D-35)**: Android는 화면 꺼짐·백그라운드 7분 이상 두 트랙 유지, 잠금화면 일시정지·재생 동기화 확인. iOS는 Apple 계정이 생기면 확인한다. 실패하면 대안 A(서버에서 스토리+배경 사운드 사전 믹스 버전 생성) 또는 대안 B(react-native-track-player 전환).
+- expo-audio Android의 `replace`는 `null`을 받지 않는다. 소스를 비울 때는 멈추기만 하고 다음 재생 때 새 소스로 바꾼다.
 - 재생 위치는 5초마다 로컬 저장, `play_events`는 25/50/75/90% 도달 시와 종료 시 전송.
 
 ## 5. 오프라인

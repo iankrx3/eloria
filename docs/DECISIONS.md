@@ -38,10 +38,11 @@
 | D-32 | 2026-10-04 | Android의 채워진 하트는 View로 그린다(`FilledHeart`) | expo-symbols Android는 Material Symbols Outlined 글꼴이라 채워진 아이콘(FILL)이 없음. 새 네이티브 의존성·빌드 없이 해결 | react-native-svg 아이콘(새 빌드 필요) |
 | D-33 | 2026-10-04 | 푸시는 Expo 푸시 서비스(FCM V1·APNs 대행)로 보내고, 생성 완료 푸시는 파이프라인 마지막 `notify` step에서 실패를 삼킨다. 앱이 앞에 있으면 배너를 숨기고, 알림 탭은 탭 레이아웃(온보딩 통과 후)에서 처리한다. `google-services.json`은 레포에 두지 않고 EAS file 환경 변수 `GOOGLE_SERVICES_JSON`으로 넣는다 | 스택(expo-notifications)과 맞고 FCM·APNs 자격 증명을 EAS가 관리. 푸시 실패로 `onFailure`가 ready 스토리를 실패로 바꾸면 안 됨. 진행 화면이 이미 Realtime으로 바뀌므로 앞에서는 중복 안내 | FCM·APNs 직접 연동, Supabase Edge Function에서 발송 |
 | D-34 | 2026-10-04 | 리추얼은 사용자 스토리와 같은 파이프라인(`runStoryPipeline`)으로 만든다. 소유자 없는 컨텍스트(`userId: null`, 테마만, 이름·사람·퀴즈 없음)로 돌리고 파일은 `library/`, 기록은 `kind = library`. 테마 카탈로그는 코드(`library/catalog.ts`)에 두고 `library_items.seed_key`로 중복 생성을 막는다. 무료 범위는 `LIBRARY_ACCESS`(카테고리당 1개, Q-04)로 서버가 판단하되 결제(M5) 전에는 페이월을 끈다 | 검수·재작성·음성 캐시·원가 기록을 그대로 재사용. 시드 재실행이 안전. 페이월 없이도 리추얼 재생을 끝까지 시험 | 별도 시드 스크립트, 리추얼 오디오를 public 버킷에 |
+| D-35 | 2026-10-04 | 배경 사운드는 expo-audio 플레이어 2개로 동시 재생한다(대안 A·B 채택 안 함). 배경 플레이어는 반복 재생, 볼륨 3단계(0.15·0.3·0.5), 스토리 재생 상태를 따라 재생·정지. 선택은 `profiles.preferred_soundscape_id`에 저장. ElevenLabs 전까지 음원은 합성 루프(빗소리·파도·벽난로·백색소음, 22.05kHz WAV 20초) | Android 실기기(SM-A256N)에서 화면 꺼짐·백그라운드 7분 이상 두 트랙 유지, 잠금화면 일시정지 시 0.2초 안에 같이 멈춤(`dumpsys audio` 기록). expo-audio는 오디오 포커스를 앱 단위로 하나만 잡아 서로 끊지 않음. 볼륨 슬라이더는 새 네이티브 의존성이 필요해 단계로 대체 | 대안 A 서버 사전 믹스(사운드×볼륨마다 파일 필요), 대안 B react-native-track-player(전환 비용). iOS 확인 후 다시 판단 |
 
 ## 확인 후 기록할 항목
 
 - ~~익명 계정 → 소셜 계정 연결 방식(M1)~~ → D-19~D-23
-- 배경 사운드 2트랙 잠금화면 동작 결과와 채택한 방식(M2)
+- ~~배경 사운드 2트랙 잠금화면 동작 결과와 채택한 방식(M2)~~ → D-35 (iOS는 미확인)
 - 확정한 Gemini 스토리 모델, 기본 보이스, `STORY_TARGET_CHARS`(M2)
 - Vercel 함수 실행 시간으로 v3 음성 step이 충분한지(M1~M2)

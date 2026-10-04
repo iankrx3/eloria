@@ -125,4 +125,4 @@ SafetyVerdict = {
 - **이름 발음**: `people.pronunciation`, `profiles.name_pronunciation`이 있으면 스크립트에 그 표기로 넣는다. 부족하면 ElevenLabs 발음 사전(v3에서 한국어 IPA 지원)을 사용자별로 만든다(P1).
 - **출력 형식**: MP3 44.1kHz 128kbps. `duration_sec`는 파일에서 계산해 저장.
 - **이미지 프롬프트 규칙**: 영어, 세로 9:16, 따뜻한 필름 톤, 인물은 뒷모습·실루엣·손만, 텍스트·로고·브랜드 금지. 결과 URL은 약 1시간 후 만료되므로 웹훅 수신 즉시 내려받는다.
-- **배경 사운드**: ElevenLabs Sound Effects·Music으로 한 번 만들어 `soundscapes` 버킷에 올린다(`scripts/seed-soundscapes.ts`). 런타임 생성 없음.
+- **배경 사운드**: ElevenLabs Sound Effects·Music으로 한 번 만들어 `soundscapes` 버킷에 올린다(`apps/api/src/scripts/seed-soundscapes.ts`, `pnpm --filter @eloria/api seed:soundscapes [--dry-run]`). 런타임 생성 없음. 지금은 같은 스크립트가 합성 루프(mock)를 올린다(D-35).

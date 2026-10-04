@@ -104,7 +104,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 | `story-covers` | private | `{user_id or 'library'}/{story_id}/{asset_id}.png` |
 | `affirmation-audio` | private | `{hash}.mp3` (캐시 공유, 서명 URL로만 접근) |
 | `wall-photos` | private | `{user_id}/{wall_entry_id}.jpg` |
-| `soundscapes` | public | `{key}.mp3` |
+| `soundscapes` | public | `{key}.mp3` (합성 mock은 `{key}.wav`) |
 | `voice-previews` | public | `{voice_key}.mp3` |
 
 private 버킷은 첫 경로 세그먼트가 `auth.uid()`인 경우만 select를 허용하고, `library`·해시 경로는 서명 URL로만 내려준다. 현재 만든 버킷: `story-audio`, `story-covers`, `soundscapes`, `voice-previews`(마이그레이션 20261003120000). `affirmation-audio`, `wall-photos`는 해당 기능 때 만든다.
