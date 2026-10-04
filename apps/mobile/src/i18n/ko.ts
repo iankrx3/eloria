@@ -101,7 +101,16 @@ export const ko = {
   },
   rituals: {
     title: '리추얼',
-    body: '매일의 확언과 카테고리별 스토리를 이곳에서 들을 수 있어요.',
+    subtitle: '마음이 가는 장면을 골라 잠시 그 하루를 살아 봐요.',
+    all: '전체',
+    categories: {
+      money: '머니',
+      love: '사랑',
+      career: '커리어',
+      confidence: '자신감',
+      meditation: '명상',
+    },
+    empty: '리추얼을 준비하고 있어요. 조금 뒤에 다시 와 주세요.',
   },
   notifications: {
     // Android 설정 > 알림에 보이는 채널 이름

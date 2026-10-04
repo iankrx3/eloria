@@ -21,7 +21,7 @@ export default function Player() {
   const { storyId } = useLocalSearchParams<{ storyId: string }>();
   const story = useStory(storyId);
   const playable = story.data ? canPlayStory(story.data.status) : false;
-  const audio = useStoryAudio(storyId, playable);
+  const audio = useStoryAudio(storyId, story.data?.kind, playable);
   const { status, playTrack } = usePlayer();
   const current = usePlayerStore((s) => s.track);
   const title = story.data?.title ?? ko.brand.name;

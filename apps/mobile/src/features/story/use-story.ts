@@ -1,10 +1,14 @@
-import { storyStatusSchema, type StoryStatus } from '@eloria/shared';
+import { STORY_KIND, storyStatusSchema, type StoryStatus } from '@eloria/shared';
+import { z } from 'zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 
+const kindSchema = z.enum(STORY_KIND);
+
 export type StoryView = {
   id: string;
+  kind: z.infer<typeof kindSchema>;
   status: StoryStatus;
   title: string | null;
   script: string | null;
@@ -12,10 +16,11 @@ export type StoryView = {
 };
 
 const storyKey = (id: string) => ['story', id] as const;
-const COLUMNS = 'id, status, title, script, error_code';
+const COLUMNS = 'id, kind, status, title, script, error_code';
 
 function toView(row: {
   id: string;
+  kind: string;
   status: string;
   title: string | null;
   script: string | null;
@@ -23,6 +28,7 @@ function toView(row: {
 }): StoryView {
   return {
     id: row.id,
+    kind: kindSchema.parse(row.kind),
     status: storyStatusSchema.parse(row.status),
     title: row.title,
     script: row.script,
@@ -30,7 +36,7 @@ function toView(row: {
   };
 }
 
-/** 스토리 한 건(RLS: 본인 것만). 읽기는 Supabase에서 직접 한다(ARCHITECTURE 1절). */
+/** 스토리 한 건(RLS: 본인 것과 공용 리추얼). 읽기는 Supabase에서 직접 한다(ARCHITECTURE 1절). */
 export function useStory(storyId: string) {
   return useQuery({
     queryKey: storyKey(storyId),
