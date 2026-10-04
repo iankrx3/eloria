@@ -35,7 +35,7 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | POST `/v1/stories/:id/revise` | 스토리 수정 | `{ request }`(≤200자) | `202 { storyId }` |
 | POST `/v1/stories/:id/retry` | 실패한 단계 재시도 | — | `202` |
 | DELETE `/v1/stories/:id` | 스토리 삭제(본인 것, 생성이 끝난 것만). 음성·표지 파일과 행을 지우고, 남은 스토리가 없는 꿈도 지운다. 생성 기록은 남긴다 | — | `204`, 생성 중이면 `409 CONFLICT` |
-| GET `/v1/stories/:id/media` | 서명 URL 발급 | — | `{ audioUrl, coverUrl, expiresAt }` |
+| GET `/v1/stories/:id/media` | 서명 URL 발급(본인 스토리 또는 공용 리추얼, 1시간). 리추얼은 `canAccessLibraryItem`(페이월 전에는 모두 허용) | — | `{ audioUrl, coverUrl, expiresAt }`, 볼 수 없거나 음성이 없으면 `404`, 구독 필요 시 `403 FORBIDDEN` |
 | POST `/v1/daily` | 오늘의 순간 즉시 생성(없을 때) | — | `200 { storyId }` 또는 `202` |
 | POST `/v1/affirmations/:id/audio` | 확언 음성(캐시 우선) | `{ voiceKey? }` | `{ audioUrl }` |
 | POST `/v1/push-tokens` | 푸시 토큰 등록(Expo 푸시 토큰, 멱등). 같은 토큰이 다른 계정에 있으면 지금 사용자로 옮긴다 | `{ token, platform }` | `204` |
@@ -63,8 +63,11 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | `daily/generate.requested` { userId } | `generateDaily` → 완료 푸시 | 사용자당 하루 1회(idempotency key = userId+date) |
 | `affirmation/audio.requested` { affirmationId, voiceKey } | `renderAffirmationAudio` | 해시 캐시 확인 후 생성 |
 | `user/delete.requested` { userId } | `deleteUser`: 스토리지 → DB → auth 사용자 삭제 | 재시도 5 |
-| `library/seed.requested` (수동) | `seedLibrary`: 카테고리별 콘텐츠 생성 | 관리자 전용 |
+| `library/seed.requested` { categories? } (수동) | `seedLibrary`: 카탈로그(`apps/api/src/library/catalog.ts`)에서 아직 없는 항목(seed_key 기준)을 만들고 `library/story.requested` fan-out | 관리자 전용, 다시 보내도 중복 없음 |
+| `library/story.requested` { storyId } | `generateLibraryStory`: 사용자 스토리와 같은 파이프라인(소유자 없음, 푸시 없음) | 동시 2, 재시도 3 |
 
-모든 함수는 시작·종료·실패를 `generation_jobs`에 기록한다.
+모든 함수는 시작·종료·실패를 `generation_jobs`에 기록한다(리추얼은 `kind = library`, `user_id` null이라 사용자 한도에 들어가지 않는다).
+
+**리추얼 시드 실행**: 로컬은 Inngest dev UI(http://localhost:8288) → Send event → `library/seed.requested`, data `{}`(카테고리만이면 `{ "categories": ["money"] }`). `PROVIDER_MODE=mock`이면 템플릿 글과 차임 음성으로 만들어지므로, 실제 AI를 연결한 뒤에는 mock 항목을 지우고 다시 시드한다.
 
 **푸시**: Expo 푸시 서비스(`packages/providers/src/push`)로 보낸다. data는 `packages/shared`의 `pushDataSchema`(`{ type: "story_ready", storyId }`), Android 채널은 `stories`, 문구는 `PUSH_COPY`. 서버는 앱 상태를 모르므로 항상 보내고, 앱이 앞에 있으면 앱이 배너를 숨긴다. 응답 티켓이 `DeviceNotRegistered`면 토큰을 지운다. 영수증(receipt) 조회는 아직 하지 않는다.

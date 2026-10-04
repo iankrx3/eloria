@@ -68,7 +68,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 
 **soundscapes**: key text unique, display_name, storage_path, loop_duration_sec, is_active
 
-**library_items**: category text(money, love, career, confidence, meditation), story_id → stories(kind=library), sort int, is_free boolean
+**library_items**: story_id unique → stories(kind=library, on delete cascade), category text(money, love, career, confidence, meditation), seed_key text unique(시드 카탈로그 key), theme text(생성 테마, 1~200자), tone text(calm, excited, powerful), sort int(카테고리 안 순서), is_free boolean — 로그인 사용자 select, 쓰기는 service role(마이그레이션 20261004130000). 음성은 `story-audio/library/{story_id}/…`라 앱은 서버 서명 URL(`GET /v1/stories/:id/media`)로 받는다
 
 **affirmations**: user_id uuid null(null = 공용), category, text, audio_path text null, audio_hash text null, source text(library, generated)
 
