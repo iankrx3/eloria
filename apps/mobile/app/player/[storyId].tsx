@@ -1,13 +1,19 @@
 import { canPlayStory } from '@eloria/shared';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayer } from '@/audio/player-provider';
 import { usePlayerStore } from '@/audio/player-store';
 import { paragraphAt, splitParagraphs } from '@/audio/timeline';
-import { PlayerControls, RepeatToggle, SeekBar } from '@/features/player/player-controls';
+import {
+  IconButton,
+  PlayerControls,
+  RepeatToggle,
+  SeekBar,
+} from '@/features/player/player-controls';
+import { SoundscapePanel } from '@/features/player/soundscape-panel';
 import { useStory } from '@/features/story/use-story';
 import { useStoryAudio } from '@/features/story/use-story-audio';
 import { ko } from '@/i18n/ko';
@@ -25,6 +31,8 @@ export default function Player() {
   const { status, playTrack } = usePlayer();
   const current = usePlayerStore((s) => s.track);
   const title = story.data?.title ?? ko.brand.name;
+  const [showSoundscape, setShowSoundscape] = useState(false);
+  const soundscapeOn = usePlayerStore((s) => Boolean(s.soundscape));
 
   useEffect(() => {
     if (audio.data && current?.storyId !== storyId) {
@@ -65,7 +73,9 @@ export default function Player() {
         </View>
 
         <View className="flex-1 justify-center gap-6">
-          {notice ? (
+          {showSoundscape ? (
+            <SoundscapePanel />
+          ) : notice ? (
             <Text className="text-center text-[16px] leading-[24px] text-on-dusk/80">{notice}</Text>
           ) : !isThisTrack || !status.isLoaded ? (
             <ActivityIndicator color={tokens.colors.glow} />
@@ -93,7 +103,16 @@ export default function Player() {
               />
               <Text className="text-[13px] text-on-dusk">{ko.player.fullText}</Text>
             </Pressable>
-            <RepeatToggle />
+            <View className="flex-row">
+              <IconButton
+                icon={{ ios: 'waveform', android: 'graphic_eq' }}
+                label={ko.player.soundscape}
+                active={showSoundscape || soundscapeOn}
+                size={22}
+                onPress={() => setShowSoundscape((v) => !v)}
+              />
+              <RepeatToggle />
+            </View>
           </View>
         </View>
 

@@ -7,7 +7,7 @@ import { formatTime } from '@/audio/timeline';
 import { ko } from '@/i18n/ko';
 import tokens from '@/theme/tokens.json';
 
-function IconButton({
+export function IconButton({
   icon,
   label,
   onPress,

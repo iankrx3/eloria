@@ -63,6 +63,11 @@ export const ko = {
     loadFailed: '음성을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.',
     notReady: '아직 목소리를 입히는 중이에요. 조금 뒤에 다시 들어 주세요.',
     openPlayer: (title: string) => `${title} 플레이어 열기`,
+    soundscape: '배경 사운드',
+    soundscapeNone: '없음',
+    soundscapeFailed: '배경 사운드를 불러오지 못했어요.',
+    volume: '볼륨',
+    volumeLevels: { low: '작게', mid: '보통', high: '크게' },
   },
   safety: {
     supportTitle: '지금 많이 힘드신가요?',
