@@ -7,7 +7,7 @@ import { audioCacheKey, handlePipelineFailure, runStoryPipeline } from './story-
 const STORY = '33333333-3333-4333-8333-333333333333';
 const USER = '11111111-1111-4111-8111-111111111111';
 
-function createFakePipelineRepo(opts: { cachedAudio?: boolean } = {}) {
+function createFakePipelineRepo(opts: { cachedAudio?: boolean; library?: boolean } = {}) {
   const statuses: StoryStatus[] = [];
   const state = {
     status: 'queued' as StoryStatus,
@@ -15,11 +15,12 @@ function createFakePipelineRepo(opts: { cachedAudio?: boolean } = {}) {
     script: null as string | null,
     calls: [] as string[],
     audioHashes: [] as string[],
+    owners: [] as (string | null)[],
     job: { step: 'queued', status: 'pending' as string, error: undefined as string | undefined },
   };
   const ctx: StoryJobContext = {
     storyId: STORY,
-    userId: USER,
+    userId: opts.library ? null : USER,
     dream: '바다가 보이는 작업실',
     displayName: '서아',
     profileTone: 'calm',
@@ -47,7 +48,10 @@ function createFakePipelineRepo(opts: { cachedAudio?: boolean } = {}) {
     updateStoryJob: async (_id, step, status, error) =>
       void Object.assign(state.job, { step, status, error }),
     reuseAudio: async () => Boolean(opts.cachedAudio),
-    saveAudio: async (a) => void state.audioHashes.push(a.contentHash),
+    saveAudio: async (a) => {
+      state.audioHashes.push(a.contentHash);
+      state.owners.push(a.userId);
+    },
     resolveVoiceId: async () => null,
   };
   return { repo, state, statuses };
@@ -177,6 +181,20 @@ describe('runStoryPipeline', () => {
     );
     expect(result).toEqual({ outcome: 'ready' });
     expect(failing.state.status).toBe('ready');
+  });
+
+  it('공용 리추얼 스토리(소유자 없음)도 같은 단계로 만들고 푸시는 보내지 않는다', async () => {
+    const library = createFakePipelineRepo({ library: true });
+    const storyReady = vi.fn(async () => {});
+    const result = await runStoryPipeline(
+      { repo: library.repo, providers: createMockProviders(), notifier: { storyReady } },
+      { storyId: STORY },
+      run as never,
+    );
+
+    expect(result).toEqual({ outcome: 'ready' });
+    expect(library.state.owners).toEqual([null]);
+    expect(storyReady).not.toHaveBeenCalled();
   });
 
   it('차단된 스토리는 푸시하지 않는다', async () => {

@@ -9,7 +9,8 @@ import type { AdminClient } from '../lib/supabase-admin';
 
 export type StoryJobContext = {
   storyId: string;
-  userId: string;
+  /** null = 공용 Library 스토리(리추얼). 파일은 library/ 폴더에, 기록은 kind=library로 남는다. */
+  userId: string | null;
   dream: string;
   displayName: string | null;
   profileTone: 'calm' | 'excited' | 'powerful' | null;
@@ -21,7 +22,7 @@ export type StoryJobContext = {
 };
 
 export type CallRecord = {
-  userId: string;
+  userId: string | null;
   storyId: string;
   step: string;
   usage: Usage;
@@ -30,7 +31,7 @@ export type CallRecord = {
 };
 
 export type AudioAsset = {
-  userId: string;
+  userId: string | null;
   storyId: string;
   bytes: Uint8Array;
   mime: string;
@@ -58,7 +59,7 @@ export interface PipelineRepo {
     error?: string,
   ): Promise<void>;
   /** 같은 해시의 음성이 이미 있으면 그 파일을 새 경로로 복사해 쓴다(재생성 없음). */
-  reuseAudio(storyId: string, userId: string, contentHash: string): Promise<boolean>;
+  reuseAudio(storyId: string, userId: string | null, contentHash: string): Promise<boolean>;
   saveAudio(asset: AudioAsset): Promise<void>;
   resolveVoiceId(
     voiceKey: string | undefined,
@@ -66,19 +67,45 @@ export interface PipelineRepo {
   ): Promise<string | null>;
 }
 
-const audioPath = (userId: string, storyId: string, assetId: string, ext: string) =>
-  `${userId}/${storyId}/${assetId}.${ext}`;
+const audioPath = (userId: string | null, storyId: string, assetId: string, ext: string) =>
+  `${userId ?? 'library'}/${storyId}/${assetId}.${ext}`;
+const jobKind = (userId: string | null) => (userId ? 'story' : 'library');
 const extFor = (mime: string) => (mime === 'audio/wav' ? 'wav' : 'mp3');
+
+const asTone = (tone: string | null) =>
+  tone === 'calm' || tone === 'excited' || tone === 'powerful' ? tone : null;
+
+/** 리추얼 스토리는 개인 정보 없이 테마만으로 만든다. 이름 대신 "당신"으로 부른다. */
+function libraryContext(storyId: string, theme: string, tone: string): StoryJobContext {
+  return {
+    storyId,
+    userId: null,
+    dream: theme,
+    displayName: null,
+    profileTone: asTone(tone),
+    preferredVoiceId: null,
+    likes: [],
+    dislikes: [],
+    people: [],
+    quiz: {},
+  };
+}
 
 export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
   return {
     async loadContext(storyId) {
       const { data: story, error } = await db
         .from('stories')
-        .select('id, user_id, desires(text)')
+        .select('id, user_id, kind, desires(text), library_items(theme, tone)')
         .eq('id', storyId)
         .single();
       if (error) throw error;
+
+      if (story.kind === 'library') {
+        const item = story.library_items;
+        if (!item) throw new Error(`리추얼 항목이 없습니다: ${storyId}`);
+        return libraryContext(storyId, item.theme, item.tone);
+      }
       if (!story.user_id) throw new Error(`사용자 스토리가 아닙니다: ${storyId}`);
       const userId = story.user_id;
 
@@ -95,13 +122,12 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
       if (people.error) throw people.error;
       if (quiz.error) throw quiz.error;
 
-      const tone = profile.data.tone;
       return {
         storyId,
         userId,
         dream: story.desires?.text ?? '',
         displayName: profile.data.display_name,
-        profileTone: tone === 'calm' || tone === 'excited' || tone === 'powerful' ? tone : null,
+        profileTone: asTone(profile.data.tone),
         preferredVoiceId: profile.data.preferred_voice_id,
         likes: profile.data.likes,
         dislikes: profile.data.dislikes,
@@ -143,7 +169,7 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
       const { error } = await db.from('generation_jobs').insert({
         user_id: userId,
         story_id: storyId,
-        kind: 'story',
+        kind: jobKind(userId),
         step,
         status: 'succeeded',
         attempts: 1,
@@ -170,7 +196,7 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
           ...(status === 'running' ? { started_at: now } : { finished_at: now }),
         })
         .eq('story_id', storyId)
-        .eq('kind', 'story')
+        .in('kind', ['story', 'library'])
         .is('provider', null);
       if (error) throw error;
     },

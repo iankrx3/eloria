@@ -62,8 +62,16 @@ export function createFakeStoryRepo() {
   const desires: { id: string; userId: string; text: string; category: string }[] = [];
   const stories = new Map<
     string,
-    { userId: string; desireId: string; status: StoryStatus; errorCode?: string }
+    {
+      userId: string;
+      desireId: string;
+      status: StoryStatus;
+      errorCode?: string;
+      audioPath?: string;
+    }
   >();
+  /** 공용 리추얼 스토리(storyId → 무료 여부, 음성 경로) */
+  const library = new Map<string, { isFree: boolean; audioPath: string | null }>();
   let seq = 0;
   const uuid = () => `00000000-0000-4000-8000-${String(++seq).padStart(12, '0')}`;
 
@@ -88,8 +96,29 @@ export function createFakeStoryRepo() {
     async deleteStory(_userId, storyId) {
       stories.delete(storyId);
     },
+    async findMedia(userId, storyId) {
+      const story = stories.get(storyId);
+      if (story && story.userId === userId) {
+        return {
+          access: 'owner',
+          isFree: false,
+          audioPath: story.audioPath ?? null,
+          coverPath: null,
+        };
+      }
+      const item = library.get(storyId);
+      return item
+        ? { access: 'library', isFree: item.isFree, audioPath: item.audioPath, coverPath: null }
+        : null;
+    },
+    async signMedia({ audio, cover }) {
+      return {
+        audioUrl: `https://signed.test/${audio}`,
+        coverUrl: cover ? `https://signed.test/${cover}` : null,
+      };
+    },
   };
-  return { repo, desires, stories };
+  return { repo, desires, stories, library };
 }
 
 export function createFakeStoryEvents(opts: { fail?: boolean } = {}) {

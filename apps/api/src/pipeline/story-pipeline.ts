@@ -53,9 +53,12 @@ function toStoryContext(ctx: StoryJobContext, tone: StoryContext['tone']): Story
  * 스토리 생성: 입력 검수 → 장면 계획 → 작성 → 검수(rewrite면 1회 재작성) → 텍스트 공개 → 음성 → 완료
  * (docs/AI_PIPELINE.md 2~3절). 표지 이미지는 M3에서 붙이고, 그 전까지는 카테고리 기본 이미지를 쓴다.
  */
+/** 파이프라인 입력. 사용자 스토리는 story/generate.requested, 리추얼은 library/story.requested에서 온다. */
+export type PipelineInput = Pick<StoryGenerateRequested, 'storyId' | 'tone' | 'voiceKey'>;
+
 export async function runStoryPipeline(
   deps: PipelineDeps,
-  event: StoryGenerateRequested,
+  event: PipelineInput,
   step: StepRunner,
 ): Promise<PipelineResult> {
   const { repo, providers } = deps;
@@ -174,10 +177,11 @@ export async function runStoryPipeline(
 
   // 스토리는 이미 ready다. 푸시가 실패해도 함수 전체를 실패로 돌리지 않는다(onFailure가 상태를 바꾸지 않게).
   const notifier = deps.notifier;
-  if (notifier) {
+  const owner = ctx.userId;
+  if (notifier && owner) {
     await step('notify', async () => {
       try {
-        await notifier.storyReady(ctx.userId, storyId, plan.title);
+        await notifier.storyReady(owner, storyId, plan.title);
         return { sent: true };
       } catch (error) {
         console.warn('[notify] story_ready push failed', storyId, error);

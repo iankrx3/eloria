@@ -1,6 +1,14 @@
 import type { DesireCategory, StoryStatus } from '@eloria/shared';
 import type { AdminClient } from '../lib/supabase-admin';
 
+/** 재생할 파일 정보. owner = 본인 스토리, library = 공용 리추얼 */
+export type StoryMedia = {
+  access: 'owner' | 'library';
+  isFree: boolean;
+  audioPath: string | null;
+  coverPath: string | null;
+};
+
 export interface StoryRepo {
   /** 꿈(desire)과 첫 스토리(status=queued), 생성 작업 행을 만든다. */
   createManifest(
@@ -19,6 +27,13 @@ export interface StoryRepo {
    * 생성 기록(generation_jobs)은 원가·한도 집계를 위해 남는다. 남은 스토리가 없는 꿈도 지운다.
    */
   deleteStory(userId: string, storyId: string): Promise<void>;
+  /** 본인 스토리이거나 공용 리추얼이면 최신 음성·표지 경로. 볼 수 없으면 null. */
+  findMedia(userId: string, storyId: string): Promise<StoryMedia | null>;
+  /** service role로 서명 URL을 만든다(앱이 직접 서명할 수 없는 library 경로용). */
+  signMedia(
+    paths: { audio: string; cover: string | null },
+    expiresInSec: number,
+  ): Promise<{ audioUrl: string; coverUrl: string | null }>;
 }
 
 export function createSupabaseStoryRepo(db: AdminClient): StoryRepo {
@@ -111,6 +126,43 @@ export function createSupabaseStoryRepo(db: AdminClient): StoryRepo {
           if (desireError) throw desireError;
         }
       }
+    },
+
+    async findMedia(userId, storyId) {
+      const { data, error } = await db
+        .from('stories')
+        .select(
+          'user_id, kind, library_items(is_free), story_assets(type, storage_path, created_at)',
+        )
+        .eq('id', storyId)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      const access = data.user_id === userId ? 'owner' : data.kind === 'library' ? 'library' : null;
+      if (!access) return null;
+
+      const latest = (type: string) =>
+        data.story_assets
+          .filter((a) => a.type === type)
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))[0]?.storage_path ?? null;
+      return {
+        access,
+        isFree: data.library_items?.is_free ?? false,
+        audioPath: latest('audio'),
+        coverPath: latest('cover'),
+      };
+    },
+
+    async signMedia({ audio, cover }, expiresInSec) {
+      const sign = async (bucket: 'story-audio' | 'story-covers', path: string) => {
+        const { data, error } = await db.storage.from(bucket).createSignedUrl(path, expiresInSec);
+        if (error) throw error;
+        return data.signedUrl;
+      };
+      return {
+        audioUrl: await sign('story-audio', audio),
+        coverUrl: cover ? await sign('story-covers', cover) : null,
+      };
     },
   };
 }

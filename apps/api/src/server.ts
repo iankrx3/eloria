@@ -1,12 +1,18 @@
 import { serve } from '@hono/node-server';
 import { createApp } from './app';
 import { createExpoPushClient, createProviders } from '@eloria/providers';
-import { createGenerateStory, ping } from './inngest';
+import {
+  createGenerateLibraryStory,
+  createGenerateStory,
+  createSeedLibrary,
+  ping,
+} from './inngest';
 import { inngestStoryEvents } from './inngest/events';
 import { loadEnv } from './env';
 import { createAdminClient } from './lib/supabase-admin';
 import { createSupabaseVerifier } from './middleware/auth';
 import { createStoryNotifier } from './notifications/story-notifier';
+import { createSupabaseLibraryRepo } from './repos/library-repo';
 import { createSupabasePipelineRepo } from './repos/pipeline-repo';
 import { createSupabasePushRepo } from './repos/push-repo';
 import { createSupabaseQuizRepo } from './repos/quiz-repo';
@@ -16,6 +22,7 @@ const env = loadEnv();
 const db = createAdminClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
 const providers = createProviders(process.env);
 const pushRepo = createSupabasePushRepo(db);
+const pipelineRepo = createSupabasePipelineRepo(db);
 const notifier = createStoryNotifier({
   repo: pushRepo,
   client: createExpoPushClient({ accessToken: env.EXPO_ACCESS_TOKEN }),
@@ -27,7 +34,9 @@ const app = createApp({
   storyEvents: inngestStoryEvents,
   inngestFunctions: [
     ping,
-    createGenerateStory({ repo: createSupabasePipelineRepo(db), providers, notifier }),
+    createGenerateStory({ repo: pipelineRepo, providers, notifier }),
+    createSeedLibrary({ repo: createSupabaseLibraryRepo(db) }),
+    createGenerateLibraryStory({ repo: pipelineRepo, providers }),
   ],
   verifyToken: createSupabaseVerifier({
     supabaseUrl: env.SUPABASE_URL,
