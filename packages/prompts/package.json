@@ -9,13 +9,14 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "vitest run --passWithNoTests",
-    "eval": "node -e \"console.error('eval:story는 M2에서 구현합니다(docs/AI_PIPELINE.md 5절).'); process.exit(1)\""
+    "test": "vitest run"
   },
   "dependencies": {
-    "@eloria/shared": "workspace:*"
+    "@eloria/shared": "workspace:*",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@types/node": "^24.19.0",
     "vitest": "^5.0.3"
   }
 }
