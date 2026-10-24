@@ -92,7 +92,8 @@ export async function runStoryPipeline(
 
   const inputVerdict = await step('review-input', async () => {
     await repo.setStatus(storyId, 'planning');
-    return (await call(ctx, 'review-input', () => providers.story.reviewSafety(ctx.dream))).verdict;
+    return (await call(ctx, 'review-input', () => providers.story.reviewSafety(ctx.dream, 'dream')))
+      .verdict;
   });
   if (inputVerdict.verdict === 'block') {
     const errorCode = blockCode(inputVerdict);
@@ -108,13 +109,14 @@ export async function runStoryPipeline(
     return scenePlanSchema.parse(plan);
   });
 
-  const write = (id: string) =>
+  const write = (id: string, safetyFeedback?: SafetyVerdict) =>
     step(id, async () => {
       await repo.setStatus(storyId, 'writing');
       const { script } = await call(ctx, id, () =>
         providers.story.writeStory(plan, storyCtx, {
           targetChars: LIMITS.STORY_TARGET_CHARS,
           maxChars: LIMITS.STORY_MAX_CHARS,
+          safetyFeedback,
         }),
       );
       return script;
@@ -122,13 +124,13 @@ export async function runStoryPipeline(
   const review = (id: string, script: string) =>
     step(id, async () => {
       await repo.setStatus(storyId, 'reviewing');
-      return (await call(ctx, id, () => providers.story.reviewSafety(script))).verdict;
+      return (await call(ctx, id, () => providers.story.reviewSafety(script, 'script'))).verdict;
     });
 
   let script = await write('write');
   let verdict = await review('review', script);
   if (verdict.verdict === 'rewrite') {
-    script = await write('rewrite');
+    script = await write('rewrite', verdict);
     verdict = await review('review-rewrite', script);
   }
   if (verdict.verdict !== 'pass') {

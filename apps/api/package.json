@@ -8,9 +8,11 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
+    "eval:story": "tsx --env-file-if-exists=.env src/scripts/eval-story.ts",
     "seed:soundscapes": "tsx --env-file-if-exists=.env src/scripts/seed-soundscapes.ts"
   },
   "dependencies": {
+    "@eloria/prompts": "workspace:*",
     "@eloria/providers": "workspace:*",
     "@eloria/shared": "workspace:*",
     "@hono/node-server": "^2.1.3",

@@ -12,6 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@eloria/prompts": "workspace:*",
     "@eloria/shared": "workspace:*"
   },
   "devDependencies": {

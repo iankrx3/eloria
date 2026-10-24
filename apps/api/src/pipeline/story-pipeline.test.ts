@@ -120,9 +120,21 @@ describe('runStoryPipeline', () => {
       { verdict: 'rewrite', reasons: ['guaranteed_outcome'] },
       { verdict: 'pass', reasons: [] },
     );
+    const writeStory = vi.spyOn(providers.story, 'writeStory');
     const result = await runStoryPipeline({ repo: fake.repo, providers }, event, run as never);
 
     expect(result).toEqual({ outcome: 'ready' });
+    // 꿈 입력과 스크립트는 다른 기준으로 검수하고, 다시 쓸 때는 검수 이유를 넘긴다(D-36).
+    expect(vi.mocked(providers.story.reviewSafety).mock.calls.map((c) => c[1])).toEqual([
+      'dream',
+      'script',
+      'script',
+    ]);
+    expect(writeStory.mock.calls[0]?.[2].safetyFeedback).toBeUndefined();
+    expect(writeStory.mock.calls[1]?.[2].safetyFeedback).toEqual({
+      verdict: 'rewrite',
+      reasons: ['guaranteed_outcome'],
+    });
     expect(fake.state.calls).toEqual([
       'review-input',
       'plan',

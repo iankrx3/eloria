@@ -29,12 +29,12 @@ describe('mock providers', () => {
   });
 
   it('위기 신호가 있으면 self_harm으로 차단한다', async () => {
-    const blocked = await p.story.reviewSafety('요즘 죽고 싶어요');
+    const blocked = await p.story.reviewSafety('요즘 죽고 싶어요', 'dream');
     expect(safetyVerdictSchema.parse(blocked.verdict)).toEqual({
       verdict: 'block',
       reasons: ['self_harm'],
     });
-    expect((await p.story.reviewSafety('바다가 보이는 집')).verdict.verdict).toBe('pass');
+    expect((await p.story.reviewSafety('바다가 보이는 집', 'dream')).verdict.verdict).toBe('pass');
   });
 
   it('TTS는 들리는 차임 WAV를 돌려준다', async () => {

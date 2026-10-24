@@ -17,7 +17,7 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "format": "prettier --write .",
-    "eval:story": "pnpm --filter @eloria/prompts eval"
+    "eval:story": "pnpm --filter @eloria/api eval:story"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
