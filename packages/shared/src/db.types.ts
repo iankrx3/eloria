@@ -14,6 +14,84 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_deletions: {
+        Row: {
+          created_at: string
+          id: string
+          reasons: string[]
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reasons?: string[]
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reasons?: string[]
+        }
+        Relationships: []
+      }
+      activity_days: {
+        Row: {
+          affirmations_done: number
+          day: string
+          stories_listened: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          affirmations_done?: number
+          day: string
+          stories_listened?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          affirmations_done?: number
+          day?: string
+          stories_listened?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      affirmations: {
+        Row: {
+          created_at: string
+          day: string
+          id: string
+          position: number
+          prompt_version: string | null
+          status: string
+          text: string
+          theme: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          id?: string
+          position: number
+          prompt_version?: string | null
+          status?: string
+          text: string
+          theme?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          id?: string
+          position?: number
+          prompt_version?: string | null
+          status?: string
+          text?: string
+          theme?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       app_config: {
         Row: {
           key: string
@@ -31,6 +109,56 @@ export type Database = {
           value?: Json
         }
         Relationships: []
+      }
+      challenge_missions: {
+        Row: {
+          body: string
+          day: number
+          kind: string
+          title: string
+        }
+        Insert: {
+          body: string
+          day: number
+          kind: string
+          title: string
+        }
+        Update: {
+          body?: string
+          day?: number
+          kind?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      challenge_progress: {
+        Row: {
+          completed_at: string
+          day: number
+          note: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          day: number
+          note?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          day?: number
+          note?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "challenge_progress_day_fkey"
+            columns: ["day"]
+            isOneToOne: false
+            referencedRelation: "challenge_missions"
+            referencedColumns: ["day"]
+          },
+        ]
       }
       consents: {
         Row: {
@@ -192,6 +320,30 @@ export type Database = {
           },
         ]
       }
+      gratitude_entries: {
+        Row: {
+          created_at: string
+          day: string
+          id: string
+          lines: string[]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          day: string
+          id?: string
+          lines: string[]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          day?: string
+          id?: string
+          lines?: string[]
+          user_id?: string
+        }
+        Relationships: []
+      }
       library_items: {
         Row: {
           category: string
@@ -203,6 +355,7 @@ export type Database = {
           story_id: string
           theme: string
           tone: string
+          wish_theme: string | null
         }
         Insert: {
           category: string
@@ -214,6 +367,7 @@ export type Database = {
           story_id: string
           theme: string
           tone: string
+          wish_theme?: string | null
         }
         Update: {
           category?: string
@@ -225,6 +379,7 @@ export type Database = {
           story_id?: string
           theme?: string
           tone?: string
+          wish_theme?: string | null
         }
         Relationships: [
           {
@@ -265,58 +420,91 @@ export type Database = {
       }
       profiles: {
         Row: {
+          affirmation_notify_at: string
+          challenge_started_on: string | null
           created_at: string
+          desired_changes: string[]
           dislikes: string[]
           display_name: string | null
           id: string
           last_active_at: string
           likes: string[]
           listen_time: string | null
+          location: string | null
           name_pronunciation: string | null
+          narrator_speed: number
+          notify_affirmation: boolean
           notify_at: string | null
+          notify_challenge: boolean
+          notify_story: boolean
+          occupation: string | null
           onboarding_completed_at: string | null
           preferred_soundscape_id: string | null
           preferred_voice_id: string | null
           relationship_status: string | null
+          story_scenes: Json
           timezone: string
           tone: string | null
           updated_at: string
+          vision_photo_path: string | null
         }
         Insert: {
+          affirmation_notify_at?: string
+          challenge_started_on?: string | null
           created_at?: string
+          desired_changes?: string[]
           dislikes?: string[]
           display_name?: string | null
           id: string
           last_active_at?: string
           likes?: string[]
           listen_time?: string | null
+          location?: string | null
           name_pronunciation?: string | null
+          narrator_speed?: number
+          notify_affirmation?: boolean
           notify_at?: string | null
+          notify_challenge?: boolean
+          notify_story?: boolean
+          occupation?: string | null
           onboarding_completed_at?: string | null
           preferred_soundscape_id?: string | null
           preferred_voice_id?: string | null
           relationship_status?: string | null
+          story_scenes?: Json
           timezone?: string
           tone?: string | null
           updated_at?: string
+          vision_photo_path?: string | null
         }
         Update: {
+          affirmation_notify_at?: string
+          challenge_started_on?: string | null
           created_at?: string
+          desired_changes?: string[]
           dislikes?: string[]
           display_name?: string | null
           id?: string
           last_active_at?: string
           likes?: string[]
           listen_time?: string | null
+          location?: string | null
           name_pronunciation?: string | null
+          narrator_speed?: number
+          notify_affirmation?: boolean
           notify_at?: string | null
+          notify_challenge?: boolean
+          notify_story?: boolean
+          occupation?: string | null
           onboarding_completed_at?: string | null
           preferred_soundscape_id?: string | null
           preferred_voice_id?: string | null
           relationship_status?: string | null
+          story_scenes?: Json
           timezone?: string
           tone?: string | null
           updated_at?: string
+          vision_photo_path?: string | null
         }
         Relationships: [
           {
@@ -388,6 +576,32 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      saved_affirmations: {
+        Row: {
+          affirmation_id: string
+          saved_at: string
+          user_id: string
+        }
+        Insert: {
+          affirmation_id: string
+          saved_at?: string
+          user_id: string
+        }
+        Update: {
+          affirmation_id?: string
+          saved_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_affirmations_affirmation_id_fkey"
+            columns: ["affirmation_id"]
+            isOneToOne: false
+            referencedRelation: "affirmations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       soundscapes: {
         Row: {
