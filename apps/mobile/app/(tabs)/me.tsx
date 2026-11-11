@@ -7,6 +7,7 @@ import {
   PEOPLE_MAX,
   PERSONAL_ITEM_MAX,
   PERSONAL_LIST_MAX,
+  PROFILE_TEXT_MAX,
   type Person,
 } from '@eloria/shared';
 import { router } from 'expo-router';
@@ -16,10 +17,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DawnBackdrop, GLOW } from '@/components/backgrounds';
 import { Icon } from '@/components/icons/icon';
 import { PrimaryButton } from '@/components/primary-button';
-import { AddChip, AddRow, ListGroup, ListRow, RemovableChip, SectionLabel } from '@/components/ui';
-import { useAuth } from '@/features/auth/auth-provider';
+import {
+  AddChip,
+  AddRow,
+  ListGroup,
+  ListRow,
+  RemovableChip,
+  RoundButton,
+  SectionLabel,
+} from '@/components/ui';
+import { useActivity } from '@/features/activity/use-activity';
+import { useSavedAffirmationCount } from '@/features/affirmations/use-saved-affirmations';
 import { DevStatus } from '@/features/dev/dev-status';
-import { useFavorites, useMyStories } from '@/features/library/use-library';
 import { useBottomSpace } from '@/features/navigation/tab-bar';
 import { ChoiceChips, EditSheet, FieldLabel, SheetInput } from '@/features/profile/edit-sheet';
 import { useAddPerson, usePeople, useRemovePerson } from '@/features/profile/use-people';
@@ -27,6 +36,7 @@ import {
   useProfile,
   useSetOnboardingCompleted,
   useUpdatePersonal,
+  useUpdateSettings,
 } from '@/features/profile/use-profile';
 import { useQuizAnswers, useSaveQuizAnswer } from '@/features/quiz/use-quiz';
 import { ko } from '@/i18n/ko';
@@ -40,7 +50,17 @@ import {
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
 
-type Sheet = 'name' | 'age' | 'gender' | 'person' | 'pet' | 'lifestyle' | 'exclude' | null;
+type Sheet =
+  | 'name'
+  | 'age'
+  | 'gender'
+  | 'location'
+  | 'occupation'
+  | 'person'
+  | 'pet'
+  | 'lifestyle'
+  | 'exclude'
+  | null;
 
 const PERSON_RELATIONS = [
   'partner',
@@ -51,17 +71,17 @@ const PERSON_RELATIONS = [
 
 /**
  * 마이페이지(Figma P01, PRD F-11 Personal). 여기 적은 이름·사람·라이프스타일·뺄 것은 다음 이야기부터 반영된다.
- * 나이·성별은 퀴즈 답(quiz_answers)으로 저장한다. 설정 화면·구독 관리·사는 곳/하는 일·보관함은 이후 작업(ROADMAP).
+ * 나이·성별은 퀴즈 답(quiz_answers)으로, 사는 곳·하는 일은 profiles에 저장한다. 계정·구독·알림은 설정(P02).
  */
 export default function Me() {
-  const auth = useAuth();
   const profile = useProfile();
   const people = usePeople();
-  const stories = useMyStories();
-  const favorites = useFavorites();
+  const activity = useActivity();
+  const savedAffirmations = useSavedAffirmationCount();
   const quiz = useQuizAnswers();
   const saveAnswer = useSaveQuizAnswer();
   const update = useUpdatePersonal();
+  const updateSettings = useUpdateSettings();
   const addPerson = useAddPerson();
   const removePerson = useRemovePerson();
   const setOnboarding = useSetOnboardingCompleted();
@@ -72,7 +92,6 @@ export default function Me() {
   const [relation, setRelation] = useState<Person['relation']>('family');
   const [gender, setGender] = useState<(typeof GENDER)[number]>();
   const [error, setError] = useState<string>();
-  const isAnonymous = auth.status === 'signed-in' && auth.session.user.is_anonymous;
 
   if (profile.isPending) {
     return (
@@ -94,7 +113,17 @@ export default function Me() {
 
   const open = (s: Exclude<Sheet, null>) => {
     setError(undefined);
-    setDraft(s === 'name' ? name : s === 'age' && answers.age ? String(answers.age) : '');
+    setDraft(
+      s === 'name'
+        ? name
+        : s === 'age' && answers.age
+          ? String(answers.age)
+          : s === 'location'
+            ? (p?.location ?? '')
+            : s === 'occupation'
+              ? (p?.occupation ?? '')
+              : '',
+    );
     setRelation('family');
     setGender(answers.gender);
     setSheet(s);
@@ -110,7 +139,9 @@ export default function Me() {
       ? Boolean(gender)
       : sheet === 'age'
         ? Number.isInteger(age) && age >= AGE_MIN && age <= AGE_MAX
-        : trimmed.length > 0;
+        : sheet === 'location' || sheet === 'occupation'
+          ? true
+          : trimmed.length > 0;
 
   const submit = () => {
     switch (sheet) {
@@ -120,6 +151,10 @@ export default function Me() {
         return saveAnswer.mutate({ questionKey: 'age', answer: age }, done);
       case 'gender':
         return gender && saveAnswer.mutate({ questionKey: 'gender', answer: gender }, done);
+      case 'location':
+        return updateSettings.mutate({ location: trimmed || null }, done);
+      case 'occupation':
+        return updateSettings.mutate({ occupation: trimmed || null }, done);
       case 'person':
         return addPerson.mutate({ name: trimmed, relation }, done);
       case 'pet':
@@ -139,6 +174,8 @@ export default function Me() {
     name: { title: s.nameTitle, submit: s.save },
     age: { title: s.ageTitle, submit: s.save },
     gender: { title: s.genderTitle, submit: s.save },
+    location: { title: s.locationTitle, submit: s.save },
+    occupation: { title: s.occupationTitle, submit: s.save },
     person: { title: s.personTitle, desc: s.personDesc, submit: s.submit },
     pet: { title: s.petTitle, desc: s.petDesc, submit: s.submit },
     lifestyle: { title: s.lifestyleTitle, submit: s.submit },
@@ -178,6 +215,11 @@ export default function Me() {
             >
               {name}
             </Text>
+            <RoundButton
+              icon="gear"
+              label={ko.me.settings}
+              onPress={() => router.push('/settings')}
+            />
           </View>
           <Text className={`${type.caption} mt-[10px] text-ink-soft`}>{ko.me.subtitle}</Text>
 
@@ -213,9 +255,9 @@ export default function Me() {
           {/* 숫자 */}
           <View className="mt-[14px] flex-row gap-[10px]">
             {[
-              { label: ko.me.stats.stories, value: stories.data?.length ?? 0 },
-              { label: ko.me.stats.liked, value: favorites.data?.size ?? 0 },
-              { label: ko.me.stats.people, value: humans.length },
+              { label: ko.me.stats.streak, value: activity.stats.current },
+              { label: ko.me.stats.listened, value: activity.storiesListened },
+              { label: ko.me.stats.savedAffirmations, value: savedAffirmations.data ?? 0 },
             ].map((stat) => (
               <View
                 key={stat.label}
@@ -231,9 +273,16 @@ export default function Me() {
           </View>
 
           <View className="mt-7 gap-[10px]">
-            <SectionLabel icon="sparkle" label={ko.me.myLibrary} />
+            <SectionLabel icon="archive" label={ko.me.archive} />
             <ListGroup>
-              <ListRow label={ko.me.savedStories} onPress={() => router.push('/stories')} last />
+              <ListRow label={ko.me.savedStories} onPress={() => router.push('/stories')} />
+              <ListRow label={ko.me.gratitude} onPress={() => router.push('/gratitude')} />
+              <ListRow
+                label={ko.me.pastStories}
+                sub={ko.me.pastStoriesSub}
+                onPress={() => router.push({ pathname: '/stories', params: { filter: 'past' } })}
+                last
+              />
             </ListGroup>
           </View>
 
@@ -256,6 +305,16 @@ export default function Me() {
                   answers.gender ? ko.quiz.questions.gender.options[answers.gender] : ko.me.notSet
                 }
                 onPress={() => open('gender')}
+              />
+              <ListRow
+                label={ko.me.location}
+                value={p?.location || ko.me.notSet}
+                onPress={() => open('location')}
+              />
+              <ListRow
+                label={ko.me.occupation}
+                value={p?.occupation || ko.me.notSet}
+                onPress={() => open('occupation')}
                 last
               />
             </ListGroup>
@@ -365,18 +424,6 @@ export default function Me() {
             </View>
           </View>
 
-          <View className="mt-7 gap-[10px]">
-            <SectionLabel icon="archive" label={ko.me.account} />
-            <ListGroup>
-              <ListRow
-                label={isAnonymous ? ko.me.accountAnonymous : ko.me.accountLinked}
-                onPress={isAnonymous ? () => router.push('/link-account') : undefined}
-                value={isAnonymous ? ko.me.linkAccount : undefined}
-                last
-              />
-            </ListGroup>
-          </View>
-
           {__DEV__ && (
             <View className="mt-7 gap-3">
               <DevStatus />
@@ -400,7 +447,12 @@ export default function Me() {
           description={sheetCopy[sheet].desc}
           submitLabel={sheetCopy[sheet].submit}
           canSubmit={canSubmit}
-          pending={update.isPending || addPerson.isPending || saveAnswer.isPending}
+          pending={
+            update.isPending ||
+            updateSettings.isPending ||
+            addPerson.isPending ||
+            saveAnswer.isPending
+          }
           onSubmit={submit}
           onClose={close}
         >
@@ -423,7 +475,9 @@ export default function Me() {
                     ? 2
                     : sheet === 'lifestyle' || sheet === 'exclude'
                       ? PERSONAL_ITEM_MAX
-                      : NAME_MAX
+                      : sheet === 'location' || sheet === 'occupation'
+                        ? PROFILE_TEXT_MAX
+                        : NAME_MAX
                 }
                 placeholder={
                   sheet === 'person'
@@ -434,7 +488,11 @@ export default function Me() {
                         ? s.lifestylePlaceholder
                         : sheet === 'exclude'
                           ? s.excludePlaceholder
-                          : sheetCopy[sheet].title
+                          : sheet === 'location'
+                            ? s.locationPlaceholder
+                            : sheet === 'occupation'
+                              ? s.occupationPlaceholder
+                              : sheetCopy[sheet].title
                 }
                 accessibilityLabel={sheetCopy[sheet].title}
                 onSubmitEditing={() => canSubmit && submit()}

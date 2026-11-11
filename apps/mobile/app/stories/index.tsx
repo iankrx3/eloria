@@ -1,4 +1,4 @@
-import { router, useFocusEffect } from 'expo-router';
+import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, SectionList, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,7 +13,11 @@ import { dawnScreenLong } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
 
-type Filter = 'all' | 'liked';
+type Filter = 'all' | 'liked' | 'past';
+
+/** 지난 이야기: 만든 지 30일이 넘은 것(마이 보관함) */
+const PAST_DAYS = 30;
+const isPast = (createdAt: string) => Date.now() - Date.parse(createdAt) > PAST_DAYS * 86_400_000;
 
 /**
  * 저장한 이야기(PRD 6절 내 스토리): 꿈별 묶음과 좋아요. 홈 "전체 보기", 마이페이지 "저장한 이야기·콘텐츠"에서 연다.
@@ -23,7 +27,8 @@ export default function Stories() {
   const stories = useMyStories();
   const favorites = useFavorites();
   const bottom = useSafeAreaInsets().bottom + 24;
-  const [filter, setFilter] = useState<Filter>('all');
+  const params = useLocalSearchParams<{ filter?: string }>();
+  const [filter, setFilter] = useState<Filter>(params.filter === 'past' ? 'past' : 'all');
 
   // 다른 화면에서 만든 이야기·좋아요가 바로 보이도록 들어올 때마다 다시 읽는다.
   useFocusEffect(
@@ -36,7 +41,12 @@ export default function Stories() {
 
   const sections = useMemo(() => {
     const list = stories.data ?? [];
-    const visible = filter === 'liked' ? list.filter((s) => favorites.data?.has(s.id)) : list;
+    const visible =
+      filter === 'liked'
+        ? list.filter((s) => favorites.data?.has(s.id))
+        : filter === 'past'
+          ? list.filter((s) => isPast(s.createdAt))
+          : list;
     return groupByDesire(visible);
   }, [stories.data, favorites.data, filter]);
 
@@ -67,6 +77,11 @@ export default function Stories() {
             selected={filter === 'liked'}
             onPress={() => setFilter('liked')}
           />
+          <FilterChip
+            label={ko.stories.past}
+            selected={filter === 'past'}
+            onPress={() => setFilter('past')}
+          />
         </View>
       </SafeAreaView>
 
@@ -94,7 +109,11 @@ export default function Stories() {
           ListEmptyComponent={
             <View className="items-center gap-4 pt-16">
               <Text className={`${type.body} text-center text-ink-soft`}>
-                {filter === 'liked' ? ko.stories.emptyLiked : ko.stories.empty}
+                {filter === 'liked'
+                  ? ko.stories.emptyLiked
+                  : filter === 'past'
+                    ? ko.stories.emptyPast
+                    : ko.stories.empty}
               </Text>
               {filter === 'all' && (
                 <PrimaryButton

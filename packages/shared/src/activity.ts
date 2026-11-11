@@ -110,3 +110,15 @@ export function challengeState(
     finished,
   };
 }
+
+/** 감사 일기(마이 보관함): 하루 최대 3줄, 줄마다 글자 수 상한 */
+export const GRATITUDE_LINES = 3;
+export const GRATITUDE_LINE_MAX = 100;
+
+/** 빈 줄을 빼고 앞뒤 공백을 지운 감사 일기 줄. 남는 게 없으면 저장하지 않는다. */
+export function cleanGratitudeLines(lines: readonly string[]): string[] {
+  return lines
+    .map((l) => l.trim().slice(0, GRATITUDE_LINE_MAX))
+    .filter((l) => l.length > 0)
+    .slice(0, GRATITUDE_LINES);
+}

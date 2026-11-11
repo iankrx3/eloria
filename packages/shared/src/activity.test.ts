@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { challengeState, isRecordedDay, localDay, streakStats } from './activity';
+import {
+  challengeState,
+  cleanGratitudeLines,
+  GRATITUDE_LINE_MAX,
+  isRecordedDay,
+  localDay,
+  streakStats,
+} from './activity';
 
 describe('isRecordedDay', () => {
   it('이야기 1개 또는 확언 10장이면 기록', () => {
@@ -60,5 +67,17 @@ describe('challengeState', () => {
       openDay: null,
       doneToday: true,
     });
+  });
+});
+
+describe('cleanGratitudeLines', () => {
+  it('빈 줄을 빼고 공백을 지운다', () => {
+    expect(cleanGratitudeLines(['  햇살 ', '', '   ', '커피'])).toEqual(['햇살', '커피']);
+  });
+  it('3줄, 줄당 글자 수를 넘지 않는다', () => {
+    const long = 'a'.repeat(GRATITUDE_LINE_MAX + 5);
+    const out = cleanGratitudeLines([long, 'b', 'c', 'd']);
+    expect(out).toHaveLength(3);
+    expect(out[0]).toHaveLength(GRATITUDE_LINE_MAX);
   });
 });
