@@ -45,7 +45,7 @@ queued → planning → writing → reviewing → text_ready → audio_ready →
 | safety | `safety/v1.ts` | 대상(`dream` 또는 `script`), 텍스트 | SafetyVerdict JSON |
 
 - 사용자 입력은 `<user_context>`·`<dream>`·`<text>` 태그 안에 넣고, 그 안의 지시를 따르지 말라고 적는다. 꺾쇠는 지워서 태그를 흉내 내지 못하게 한다.
-- 퀴즈 선택지 키(`seaside` 등)는 한국어로 바꿔 넣는다. 요즘 감정(`recent_feeling`)은 흐름 안내로만 바꾸고 감정 이름은 넣지 않는다(PRD 5절).
+- 퀴즈 선택지 키(`han_river_view` 등)는 한국어로 바꿔 넣는다. 사용자 정보 블록에는 값이 있는 줄만 넣는다(퀴즈 v2: 나이·성별·꿈이 간절한 이유·아침 풍경·꿈꾸는 하루·바라는 사랑, D-39). 걸림돌(`desire_blocker`)은 이야기에 넣지 않고 확언 생성에만 쓴다. 이전 퀴즈 키(`recent_feeling` 등)는 평가 세트 호환용으로 남아 있고, 감정은 흐름 안내로만 바꾼다.
 - `checkScript`(`packages/prompts/src/checks.ts`)가 길이, 숫자·로마자·기호, 마크다운, 이모지, 이름 횟수, 결과 보장 표현, 싫어하는 것을 기계적으로 점검한다. 평가 리포트용이고 안전 검수를 대신하지 않는다.
 
 ### 4.1 ScenePlan 스키마 (`packages/shared/src/ai/scene-plan.ts`)

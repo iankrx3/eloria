@@ -1,6 +1,6 @@
 # Eloria — 코딩 에이전트 가이드
 
-Eloria는 한 줄의 꿈을 "이미 그 삶을 사는 나"의 오디오 스토리로 바꿔 매일 듣게 하는 20~30대 여성 대상 manifestation 앱이다.
+Eloria는 한 줄의 꿈을 "이미 그 삶을 사는 나"의 오디오 스토리로 바꿔 매일 듣게 하는 20~30대 여성 대상 manifestation 앱이다. 사용자에게 보이는 앱 이름은 **ARIN**이고(D-38), 레포·패키지·번들 ID는 Eloria를 그대로 쓴다.
 Expo(React Native)로 iOS·Android를 동시에 만든다. 이 파일은 모든 작업 전에 읽는다.
 
 ## 먼저 읽을 문서
@@ -22,7 +22,7 @@ Expo(React Native)로 iOS·Android를 동시에 만든다. 이 파일은 모든 
 ## 스택 (확정)
 
 - 앱: Expo SDK 57, React Native 0.86, TypeScript(strict), Expo Router, NativeWind, TanStack Query, Zustand
-- 오디오: `expo-audio` / 파일: `expo-file-system` / 푸시: `expo-notifications`
+- 오디오: `expo-audio` / 파일: `expo-file-system` / 푸시: `expo-notifications` / 아이콘·벡터: `react-native-svg`
 - 결제: RevenueCat(`react-native-purchases`, `react-native-purchases-ui`)
 - 백엔드: Supabase(Auth·Postgres·Storage·Realtime), API 서버 = Hono(Node, Vercel 배포), 작업 큐 = Inngest
 - AI: Gemini(`@google/genai`) = 스토리·확언·검수 / ElevenLabs(`@elevenlabs/elevenlabs-js`) = 음성·이미지·효과음

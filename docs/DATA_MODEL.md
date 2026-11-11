@@ -31,7 +31,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 | onboarding_completed_at | timestamptz null | |
 | last_active_at | timestamptz | 데일리 사전 생성 대상 판단 |
 
-**quiz_answers**: user_id, question_key text, answer jsonb, unique(user_id, question_key)
+**quiz_answers**: user_id, question_key text, answer jsonb, unique(user_id, question_key). 키와 답 형식은 `packages/shared/src/quiz.ts`(퀴즈 v2, D-39). 나이·성별은 프로필 컬럼 없이 여기에 두고 마이페이지에서도 같은 API로 고친다. 이전 퀴즈의 키는 남아 있어도 읽을 때 버린다
 
 **people** (소중한 사람): user_id, name, relation text(partner, family, friend, pet, other), pronunciation text null
 
