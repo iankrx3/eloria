@@ -8,6 +8,13 @@ export type StoryContext = {
   futureSelf?: string[];
   recentFeeling?: string;
   oneYearChange?: string;
+  /** 퀴즈 v2(D-39) */
+  age?: number;
+  gender?: string;
+  desireWhy?: string;
+  loveDesired?: string;
+  dreamHome?: string[];
+  dreamDays?: string;
   /** Personal(PRD F-11): 장면에 자연스럽게 넣을 것과 피할 것 */
   likes?: string[];
   dislikes?: string[];
@@ -29,6 +36,24 @@ const FUTURE_SELF: Record<string, string> = {
   kind: '다정한',
   free: '자유로운',
   successful: '성공한',
+};
+
+const GENDER: Record<string, string> = {
+  female: '여성',
+  male: '남성',
+  other: '기타',
+};
+
+const DREAM_HOME: Record<string, string> = {
+  han_river_view: '한강뷰',
+  night_view: '반짝이는 야경',
+  jeju_sea: '제주 바다',
+  forest_garden: '숲과 정원',
+  sunset_terrace: '노을 지는 테라스',
+  white_curtains: '하얀 커튼과 햇살',
+  foreign_street: '낯선 나라의 거리',
+  snowy_mountain: '눈 덮인 산',
+  current_window: '지금 우리 집 창밖',
 };
 
 const RELATION: Record<string, string> = {
@@ -77,13 +102,26 @@ export function userContextBlock(ctx: StoryContext): string {
   const futureSelf = ctx.futureSelf?.map((k) => FUTURE_SELF[k]).filter(Boolean) as
     string[] | undefined;
 
+  const dreamHome = ctx.dreamHome?.map((k) => DREAM_HOME[k]).filter(Boolean) as
+    string[] | undefined;
+  // 값이 있는 줄만 넣는다. 없는 정보를 "정보 없음"으로 채우면 모델이 그 줄을 억지로 쓰려 한다.
+  const optional: [string, string | undefined][] = [
+    ['나이', ctx.age ? `${ctx.age}세` : undefined],
+    ['성별', ctx.gender ? GENDER[ctx.gender] : undefined],
+    ['이 꿈이 간절한 이유', ctx.desireWhy ? userText(ctx.desireWhy) : undefined],
+    ['상상 속 아침 풍경', dreamHome?.length ? dreamHome.join(', ') : undefined],
+    ['꿈꾸는 삶의 하루', ctx.dreamDays ? userText(ctx.dreamDays) : undefined],
+    ['바라는 사랑', ctx.loveDesired ? userText(ctx.loveDesired) : undefined],
+    ['꿈꾸는 하루가 시작되는 곳', ctx.dayStart ? DAY_START[ctx.dayStart] : undefined],
+    ['1년 뒤 달라져 있고 싶은 것', ctx.oneYearChange ? userText(ctx.oneYearChange) : undefined],
+    ['미래의 나', futureSelf?.length ? list(futureSelf) : undefined],
+  ];
+
   return [
     '<user_context>',
     `부를 이름: ${name ?? "없음(이름 대신 '당신'으로 부른다)"}`,
     `꿈: <dream>${userText(ctx.dream)}</dream>`,
-    `꿈꾸는 하루가 시작되는 곳: ${(ctx.dayStart && DAY_START[ctx.dayStart]) || '정보 없음'}`,
-    `1년 뒤 달라져 있고 싶은 것: ${ctx.oneYearChange ? userText(ctx.oneYearChange) : '정보 없음'}`,
-    `미래의 나: ${list(futureSelf)}`,
+    ...optional.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`),
     `함께하는 사람: ${people}`,
     `좋아하는 것(어울리면 1~2개를 자연스럽게): ${list(ctx.likes)}`,
     `피할 것(어떤 형태로도 넣지 않는다): ${list(ctx.dislikes)}`,

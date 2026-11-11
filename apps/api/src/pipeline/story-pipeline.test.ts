@@ -28,7 +28,7 @@ function createFakePipelineRepo(opts: { cachedAudio?: boolean; library?: boolean
     likes: ['바다 산책'],
     dislikes: [],
     people: [{ name: '민준', relation: 'partner' }],
-    quiz: { day_start: 'seaside' },
+    quiz: { dream_home: ['jeju_sea'] },
   };
 
   const repo: PipelineRepo = {

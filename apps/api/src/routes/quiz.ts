@@ -1,5 +1,6 @@
 import {
   collectQuizAnswers,
+  peopleFromQuizAnswers,
   profileFromQuizAnswers,
   quizAnswerRequestSchema,
   toCamel,
@@ -23,7 +24,7 @@ export function createQuizRoutes(repo: QuizRepo) {
       const profile = await repo.completeQuiz(
         userId,
         profileFromQuizAnswers(answers),
-        answers.people ?? [],
+        peopleFromQuizAnswers(answers),
       );
       return c.json({ profile: toCamel(profile) } satisfies QuizCompleteResponse);
     });

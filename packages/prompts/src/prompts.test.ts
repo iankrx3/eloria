@@ -183,3 +183,27 @@ describe('평가 세트', () => {
     }
   });
 });
+
+describe('퀴즈 v2 사용자 정보(D-39)', () => {
+  const v2: StoryContext = {
+    dream: '한강뷰 집에서 맞는 아침',
+    displayName: '지은',
+    tone: 'calm',
+    people: [{ name: '엄마', relation: 'family' }],
+    age: 27,
+    gender: 'female',
+    desireWhy: '나만의 공간에서 쉬고 싶어서',
+    dreamHome: ['han_river_view', 'white_curtains'],
+    dreamDays: '느긋한 아침과 좋아하는 일',
+  };
+
+  it('있는 값만 넣고 선택지 키는 말로 바꾼다', () => {
+    const { user } = scenePlanPromptV1(v2);
+    expect(user).toContain('나이: 27세');
+    expect(user).toContain('성별: 여성');
+    expect(user).toContain('상상 속 아침 풍경: 한강뷰, 하얀 커튼과 햇살');
+    expect(user).toContain('이 꿈이 간절한 이유: 나만의 공간에서 쉬고 싶어서');
+    expect(user).not.toContain('바라는 사랑');
+    expect(user).not.toContain('정보 없음');
+  });
+});
