@@ -8,11 +8,18 @@ import { Icon } from '@/components/icons/icon';
 import { Logo } from '@/components/logo';
 import { MoonHero } from '@/components/moon';
 import { SectionHeader } from '@/components/ui';
+import {
+  ChallengeCard,
+  ChallengeNotice,
+  HomeTopChips,
+  VisionBadge,
+} from '@/features/home/home-widgets';
 import { HomeStoryCard } from '@/features/home/story-card';
 import { useMyStories } from '@/features/library/use-library';
 import { ManifestInput } from '@/features/manifest/manifest-input';
 import { useBottomSpace } from '@/features/navigation/tab-bar';
 import { useProfile } from '@/features/profile/use-profile';
+import { VoiceSheet } from '@/features/voice/voice-sheet';
 import { ko } from '@/i18n/ko';
 import { dawnScreen, shadow } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
@@ -23,13 +30,14 @@ const FOR_YOU_LIMIT = 10;
 
 /**
  * 홈(Figma H01). 오늘의 달 · 인사 · 꿈 입력 · 추천 칩 · 당신을 위한 이야기.
- * 보이스 칩·연속 기록·비전 사진·다음 이야기 카운트다운·21일 챌린지는 기능이 생기면 붙인다(ROADMAP M7).
+ * 목소리·연속 기록 칩, 비전 사진, 챌린지 알림·카드, 목표 수정. 다음 이야기 카운트다운은 데일리(3단계)와 함께.
  */
 export default function Home() {
   const name = useProfile().data?.displayName ?? null;
   const stories = useMyStories();
   const bottom = useBottomSpace();
   const [text, setText] = useState('');
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const { welcome } = useLocalSearchParams<{ welcome?: string }>();
   const shownWelcome = useRef(false);
 
@@ -74,10 +82,13 @@ export default function Home() {
         <SafeAreaView edges={['top']} className="items-center px-gutter pt-2">
           <View className="w-full flex-row items-center justify-between">
             <Logo size={32} />
+            <HomeTopChips onVoice={() => setVoiceOpen(true)} />
           </View>
 
           <View className="mt-[6px]">
-            <MoonHero />
+            <MoonHero>
+              <VisionBadge />
+            </MoonHero>
           </View>
 
           <Text accessibilityRole="header" className={`${type.h1} mt-2 text-center text-plum-deep`}>
@@ -123,24 +134,26 @@ export default function Home() {
           ))}
         </ScrollView>
 
+        <View className="mt-4 px-gutter">
+          <ChallengeNotice />
+        </View>
+
         <View className="mt-6 px-gutter">
           <SectionHeader
             title={ko.home.forYou}
             action={
-              list.length > 0 ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`${ko.home.forYou} ${ko.common.seeAll}`}
-                  onPress={() => {
-                    haptic('light');
-                    router.push('/stories');
-                  }}
-                  className="flex-row items-center gap-[6px] rounded-full border border-on-photo bg-on-photo/70 py-[7px] pl-3 pr-[14px]"
-                >
-                  <Icon name="library" size={14} color={tokens.colors['plum-deep']} />
-                  <Text className={`${type.caption} text-plum-deep`}>{ko.common.seeAll}</Text>
-                </Pressable>
-              ) : undefined
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={ko.home.editGoals}
+                onPress={() => {
+                  haptic('light');
+                  router.push('/goals');
+                }}
+                className="flex-row items-center gap-[6px] rounded-full border border-on-photo bg-on-photo/70 py-[7px] pl-3 pr-[14px]"
+              >
+                <Icon name="pencil" size={14} color={tokens.colors['plum-deep']} />
+                <Text className={`${type.caption} text-plum-deep`}>{ko.home.editGoals}</Text>
+              </Pressable>
             }
           />
         </View>
@@ -166,7 +179,12 @@ export default function Home() {
             </Text>
           </View>
         )}
+
+        <View className="mt-[26px] px-gutter">
+          <ChallengeCard />
+        </View>
       </KeyboardAwareScrollView>
+      <VoiceSheet visible={voiceOpen} onClose={() => setVoiceOpen(false)} />
     </View>
   );
 }
