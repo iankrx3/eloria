@@ -27,7 +27,7 @@ export default function TabsLayout() {
 
   if (profile.isError) {
     return (
-      <View className="flex-1 justify-center bg-dawn px-gutter">
+      <View className="flex-1 justify-center bg-pearl px-gutter">
         <PrimaryButton label={ko.common.retry} onPress={() => profile.refetch()} />
       </View>
     );
@@ -35,7 +35,7 @@ export default function TabsLayout() {
 
   if (auth.status !== 'signed-in' || !profile.isSuccess) {
     return (
-      <View className="flex-1 items-center justify-center bg-dawn">
+      <View className="flex-1 items-center justify-center bg-pearl">
         <ActivityIndicator color={tokens.colors.plum} />
       </View>
     );
@@ -50,12 +50,12 @@ export default function TabsLayout() {
         tabBar={(props) => <TabBar {...props} />}
         screenOptions={{
           headerShown: false,
-          sceneStyle: { backgroundColor: tokens.colors.dawn },
+          sceneStyle: { backgroundColor: tokens.colors.pearl },
         }}
       >
         <Tabs.Screen name="index" />
         <Tabs.Screen name="library" />
-        <Tabs.Screen name="rituals" />
+        <Tabs.Screen name="affirmations" />
         <Tabs.Screen name="me" />
       </Tabs>
     </>

@@ -11,10 +11,15 @@ export function CrisisSupport() {
   return (
     <View className="gap-4">
       <View className="gap-2">
-        <Text accessibilityRole="header" className="text-[28px] leading-[38px] text-plum-deep">
+        <Text
+          accessibilityRole="header"
+          className="font-serif-semibold text-[30px] leading-[42px] tracking-[-0.3px] text-plum-deep"
+        >
           {ko.safety.supportTitle}
         </Text>
-        <Text className="text-[16px] leading-[24px] text-ink-muted">{ko.safety.supportBody}</Text>
+        <Text className="font-sans text-[16px] leading-[24px] tracking-[-0.16px] text-ink-soft">
+          {ko.safety.supportBody}
+        </Text>
       </View>
       {LINES.map((line) => (
         <Pressable
@@ -22,10 +27,10 @@ export function CrisisSupport() {
           accessibilityRole="link"
           accessibilityLabel={ko.safety.call(line.name)}
           onPress={() => Linking.openURL(`tel:${line.tel}`)}
-          className="gap-1 rounded-card bg-surface p-4"
+          className="gap-1 rounded-[22px] border border-glass-border bg-glass p-[18px]"
         >
-          <Text className="text-[16px] text-plum-deep">{line.name}</Text>
-          <Text className="text-[13px] text-ink-muted">{line.detail}</Text>
+          <Text className="font-sans text-[16px] leading-[24px] text-plum-deep">{line.name}</Text>
+          <Text className="font-sans text-[12px] leading-[17px] text-ink-soft">{line.detail}</Text>
         </Pressable>
       ))}
     </View>

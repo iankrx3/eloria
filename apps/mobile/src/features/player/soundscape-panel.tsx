@@ -22,9 +22,13 @@ function Chip({
       accessibilityState={{ selected }}
       accessibilityLabel={label}
       onPress={onPress}
-      className={`rounded-full px-4 py-2 ${selected ? 'bg-on-dusk' : 'bg-on-dusk/15'}`}
+      className={`rounded-full px-4 py-2 ${selected ? 'bg-pearl' : 'border border-on-photo/40 bg-on-photo/15'}`}
     >
-      <Text className={`text-[13px] ${selected ? 'text-plum-deep' : 'text-on-dusk'}`}>{label}</Text>
+      <Text
+        className={`font-sans text-[12px] leading-[17px] ${selected ? 'text-plum-deep' : 'text-on-photo'}`}
+      >
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -38,15 +42,20 @@ export function SoundscapePanel() {
   const setVolume = usePlayerStore((s) => s.setSoundscapeVolume);
 
   return (
-    <View className="gap-5 rounded-card bg-on-dusk/10 p-4">
+    <View className="gap-5 rounded-[22px] border border-on-photo/30 bg-twilight/80 p-5">
       <View className="gap-3">
-        <Text accessibilityRole="header" className="text-[13px] text-on-dusk/80">
+        <Text
+          accessibilityRole="header"
+          className="font-sans text-[12px] leading-[17px] text-on-photo/80"
+        >
           {ko.player.soundscape}
         </Text>
         {options.isPending ? (
-          <ActivityIndicator color={tokens.colors.glow} />
+          <ActivityIndicator color={tokens.colors.amber} />
         ) : options.isError ? (
-          <Text className="text-[13px] text-on-dusk/80">{ko.player.soundscapeFailed}</Text>
+          <Text className="font-sans text-[12px] leading-[17px] text-on-photo/80">
+            {ko.player.soundscapeFailed}
+          </Text>
         ) : (
           <View accessibilityRole="radiogroup" className="flex-row flex-wrap gap-2">
             <Chip
@@ -69,7 +78,9 @@ export function SoundscapePanel() {
       </View>
       {current && (
         <View className="gap-3">
-          <Text className="text-[13px] text-on-dusk/80">{ko.player.volume}</Text>
+          <Text className="font-sans text-[12px] leading-[17px] text-on-photo/80">
+            {ko.player.volume}
+          </Text>
           <View accessibilityRole="radiogroup" className="flex-row gap-2">
             {(Object.keys(SOUNDSCAPE_VOLUME) as SoundscapeVolume[]).map((v) => (
               <Chip

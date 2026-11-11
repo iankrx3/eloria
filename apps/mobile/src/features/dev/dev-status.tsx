@@ -23,8 +23,8 @@ export function DevStatus() {
         : ko.dev.sessionLinked;
 
   return (
-    <View className="gap-3 rounded-card bg-surface p-4">
-      <Text className="text-[13px] text-ink-muted">{ko.dev.title}</Text>
+    <View className="gap-3 rounded-[22px] border border-glass-border bg-glass p-[18px]">
+      <Text className="font-sans text-[12px] leading-[17px] text-ink-soft">{ko.dev.title}</Text>
       <Row label={ko.dev.session} value={sessionLabel} />
       {auth.status === 'signed-in' && (
         <Row label={ko.dev.userId} value={auth.session.user.id.slice(0, 8)} />
@@ -46,8 +46,8 @@ export function DevStatus() {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row justify-between">
-      <Text className="text-[16px] text-plum-deep">{label}</Text>
-      <Text className="text-[16px] text-plum">{value}</Text>
+      <Text className="font-sans text-[16px] leading-[24px] text-plum-deep">{label}</Text>
+      <Text className="font-sans-medium text-[16px] leading-[24px] text-plum">{value}</Text>
     </View>
   );
 }

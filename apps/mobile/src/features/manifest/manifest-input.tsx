@@ -1,25 +1,26 @@
 import { DESIRE_TEXT_MAX } from '@eloria/shared';
-import { SymbolView } from 'expo-symbols';
 import { useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, TextInput, View } from 'react-native';
+import { Icon } from '@/components/icons/icon';
 import { ko } from '@/i18n/ko';
 import { ApiClientError } from '@/lib/api-client';
+import { shadow } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
+import { type } from '@/theme/typography';
 import { useCreateManifest } from './use-create-manifest';
 
 type Props = {
+  value: string;
+  onChangeText: (text: string) => void;
   /** 등록에 성공하면 생성 진행 화면으로 보낼 수 있게 storyId를 넘긴다. */
   onCreated: (storyId: string) => void;
-  autoFocus?: boolean;
 };
 
-/** 꿈 입력창(DESIGN 4절 홈: 둥근 입력창 + 오른쪽 원형 plum 전송 버튼). 온보딩 첫 꿈과 홈에서 같이 쓴다. */
-export function ManifestInput({ onCreated, autoFocus = false }: Props) {
-  const [text, setText] = useState('');
+/** 꿈 입력창(Figma Input / Manifest): 흰 알약 + 오른쪽 원형 plum 전송 버튼 */
+export function ManifestInput({ value, onChangeText, onCreated }: Props) {
   const create = useCreateManifest();
   const queryClient = useQueryClient();
-  const trimmed = text.trim();
+  const trimmed = value.trim();
   const canSend = trimmed.length > 0 && !create.isPending;
 
   const send = () => {
@@ -28,8 +29,8 @@ export function ManifestInput({ onCreated, autoFocus = false }: Props) {
       { text: trimmed },
       {
         onSuccess: ({ storyId }) => {
-          setText('');
-          // 라이브러리에 새 스토리가 바로 보이게 한다.
+          onChangeText('');
+          // 홈·저장한 이야기에 새 이야기가 바로 보이게 한다.
           void queryClient.invalidateQueries({ queryKey: ['library'] });
           onCreated(storyId);
         },
@@ -49,17 +50,19 @@ export function ManifestInput({ onCreated, autoFocus = false }: Props) {
 
   return (
     <View className="gap-2">
-      <View className="min-h-[56px] flex-row items-center gap-2 rounded-field bg-surface pl-4 pr-2">
+      <View
+        className="min-h-[60px] flex-row items-center gap-[10px] rounded-[30px] border border-on-photo bg-glass-strong py-2 pl-5 pr-2"
+        style={shadow.input}
+      >
         <TextInput
-          value={text}
-          onChangeText={setText}
+          value={value}
+          onChangeText={onChangeText}
           maxLength={DESIRE_TEXT_MAX}
           placeholder={ko.home.placeholder}
-          placeholderTextColor={tokens.colors['ink-muted']}
+          placeholderTextColor={tokens.colors['ink-faint']}
           accessibilityLabel={ko.home.placeholder}
-          autoFocus={autoFocus}
           multiline
-          className="max-h-[120px] flex-1 py-3 text-[16px] leading-[24px] text-plum-deep"
+          className={`${type.body} max-h-[96px] flex-1 py-2 text-plum-deep`}
         />
         <Pressable
           accessibilityRole="button"
@@ -67,27 +70,27 @@ export function ManifestInput({ onCreated, autoFocus = false }: Props) {
           accessibilityState={{ disabled: !canSend, busy: create.isPending }}
           disabled={!canSend}
           onPress={send}
-          className={`h-10 w-10 items-center justify-center rounded-full ${canSend ? 'bg-plum' : 'bg-dawn-2'}`}
+          className={`h-11 w-11 items-center justify-center self-end rounded-full ${
+            canSend || create.isPending ? 'bg-plum' : 'bg-plum/40'
+          }`}
         >
           {create.isPending ? (
-            <ActivityIndicator color={tokens.colors['on-dusk']} />
+            <ActivityIndicator color={tokens.colors['on-photo']} />
           ) : (
-            <SymbolView
-              name={{ ios: 'arrow.up', android: 'arrow_upward' }}
-              size={20}
-              tintColor={canSend ? tokens.colors['on-dusk'] : tokens.colors['ink-muted']}
-            />
+            <Icon name="arrowUp" size={20} color={tokens.colors['on-photo']} />
           )}
         </Pressable>
       </View>
-      <View className="flex-row justify-between px-1">
-        <Text accessibilityLiveRegion="polite" className="flex-1 text-[13px] text-plum">
-          {error ?? ''}
-        </Text>
-        <Text className="text-[13px] text-ink-muted">
-          {ko.manifest.counter(text.length, DESIRE_TEXT_MAX)}
-        </Text>
-      </View>
+      {(error || value.length > 0) && (
+        <View className="flex-row justify-between px-2">
+          <Text accessibilityLiveRegion="polite" className={`${type.caption} flex-1 text-plum`}>
+            {error ?? ''}
+          </Text>
+          <Text className={`${type.caption} text-ink-faint`}>
+            {ko.manifest.counter(value.length, DESIRE_TEXT_MAX)}
+          </Text>
+        </View>
+      )}
     </View>
   );
 }

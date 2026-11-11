@@ -1,52 +1,76 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { PhotoBackground } from '@/components/backgrounds';
+import { Icon, type IconName } from '@/components/icons/icon';
 import { PrimaryButton } from '@/components/primary-button';
+import { RoundButton } from '@/components/ui';
+import { useProfile } from '@/features/profile/use-profile';
 import { CrisisSupport } from '@/features/safety/crisis-support';
-import { Orb } from '@/features/story/orb';
-import { progressState } from '@/features/story/progress-state';
+import { progressState, type ProgressMessage } from '@/features/story/progress-state';
 import { useStory, useStoryRealtime } from '@/features/story/use-story';
 import { ko } from '@/i18n/ko';
+import { photoText, photoTextSoft, progressOverlay } from '@/theme/effects';
+import { scenes, storyCover } from '@/theme/images';
 import tokens from '@/theme/tokens.json';
+import { type } from '@/theme/typography';
+
+type StepState = 'done' | 'active' | 'todo';
+
+/** 서버 상태 → 화면 3단계(장면 고르기 · 이야기 쓰기 · 목소리 입히기) */
+function stepStates(message: ProgressMessage): [StepState, StepState, StepState] {
+  switch (message) {
+    case 'queued':
+    case 'planning':
+      return ['active', 'todo', 'todo'];
+    case 'writing':
+    case 'reviewing':
+      return ['done', 'active', 'todo'];
+    case 'voicing':
+      return ['done', 'done', 'active'];
+  }
+}
+
+const STEP_ICON: Record<StepState, IconName> = { done: 'check', active: 'progress', todo: 'todo' };
 
 /**
- * 생성 진행(DESIGN 4절). 상태는 Realtime으로 받는다(ARCHITECTURE 2.1).
+ * 생성 진행(Figma H04 이야기 짓는 중 → H06 이야기 준비). 상태는 Realtime으로 받는다(ARCHITECTURE 2.1).
  * 화면을 떠나도 생성은 서버에서 계속된다.
  */
 export default function ManifestProgress() {
-  const params = useLocalSearchParams<{ id: string; onboarding?: string }>();
-  const storyId = params.id;
-  const inOnboarding = params.onboarding === '1';
+  const { id: storyId } = useLocalSearchParams<{ id: string }>();
   const story = useStory(storyId);
+  const name = useProfile().data?.displayName ?? null;
   const state = story.data ? progressState(story.data.status, story.data.errorCode) : undefined;
   useStoryRealtime(storyId, state?.kind === 'working');
 
   const openText = () => router.push({ pathname: '/story/[storyId]/text', params: { storyId } });
-  const leave = () =>
-    inOnboarding
-      ? router.replace({ pathname: '/link-account', params: { next: '/paywall' } })
-      : router.replace('/');
+  const home = () => router.replace('/');
 
   if (story.isError) {
     return (
-      <SafeAreaView className="flex-1 justify-center gap-4 bg-dawn px-gutter">
-        <Text className="text-center text-[16px] text-ink-muted">{ko.progress.failed}</Text>
-        <PrimaryButton label={ko.common.retry} onPress={() => story.refetch()} />
-      </SafeAreaView>
+      <PhotoBackground source={scenes.sky} overlay={progressOverlay}>
+        <SafeAreaView className="flex-1 justify-center gap-4 px-gutter">
+          <Text className={`${type.body} text-center text-on-photo`} style={photoTextSoft}>
+            {ko.progress.failed}
+          </Text>
+          <PrimaryButton variant="pearl" label={ko.common.retry} onPress={() => story.refetch()} />
+        </SafeAreaView>
+      </PhotoBackground>
     );
   }
 
   if (!state) {
     return (
-      <View className="flex-1 items-center justify-center bg-dawn">
-        <ActivityIndicator color={tokens.colors.plum} />
+      <View className="flex-1 items-center justify-center bg-twilight">
+        <ActivityIndicator color={tokens.colors['on-photo']} />
       </View>
     );
   }
 
   if (state.kind === 'crisis') {
     return (
-      <SafeAreaView className="flex-1 bg-dawn">
+      <SafeAreaView className="flex-1 bg-pearl">
         <ScrollView contentContainerClassName="gap-6 px-gutter py-8">
           <CrisisSupport />
           <PrimaryButton
@@ -59,64 +83,111 @@ export default function ManifestProgress() {
     );
   }
 
-  const message =
-    state.kind === 'working'
-      ? ko.progress[state.message]
-      : state.kind === 'done'
-        ? ko.progress.ready
-        : state.kind === 'blocked'
-          ? ko.progress.blocked
-          : state.canRead
-            ? ko.progress.ttsFailed
-            : ko.progress.failed;
+  // 완성(H06): 이야기 사진 위에 제목, 들어보기
+  if (state.kind === 'done') {
+    return (
+      <PhotoBackground source={storyCover(storyId)} overlay={progressOverlay}>
+        <SafeAreaView className="flex-1 px-gutter pb-9 pt-2">
+          <View className="items-end">
+            <RoundButton icon="close" label={ko.progress.home} tone="photo" onPress={home} />
+          </View>
+          <Text
+            accessibilityRole="header"
+            className={`${type.subtitle} mt-12 text-on-photo`}
+            style={photoText}
+          >
+            {story.data?.title ?? ko.progress.ready}
+          </Text>
+          <View className="flex-1" />
+          <Text className={`${type.labelSmall} text-on-photo/80`}>{ko.progress.readyEyebrow}</Text>
+          <Text className={`${type.body} mt-2 text-on-photo/90`}>{ko.progress.ready}</Text>
+          <View className="mt-6 gap-3">
+            <PrimaryButton
+              variant="pearl"
+              label={ko.player.listen}
+              onPress={() => router.replace({ pathname: '/player/[storyId]', params: { storyId } })}
+            />
+            <PrimaryButton variant="ghost-photo" label={ko.progress.read} onPress={openText} />
+          </View>
+        </SafeAreaView>
+      </PhotoBackground>
+    );
+  }
+
+  const failedMessage =
+    state.kind === 'blocked'
+      ? ko.progress.blocked
+      : state.kind === 'failed'
+        ? state.canRead
+          ? ko.progress.ttsFailed
+          : ko.progress.failed
+        : undefined;
 
   return (
-    <SafeAreaView className="flex-1 bg-dawn">
-      <View className="flex-1 items-center justify-center gap-8 px-gutter">
-        <Orb breathing={state.kind === 'working'} />
-        <Text
-          accessibilityLiveRegion="polite"
-          className="text-center text-[22px] leading-[32px] text-plum-deep"
-        >
-          {message}
-        </Text>
-        {story.data?.title && state.kind !== 'blocked' && (
-          <Text className="text-center text-[16px] text-ink-muted">{story.data.title}</Text>
-        )}
-      </View>
+    <PhotoBackground source={scenes.sky} overlay={progressOverlay}>
+      <SafeAreaView className="flex-1 px-gutter pb-6 pt-2">
+        <View className="flex-row">
+          <RoundButton icon="back" label={ko.progress.home} tone="photo" onPress={home} />
+        </View>
 
-      <View className="gap-3 px-gutter pb-6">
-        {state.kind === 'working' && state.canReadFirst && (
-          <PrimaryButton label={ko.progress.readFirst} onPress={openText} />
-        )}
-        {state.kind === 'done' && (
-          <>
+        <View className="flex-1 items-center justify-center gap-3">
+          <Text className={`${type.labelSmall} text-on-photo/85`} style={photoTextSoft}>
+            {ko.progress.eyebrow}
+          </Text>
+          <Text
+            accessibilityLiveRegion="polite"
+            className={`${type.h1} text-center text-on-photo`}
+            style={photoText}
+          >
+            {failedMessage ? ko.progress.failed : ko.progress.title}
+          </Text>
+          <Text className={`${type.body} text-center text-on-photo/90`} style={photoTextSoft}>
+            {failedMessage ?? ko.progress.subtitle(name)}
+          </Text>
+
+          {state.kind === 'working' && (
+            <View className="mt-6 gap-3 rounded-[20px] border border-on-photo/40 bg-on-photo/15 px-[22px] py-[18px]">
+              {stepStates(state.message).map((s, i) => {
+                const label = [
+                  ko.progress.steps.plan,
+                  ko.progress.steps.write,
+                  ko.progress.steps.voice,
+                ][i]!;
+                return (
+                  <View key={label} className="flex-row items-center gap-[10px]">
+                    <Icon
+                      name={STEP_ICON[s]}
+                      size={16}
+                      color={s === 'todo' ? 'rgba(255,255,255,0.55)' : tokens.colors['on-photo']}
+                    />
+                    <Text
+                      className={`${type.body} ${s === 'todo' ? 'text-on-photo/55' : 'text-on-photo'}`}
+                    >
+                      {label}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          )}
+        </View>
+
+        <View className="gap-3">
+          {state.kind === 'working' && state.canReadFirst && (
+            <PrimaryButton variant="pearl" label={ko.progress.readFirst} onPress={openText} />
+          )}
+          {state.kind === 'failed' && state.canRead && (
+            <PrimaryButton variant="pearl" label={ko.progress.read} onPress={openText} />
+          )}
+          {(state.kind === 'blocked' || (state.kind === 'failed' && !state.canRead)) && (
             <PrimaryButton
-              label={ko.player.listen}
-              onPress={() => router.push({ pathname: '/player/[storyId]', params: { storyId } })}
+              variant="pearl"
+              label={ko.progress.tryAgain}
+              onPress={() => router.back()}
             />
-            <PrimaryButton variant="ghost" label={ko.progress.read} onPress={openText} />
-          </>
-        )}
-        {state.kind === 'failed' && state.canRead && (
-          <PrimaryButton label={ko.progress.read} onPress={openText} />
-        )}
-        {state.kind === 'blocked' || (state.kind === 'failed' && !state.canRead) ? (
-          <PrimaryButton
-            variant="ghost"
-            label={ko.progress.tryAgain}
-            onPress={() => router.back()}
-          />
-        ) : (
-          (state.kind === 'done' || !inOnboarding) && (
-            <PrimaryButton
-              variant="ghost"
-              label={inOnboarding ? ko.progress.continue : ko.progress.home}
-              onPress={leave}
-            />
-          )
-        )}
-      </View>
-    </SafeAreaView>
+          )}
+        </View>
+      </SafeAreaView>
+    </PhotoBackground>
   );
 }

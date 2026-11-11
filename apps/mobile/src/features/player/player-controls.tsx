@@ -1,20 +1,22 @@
-import { SymbolView, type SymbolViewProps } from 'expo-symbols';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { usePlayer } from '@/audio/player-provider';
-import { FavoriteButton } from '@/features/library/favorite-button';
 import { formatTime } from '@/audio/timeline';
+import { Icon, type IconName } from '@/components/icons/icon';
+import { FavoriteButton } from '@/features/library/favorite-button';
 import { ko } from '@/i18n/ko';
+import { shadow } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
+import { type } from '@/theme/typography';
 
 export function IconButton({
   icon,
   label,
   onPress,
-  size = 28,
+  size = 26,
   active = false,
 }: {
-  icon: SymbolViewProps['name'];
+  icon: IconName;
   label: string;
   onPress: () => void;
   size?: number;
@@ -29,16 +31,16 @@ export function IconButton({
       hitSlop={8}
       className="h-12 w-12 items-center justify-center"
     >
-      <SymbolView
+      <Icon
         name={icon}
         size={size}
-        tintColor={active ? tokens.colors.glow : tokens.colors['on-dusk']}
+        color={active ? tokens.colors.amber : tokens.colors['on-photo']}
       />
     </Pressable>
   );
 }
 
-/** 진행 바(경과/남은 시간). 누른 위치로 이동한다(DESIGN 4절 플레이어). */
+/** 진행 바(3px, 흰 손잡이)와 경과/남은 시간. 누른 위치로 이동한다. */
 export function SeekBar() {
   const { status, player } = usePlayer();
   const [width, setWidth] = useState(0);
@@ -63,22 +65,37 @@ export function SeekBar() {
         }}
         className="h-6 justify-center"
       >
-        <View className="h-1 overflow-hidden rounded-full bg-on-dusk/30">
-          <View className="h-1 rounded-full bg-glow" style={{ width: `${progress * 100}%` }} />
+        <View className="h-[3px] rounded-[2px] bg-on-photo/25">
+          <View
+            className="h-[3px] rounded-[2px] bg-on-photo"
+            style={{ width: `${progress * 100}%` }}
+          />
         </View>
+        <View
+          className="absolute h-3 w-3 rounded-full bg-on-photo"
+          style={{ left: Math.max(0, progress * width - 6) }}
+        />
       </Pressable>
       <View className="flex-row justify-between">
-        <Text className="text-[13px] text-on-dusk/80">{formatTime(status.currentTime)}</Text>
-        <Text className="text-[13px] text-on-dusk/80">
-          {ko.player.remaining(formatTime(status.duration - status.currentTime))}
+        <Text className={`${type.caption} text-on-photo/75`}>{formatTime(status.currentTime)}</Text>
+        <Text className={`${type.caption} text-on-photo/75`}>
+          {ko.player.remaining(formatTime(Math.max(0, status.duration - status.currentTime)))}
         </Text>
       </View>
     </View>
   );
 }
 
-/** 컨트롤(DESIGN 4절): 좋아요 · 10초 되감기 · 재생/일시정지(흰 원) · 10초 앞으로 · 배경 사운드 */
-export function PlayerControls({ storyId }: { storyId: string }) {
+/** 컨트롤(Figma H07): 좋아요 · 10초 되감기 · 재생/일시정지(흰 원) · 10초 앞으로 · 배경음 */
+export function PlayerControls({
+  storyId,
+  soundscapeActive,
+  onSoundscape,
+}: {
+  storyId: string;
+  soundscapeActive: boolean;
+  onSoundscape: () => void;
+}) {
   const { status, togglePlay, seekBy } = usePlayer();
   const playing = status.playing;
 
@@ -86,54 +103,49 @@ export function PlayerControls({ storyId }: { storyId: string }) {
     <View className="flex-row items-center justify-between">
       <FavoriteButton
         storyId={storyId}
-        color={tokens.colors['on-dusk']}
-        activeColor={tokens.colors.glow}
+        color={tokens.colors['on-photo']}
+        activeColor={tokens.colors['on-photo']}
         size={24}
       />
-      <IconButton
-        icon={{ ios: 'gobackward.10', android: 'replay_10' }}
-        label={ko.player.back10}
-        onPress={() => seekBy(-10)}
-      />
+      <IconButton icon="back10" label={ko.player.back10} onPress={() => seekBy(-10)} />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={playing ? ko.player.pause : ko.player.play}
         onPress={togglePlay}
-        className="h-[72px] w-[72px] items-center justify-center rounded-full bg-on-dusk"
+        className="h-[72px] w-[72px] items-center justify-center rounded-full bg-pearl"
+        style={shadow.playLarge}
       >
-        <SymbolView
-          name={
-            playing
-              ? { ios: 'pause.fill', android: 'pause' }
-              : { ios: 'play.fill', android: 'play_arrow' }
-          }
-          size={32}
-          tintColor={tokens.colors.dusk}
-        />
+        <Icon name={playing ? 'pause' : 'play'} size={28} color={tokens.colors['plum-deep']} />
       </Pressable>
+      <IconButton icon="forward10" label={ko.player.forward10} onPress={() => seekBy(10)} />
       <IconButton
-        icon={{ ios: 'goforward.10', android: 'forward_10' }}
-        label={ko.player.forward10}
-        onPress={() => seekBy(10)}
+        icon="music"
+        label={ko.player.soundscape}
+        size={24}
+        active={soundscapeActive}
+        onPress={onSoundscape}
       />
-      {/* 배경 사운드 선택은 다음 작업(2트랙 믹서)에서 이 자리에 붙인다. */}
-      <View className="h-12 w-12" />
     </View>
   );
 }
 
-/** 반복 토글(DESIGN 4절: 전체 스토리 보기 칩 옆) */
+/** 반복 토글(Figma: 다음 문장 줄 오른쪽의 유리 원) */
 export function RepeatToggle() {
   const { status, player } = usePlayer();
   return (
-    <IconButton
-      icon={{ ios: 'repeat', android: status.loop ? 'repeat_on' : 'repeat' }}
-      label={ko.player.repeat}
-      active={status.loop}
-      size={22}
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={ko.player.repeat}
+      accessibilityState={{ selected: status.loop }}
       onPress={() => {
         player.loop = !player.loop;
       }}
-    />
+      hitSlop={6}
+      className={`h-9 w-9 items-center justify-center rounded-full border ${
+        status.loop ? 'border-on-photo bg-on-photo/40' : 'border-on-photo/40 bg-on-photo/15'
+      }`}
+    >
+      <Icon name="repeat" size={16} color={tokens.colors['on-photo']} />
+    </Pressable>
   );
 }

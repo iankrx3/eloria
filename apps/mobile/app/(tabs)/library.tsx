@@ -1,99 +1,151 @@
-import { router, useFocusEffect } from 'expo-router';
+import type { LibraryCategory } from '@eloria/shared';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, SectionList, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { DawnBackdrop, GLOW } from '@/components/backgrounds';
 import { PrimaryButton } from '@/components/primary-button';
-import { groupByDesire } from '@/features/library/group-stories';
-import { StoryCard } from '@/features/library/story-card';
-import { useFavorites, useMyStories } from '@/features/library/use-library';
+import { FilterChip, SectionHeader } from '@/components/ui';
+import { useFavorites } from '@/features/library/use-library';
+import { useBottomSpace } from '@/features/navigation/tab-bar';
+import { groupRituals } from '@/features/rituals/group-rituals';
+import { FeatureCard, TrackCard, TrackRow } from '@/features/rituals/track-cards';
+import { useRituals } from '@/features/rituals/use-rituals';
 import { ko } from '@/i18n/ko';
+import { dawnScreenLong } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
+import { type } from '@/theme/typography';
 
-type Filter = 'all' | 'liked';
+type Filter = 'all' | 'saved' | LibraryCategory;
 
 /**
- * 라이브러리(PRD 6절): 내 스토리(꿈별 그룹)와 좋아요.
- * 플레이리스트·다운로드됨은 이후 작업(M5 오프라인, M7 플레이리스트).
+ * 라이브러리(Figma L01, PRD F-10): 운영자가 미리 만든 공용 콘텐츠. 대표 카드 → 카테고리별 가로 캐러셀.
+ * 칩으로 한 카테고리(세로 목록)나 저장한 것만 볼 수 있다. Figma의 확언·주파수·수면·노래·소원 테마는
+ * 콘텐츠가 준비되면 같은 틀에 섹션으로 더한다(ROADMAP).
  */
 export default function Library() {
-  const stories = useMyStories();
+  const rituals = useRituals();
   const favorites = useFavorites();
+  const bottom = useBottomSpace();
   const [filter, setFilter] = useState<Filter>('all');
 
-  // 다른 화면에서 만든 스토리·좋아요가 바로 보이도록 탭에 들어올 때마다 다시 읽는다.
+  // 시드가 새로 완성되면 보이도록 탭에 들어올 때 다시 읽는다(staleTime 안이면 캐시를 쓴다).
   useFocusEffect(
     useCallback(() => {
-      void stories.refetch();
-      void favorites.refetch();
-      // eslint-disable-next-line react-hooks/exhaustive-deps -- refetch 함수는 안정적이며 포커스마다 한 번만 부른다.
+      if (rituals.isStale) void rituals.refetch();
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- 포커스마다 한 번만 확인한다.
     }, []),
   );
 
-  const sections = useMemo(() => {
-    const list = stories.data ?? [];
-    const visible = filter === 'liked' ? list.filter((s) => favorites.data?.has(s.id)) : list;
-    return groupByDesire(visible);
-  }, [stories.data, favorites.data, filter]);
+  const all = useMemo(() => groupRituals(rituals.data ?? []), [rituals.data]);
+  const items = useMemo(() => {
+    const list = all.flatMap((s) => s.data);
+    if (filter === 'all') return list;
+    if (filter === 'saved') return list.filter((i) => favorites.data?.has(i.storyId));
+    return list.filter((i) => i.category === filter);
+  }, [all, filter, favorites.data]);
+  const feature = all[0]?.data[0];
 
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-dawn">
-      <View className="gap-4 px-gutter pb-2 pt-4">
-        <Text accessibilityRole="header" className="text-[28px] leading-[38px] text-plum-deep">
-          {ko.library.title}
-        </Text>
-        <View accessibilityRole="tablist" className="flex-row gap-2">
-          {(['all', 'liked'] as const).map((f) => (
-            <Pressable
-              key={f}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: filter === f }}
-              onPress={() => setFilter(f)}
-              className={`rounded-full px-4 py-2 ${filter === f ? 'bg-plum' : 'bg-surface'}`}
-            >
-              <Text className={`text-[13px] ${filter === f ? 'text-on-dusk' : 'text-plum-deep'}`}>
-                {f === 'all' ? ko.library.all : ko.library.liked}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-      </View>
-
-      {stories.isPending ? (
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator color={tokens.colors.plum} />
-        </View>
-      ) : stories.isError ? (
-        <View className="flex-1 justify-center px-gutter">
-          <PrimaryButton label={ko.common.retry} onPress={() => stories.refetch()} />
-        </View>
-      ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(item) => item.id}
-          stickySectionHeadersEnabled={false}
-          contentContainerClassName="gap-3 px-gutter pb-8"
-          renderSectionHeader={({ section }) => (
-            <Text numberOfLines={1} className="pb-1 pt-4 text-[13px] text-ink-muted">
-              {section.title ?? ko.library.otherStories}
-            </Text>
-          )}
-          renderItem={({ item }) => <StoryCard story={item} />}
-          ListEmptyComponent={
-            <View className="items-center gap-4 pt-16">
-              <Text className="text-center text-[16px] leading-[24px] text-ink-muted">
-                {filter === 'liked' ? ko.library.emptyLiked : ko.library.empty}
-              </Text>
-              {filter === 'all' && (
-                <PrimaryButton
-                  variant="ghost"
-                  label={ko.library.goHome}
-                  onPress={() => router.navigate('/')}
-                />
-              )}
-            </View>
-          }
+    <View className="flex-1">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: bottom, flexGrow: 1 }}
+      >
+        <DawnBackdrop
+          style={dawnScreenLong}
+          glows={[
+            { x: 170, y: -60, size: 260, color: GLOW.pink },
+            { x: -110, y: 460, size: 260, color: GLOW.sky },
+            { x: 170, y: 980, size: 260, color: GLOW.pink },
+            { x: -110, y: 1500, size: 260, color: GLOW.sky },
+          ]}
         />
-      )}
-    </SafeAreaView>
+        <SafeAreaView edges={['top']} className="px-gutter pt-2">
+          <Text accessibilityRole="header" className={`${type.h1} text-plum-deep`}>
+            {ko.library.title}
+          </Text>
+        </SafeAreaView>
+
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          accessibilityRole="tablist"
+          className="mt-[14px] shrink-0 grow-0"
+          contentContainerClassName="gap-2 px-gutter"
+        >
+          <FilterChip
+            label={ko.library.all}
+            selected={filter === 'all'}
+            onPress={() => setFilter('all')}
+          />
+          <FilterChip
+            label={ko.stories.liked}
+            selected={filter === 'saved'}
+            onPress={() => setFilter('saved')}
+          />
+          {all.map((s) => (
+            <FilterChip
+              key={s.category}
+              label={ko.library.categories[s.category]}
+              selected={filter === s.category}
+              onPress={() => setFilter(s.category)}
+            />
+          ))}
+        </ScrollView>
+
+        {rituals.isPending ? (
+          <View className="flex-1 items-center justify-center pt-24">
+            <ActivityIndicator color={tokens.colors.plum} />
+          </View>
+        ) : rituals.isError ? (
+          <View className="px-gutter pt-24">
+            <PrimaryButton label={ko.common.retry} onPress={() => rituals.refetch()} />
+          </View>
+        ) : all.length === 0 ? (
+          <Text className={`${type.body} px-gutter pt-24 text-center text-ink-soft`}>
+            {ko.library.empty}
+          </Text>
+        ) : filter === 'all' ? (
+          <>
+            {feature && (
+              <View className="mt-[18px] items-center">
+                <FeatureCard item={feature} />
+              </View>
+            )}
+            {all.map((section) => (
+              <View key={section.category} className="mt-8">
+                <View className="px-gutter">
+                  <SectionHeader
+                    title={ko.library.categories[section.category]}
+                    onSeeAll={() => setFilter(section.category)}
+                  />
+                </View>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="mt-[14px] shrink-0 grow-0"
+                  contentContainerClassName="gap-[14px] px-gutter pb-4"
+                >
+                  {section.data.map((item, i) => (
+                    <TrackCard key={item.storyId} item={item} index={i} />
+                  ))}
+                </ScrollView>
+              </View>
+            ))}
+          </>
+        ) : (
+          <View className="mt-[18px] gap-3 px-gutter">
+            {items.length === 0 ? (
+              <Text className={`${type.body} pt-16 text-center text-ink-soft`}>
+                {ko.stories.emptyLiked}
+              </Text>
+            ) : (
+              items.map((item, i) => <TrackRow key={item.storyId} item={item} index={i} />)
+            )}
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
