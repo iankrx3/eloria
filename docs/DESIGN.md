@@ -30,7 +30,7 @@
 - 그라디언트(`effects.ts`): Day · Dawn(#F6E6EA → #E6D9F0 → #CCD6F2), Night · Twilight(#1F1A33 → #3E2A4F), 사진 오버레이(보랏빛 필름 + 위아래 어둡게). RN 0.86 `experimental_backgroundImage`로 그린다(D-41).
 - 라운드: 카드 22~28, 입력·선택지 16, 그리드 칸 14, 버튼·칩 999, 시트 28.
 - 간격: 화면 좌우 24(`px-gutter`), 섹션 사이 24~32.
-- 배경 흐림(backdrop blur)은 쓰지 않고 반투명 흰색으로 대신한다.
+- 배경 흐림: 사진 위 유리는 expo-blur로 흐린다(D-42). 밝은 화면은 반투명 흰색.
 
 ## 3. 타이포그래피 (`src/theme/typography.ts`)
 
@@ -72,7 +72,18 @@ Figma에 있지만 아직 만들지 않은 화면(데이터·기능 필요): 비
 - "동작 줄이기"가 켜져 있으면 초승달 애니메이션을 끈다.
 - 사진 위 글자는 그림자(text-shadow)와 오버레이로 대비를 맞춘다. 밝은 화면 본문은 Deep Plum 65% 이상.
 - 모든 아이콘 버튼에 `accessibilityLabel`(한국어).
-- 햅틱(Figma 노트)은 expo-haptics를 들인 뒤 붙인다(ROADMAP).
+- 햅틱(`src/lib/haptics.ts`, D-42). 설정 > 햅틱 진동으로 끌 수 있다. Figma 노트 기준:
+
+| 동작 | 햅틱 |
+| --- | --- |
+| 버튼·칩·카드·행·탭 이동(기본) | light / 탭 바 selection |
+| 퀴즈 보기·그리드 칸·관계·성별 선택, 반복 토글, 페이월 플랜 | selection |
+| 퀴즈 마지막 "계속하기", 홈 전송, 라이브러리 재생 | medium |
+| 시네마틱 시작, 하트 켜기, 로그인 완료, 이야기 완성 | success |
+| 전환 화면·세 번째 시네마틱 진입 | soft |
+| 로그인 실패 / 이야기 지우기 확인 | error / warning |
+
+- 사진 위 유리 요소는 실제로 사진을 흐린다(`GlassFill`, Figma backdrop-blur 값). 밝은 화면에서는 반투명 흰색만 칠한다.
 
 ## 6. 카피 톤
 
