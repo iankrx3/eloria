@@ -11,10 +11,11 @@ const APP_ENV = (process.env.APP_ENV ?? 'development') as AppEnv;
 // 번들 ID·패키지명은 열린 질문 Q-05. 확정 전 가칭이다.
 const BASE_ID = 'com.o3c.eloria';
 
+// 표시 이름은 ARIN(D-38). 번들 ID·scheme·slug는 기존 빌드·로그인 설정을 유지하려고 그대로 둔다.
 const VARIANTS: Record<AppEnv, { id: string; name: string; scheme: string }> = {
-  development: { id: `${BASE_ID}.dev`, name: 'Eloria Dev', scheme: 'eloria-dev' },
-  preview: { id: `${BASE_ID}.preview`, name: 'Eloria Preview', scheme: 'eloria-preview' },
-  production: { id: BASE_ID, name: 'Eloria', scheme: 'eloria' },
+  development: { id: `${BASE_ID}.dev`, name: 'ARIN Dev', scheme: 'eloria-dev' },
+  preview: { id: `${BASE_ID}.preview`, name: 'ARIN Preview', scheme: 'eloria-preview' },
+  production: { id: BASE_ID, name: 'ARIN', scheme: 'eloria' },
 };
 
 const variant = VARIANTS[APP_ENV];
@@ -46,7 +47,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: variant.id,
     ...(GOOGLE_SERVICES_FILE ? { googleServicesFile: GOOGLE_SERVICES_FILE } : {}),
     adaptiveIcon: {
-      backgroundColor: '#F3ECF6',
+      backgroundColor: '#F7F2FA',
       foregroundImage: './assets/android-icon-foreground.png',
       backgroundImage: './assets/android-icon-background.png',
       monochromeImage: './assets/android-icon-monochrome.png',
@@ -66,10 +67,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         recordAudioAndroid: false,
       },
     ],
-    ['expo-notifications', { color: '#6E4A7E' }],
+    ['expo-notifications', { color: '#714D7F' }],
     [
       'expo-splash-screen',
-      { image: './assets/splash-icon.png', imageWidth: 160, backgroundColor: '#F3ECF6' },
+      { image: './assets/splash-icon.png', imageWidth: 200, backgroundColor: '#F7F2FA' },
     ],
     ['@react-native-seoul/kakao-login', { kakaoAppKey: KAKAO_NATIVE_APP_KEY }],
     [

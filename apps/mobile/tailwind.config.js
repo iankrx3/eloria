@@ -1,6 +1,6 @@
 /**
- * 디자인 토큰(docs/DESIGN.md 2~3절). 값은 시안에서 추정한 시작값이며,
- * 디자이너가 확정하면 DESIGN.md와 src/theme/tokens.ts를 함께 바꾼다.
+ * 디자인 토큰(docs/DESIGN.md 2~3절, Figma "ARIN" 01 Brand).
+ * 값을 바꾸면 DESIGN.md와 src/theme/tokens.json을 함께 고친다.
  */
 const { colors, radius, fontFamily } = require('./src/theme/tokens.json');
 
@@ -13,7 +13,7 @@ module.exports = {
       colors,
       borderRadius: radius,
       fontFamily,
-      spacing: { gutter: '20px' },
+      spacing: { gutter: '24px' },
     },
   },
   plugins: [],
