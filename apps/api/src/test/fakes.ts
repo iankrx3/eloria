@@ -4,6 +4,7 @@ import { createApp, type AppDeps } from '../app';
 import type { StoryEvents } from '../inngest/events';
 import { createSupabaseVerifier } from '../middleware/auth';
 import type { PushRepo } from '../repos/push-repo';
+import type { AccountRepo } from '../repos/account-repo';
 import type { ProfileRow, ProfileUpdate, QuizRepo } from '../repos/quiz-repo';
 import type { StoryRepo } from '../repos/story-repo';
 
@@ -148,6 +149,16 @@ export function createFakePushRepo() {
   return { repo, tokens };
 }
 
+export function createFakeAccountRepo() {
+  const deleted: { userId: string; reasons: string[] }[] = [];
+  const repo: AccountRepo = {
+    async deleteAccount(userId, reasons) {
+      deleted.push({ userId, reasons });
+    },
+  };
+  return { repo, deleted };
+}
+
 /** 테스트용 앱. 필요한 의존성만 바꿔 끼운다. */
 export function createTestApp(overrides: Partial<AppDeps> = {}) {
   return createApp({
@@ -156,6 +167,7 @@ export function createTestApp(overrides: Partial<AppDeps> = {}) {
     storyRepo: createFakeStoryRepo().repo,
     storyEvents: createFakeStoryEvents().events,
     pushRepo: createFakePushRepo().repo,
+    accountRepo: createFakeAccountRepo().repo,
     ...overrides,
   });
 }

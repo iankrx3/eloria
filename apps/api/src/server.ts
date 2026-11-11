@@ -17,6 +17,7 @@ import { createSupabasePipelineRepo } from './repos/pipeline-repo';
 import { createSupabasePushRepo } from './repos/push-repo';
 import { createSupabaseQuizRepo } from './repos/quiz-repo';
 import { createSupabaseStoryRepo } from './repos/story-repo';
+import { createSupabaseAccountRepo } from './repos/account-repo';
 
 const env = loadEnv();
 const db = createAdminClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
@@ -30,6 +31,7 @@ const notifier = createStoryNotifier({
 const app = createApp({
   quizRepo: createSupabaseQuizRepo(db),
   storyRepo: createSupabaseStoryRepo(db),
+  accountRepo: createSupabaseAccountRepo(db),
   pushRepo,
   storyEvents: inngestStoryEvents,
   inngestFunctions: [

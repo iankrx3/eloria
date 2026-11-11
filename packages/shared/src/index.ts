@@ -5,6 +5,7 @@ export * from './api/health';
 export * from './api/manifests';
 export * from './api/media';
 export * from './api/quiz';
+export * from './api/account';
 export * from './case';
 export * from './config/defaults';
 export * from './config/limits';
