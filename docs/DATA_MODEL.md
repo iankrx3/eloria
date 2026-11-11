@@ -30,6 +30,14 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 | dislikes | text[] | Personal: 싫어하는 것 |
 | onboarding_completed_at | timestamptz null | |
 | last_active_at | timestamptz | 데일리 사전 생성 대상 판단 |
+| location, occupation | text null(≤40) | 마이페이지 사는 곳·하는 일(P01) |
+| desired_changes | text[] | 목표 수정(H13) 바라는 변화. `DESIRED_CHANGES` 값만 |
+| story_scenes | jsonb | 목표 수정 장면 `[{ text, tag }]`, 최대 5개(`storyScenesSchema`) |
+| narrator_speed | numeric(2,1) | 0.9, 1.0, 1.1 |
+| affirmation_notify_at | time | 확언 알림 시간, 기본 08:00 |
+| notify_affirmation, notify_story, notify_challenge | boolean | 알림 토글(P02). 기본 true, true, false |
+| vision_photo_path | text null | 홈 비전 사진(`vision-photos` 본인 경로) |
+| challenge_started_on | date null | 21일 챌린지 시작일 |
 
 **quiz_answers**: user_id, question_key text, answer jsonb, unique(user_id, question_key). 키와 답 형식은 `packages/shared/src/quiz.ts`(퀴즈 v2, D-39). 나이·성별은 프로필 컬럼 없이 여기에 두고 마이페이지에서도 같은 API로 고친다. 이전 퀴즈의 키는 남아 있어도 읽을 때 버린다
 
@@ -37,7 +45,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 
 **desires** (꿈): user_id, text(≤200자), category text(wealth, love, career, health, confidence, other), status text(active, achieved, archived), achieved_at timestamptz null
 
-**consents**: user_id, kind text(privacy, marketing, ai_processing), version text, granted boolean, granted_at
+**consents**: user_id, kind text(privacy, marketing, ai_processing), version text, granted boolean, granted_at — 바꿀 때마다 새 행을 쌓고 가장 최근 행으로 판단한다(설정 P02 혜택·이벤트 소식, 버전 `marketing-v1`)
 
 ## 3. 콘텐츠
 
@@ -64,15 +72,15 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 
 **story_assets**: story_id, type text(audio, cover, mixed_audio), storage_path text, duration_sec numeric null, mime text, bytes int, content_hash text(캐시 키), provider text, model text
 
-**voices**: key text unique, display_name, provider_voice_id text, model text, language text, preview_path text, is_active boolean, owner_user_id uuid null(P2 클론)
+**voices**: key text unique, display_name, provider_voice_id text, model text, language text, preview_path text, is_active boolean, owner_user_id uuid null(P2 클론) — 시드: harin·seoa·yuna·jiho(마이그레이션 20261111140000, ElevenLabs 연결 전이라 `provider_voice_id = mock-*`, `model = mock`)
 
 **soundscapes**: key text unique, display_name, storage_path, loop_duration_sec, is_active
 
-**library_items**: story_id unique → stories(kind=library, on delete cascade), category text(money, love, career, confidence, meditation), seed_key text unique(시드 카탈로그 key), theme text(생성 테마, 1~200자), tone text(calm, excited, powerful), sort int(카테고리 안 순서), is_free boolean — 로그인 사용자 select, 쓰기는 service role(마이그레이션 20261004130000). 음성은 `story-audio/library/{story_id}/…`라 앱은 서버 서명 URL(`GET /v1/stories/:id/media`)로 받는다
+**library_items**: story_id unique → stories(kind=library, on delete cascade), category text(money, love, career, confidence, meditation, affirmation, frequency, sleep, song), wish_theme text null(exam, home, job, love, body, travel — L06 소원별로 듣기), seed_key text unique(시드 카탈로그 key), theme text(생성 테마, 1~200자), tone text(calm, excited, powerful), sort int(카테고리 안 순서), is_free boolean — 로그인 사용자 select, 쓰기는 service role(마이그레이션 20261004130000). 음성은 `story-audio/library/{story_id}/…`라 앱은 서버 서명 URL(`GET /v1/stories/:id/media`)로 받는다
 
-**affirmations**: user_id uuid null(null = 공용), category, text, audio_path text null, audio_hash text null, source text(library, generated)
+**affirmations** (오늘의 확언 10장, A01): user_id, day date, position int(1~10), text(≤120자), theme text null, status text(approved, blocked), prompt_version text null, unique(user_id, day, position) — 서버(service role)만 쓰고 사용자는 본인의 `approved`만 select(마이그레이션 20261111120000)
 
-**saved_affirmations**: user_id, affirmation_id, unique(user_id, affirmation_id)
+**saved_affirmations**: user_id, affirmation_id, saved_at, primary key(user_id, affirmation_id) — 본인 행 RLS
 
 ## 4. 활동
 
@@ -80,20 +88,22 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 **playlist_items**: playlist_id, story_id, sort
 **favorites**: user_id, story_id, unique(user_id, story_id) — RLS: 본인 select·delete, insert는 볼 수 있는 스토리(본인 또는 library)에만. 앱이 직접 쓴다(마이그레이션 20261003150000)
 **play_events**: user_id, story_id, event text(start, progress_25, progress_50, progress_75, progress_90, complete), position_sec, occurred_at, platform
-**gratitude_entries**: user_id, entry_date date, lines text[3], unique(user_id, entry_date)
+**gratitude_entries** (감사 일기, 마이 보관함): user_id, day date, lines text[](1~3줄, 줄당 ≤100자는 앱 `cleanGratitudeLines`), unique(user_id, day) — 본인 행 RLS, 앱이 직접 upsert
+**activity_days** (연속 기록, H11): user_id, day date, stories_listened int, affirmations_done int, primary key(user_id, day) — 본인 행 RLS, 앱이 직접 기록. 그날 이야기 1개를 끝까지(90%) 듣거나 확언 10장을 넘기면 기록한 날(`ACTIVITY_RULE`, `packages/shared/src/activity.ts`)
+**challenge_missions** (21일 챌린지, H12): day int(1~21) primary key, kind text(affirm, gratitude, visualize, listen, write), title, body — 로그인 사용자 select, 시드는 마이그레이션 20261111140000
+**challenge_progress**: user_id, day → challenge_missions, completed_at, note text null, primary key(user_id, day) — 본인 행 RLS. 하루 1개씩 열리고 놓친 날은 이어서 진행(`challengeState`)
 **wall_entries**: user_id, desire_id null, title, note, photo_path null, achieved_on date
-**streaks** (뷰 또는 테이블): user_id, current_days, longest_days, last_listen_date
 
 ## 5. 운영
 
 **subscriptions**: user_id unique, status text(active, trialing, grace, expired, none), product_id, store text(app_store, play_store), period_end timestamptz, rc_app_user_id, updated_from_event_id
 **webhook_events**: source text(revenuecat, elevenlabs), event_id text unique, payload jsonb, processed_at
-**generation_jobs**: user_id, story_id null, kind text(story, revision, daily, affirmation_audio, cover, library), step text, status text(pending, running, succeeded, failed), attempts int, provider text, model text, input_tokens int, output_tokens int, tts_chars int, image_count int, est_cost_usd numeric(10,5), error text, started_at, finished_at — RLS만 켜고 정책 없음(사용자 접근 불가, service role 전용)
+**generation_jobs**: user_id, story_id null, kind text(story, revision, daily, affirmation, affirmation_audio, cover, library, lifestyle), step text, status text(pending, running, succeeded, failed), attempts int, provider text, model text, input_tokens int, output_tokens int, tts_chars int, image_count int, est_cost_usd numeric(10,5), error text, started_at, finished_at — RLS만 켜고 정책 없음(사용자 접근 불가, service role 전용)
 **generation_quota** (뷰): user_id, month, stories_used, daily_used, revisions_used — `generation_jobs`의 스토리별 전체 진행 행(`provider is null`, 생성 요청 때 하나씩 생김)을 세어 집계(마이그레이션 20261004090000). 스토리를 지워도 `story_id`만 null이 되고 행은 남아 사용량이 줄지 않는다. `security_invoker`, anon·authenticated 권한 없음(서버 전용)
 **push_tokens**: user_id, token text unique(Expo 푸시 토큰, 기기당 하나라 다른 계정으로 로그인하면 행이 그 사용자로 옮겨 감), platform text(ios, android), created_at, updated_at — 본인 select만, 쓰기는 service role(마이그레이션 20261004110000)
 **promo_codes**: code unique, grants text(free_month 등), max_uses, used_count, creator_name, expires_at
 **referrals**: code, user_id, redeemed_at
-**deletion_requests**: user_id, requested_at, completed_at null
+**account_deletions** (회원 탈퇴 사유, P04): reasons text[](`DELETE_REASONS`), created_at — 누구인지 남기지 않는다. RLS만 켜고 정책 없음(service role 전용)
 **app_config**: key text primary key, value jsonb, updated_at — 원가 한도 등 원격 설정(`AI_PIPELINE.md` 6절). 로그인 사용자 select, 쓰기는 service role
 
 ## 6. 스토리지 버킷
@@ -104,10 +114,11 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 | `story-covers` | private | `{user_id or 'library'}/{story_id}/{asset_id}.png` |
 | `affirmation-audio` | private | `{hash}.mp3` (캐시 공유, 서명 URL로만 접근) |
 | `wall-photos` | private | `{user_id}/{wall_entry_id}.jpg` |
+| `vision-photos` | private | `{user_id}/vision-{timestamp}.{jpg,png,webp}`(5MB) |
 | `soundscapes` | public | `{key}.mp3` (합성 mock은 `{key}.wav`) |
 | `voice-previews` | public | `{voice_key}.mp3` |
 
-private 버킷은 첫 경로 세그먼트가 `auth.uid()`인 경우만 select를 허용하고, `library`·해시 경로는 서명 URL로만 내려준다. 현재 만든 버킷: `story-audio`, `story-covers`, `soundscapes`, `voice-previews`(마이그레이션 20261003120000). `affirmation-audio`, `wall-photos`는 해당 기능 때 만든다.
+private 버킷은 첫 경로 세그먼트가 `auth.uid()`인 경우만 select를 허용하고, `library`·해시 경로는 서명 URL로만 내려준다. 현재 만든 버킷: `story-audio`, `story-covers`, `soundscapes`, `voice-previews`(마이그레이션 20261003120000), `vision-photos`(20261111120000, 본인 폴더 select·insert·update·delete). `affirmation-audio`, `wall-photos`는 해당 기능 때 만든다.
 
 ## 7. 변경 절차
 

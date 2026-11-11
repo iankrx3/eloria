@@ -40,7 +40,7 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | POST `/v1/affirmations/:id/audio` | 확언 음성(캐시 우선) | `{ voiceKey? }` | `{ audioUrl }` |
 | POST `/v1/push-tokens` | 푸시 토큰 등록(Expo 푸시 토큰, 멱등). 같은 토큰이 다른 계정에 있으면 지금 사용자로 옮긴다 | `{ token, platform }` | `204` |
 | POST `/v1/promo/redeem` | 크리에이터 코드 | `{ code }` | `{ grant }` |
-| POST `/v1/account/delete` | 계정 삭제 요청 | — | `202` |
+| POST `/v1/account/delete` | 회원 탈퇴(P04). 사유만 `account_deletions`에 익명으로 남기고, 본인 폴더 파일(`story-audio`·`story-covers`·`vision-photos`)을 지운 뒤 auth 사용자를 지운다(행은 cascade). 요청 안에서 끝낸다(D-44) | `{ reasons? }`(`DELETE_REASONS`) | `204` |
 
 `GET /v1/stories/:id/media`는 Supabase 서명 URL을 앱이 직접 만들 수 없는 경로(library, 해시 캐시)에만 쓴다. 본인 경로 파일은 앱이 `createSignedUrl`을 직접 호출해도 된다.
 
