@@ -10,6 +10,7 @@ import { useSoundscapeDefault } from '@/features/soundscape/use-soundscapes';
 import { ko } from '@/i18n/ko';
 import { usePlayerStore, type Track } from './player-store';
 import { SOUNDSCAPE_VOLUME } from './soundscape';
+import { useSleepTimer } from './sleep-timer';
 
 type PlayerContextValue = {
   player: AudioPlayer;
@@ -60,6 +61,14 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     if (storyPlaying && soundscapeUrl) ambient.play();
     else ambient.pause();
   }, [ambient, storyPlaying, soundscapeUrl]);
+
+  // 수면 타이머: 재생이 시작될 때 걸고, 시간이 되면 멈춘다. 멈추거나 설정을 바꾸면 다시 건다.
+  const sleepMinutes = useSleepTimer((st) => st.minutes);
+  useEffect(() => {
+    if (!storyPlaying || sleepMinutes === 0) return;
+    const timer = setTimeout(() => player.pause(), sleepMinutes * 60 * 1000);
+    return () => clearTimeout(timer);
+  }, [player, storyPlaying, sleepMinutes]);
 
   useEffect(() => {
     // 잠금화면 컨트롤은 doNotMix여야 OS가 이 플레이어와 연결한다(expo-audio 문서).

@@ -12,6 +12,7 @@ import { PlayerProvider } from '@/audio/player-provider';
 import { AuthProvider } from '@/features/auth/auth-provider';
 import { configureNotifications } from '@/features/notifications/push';
 import { usePushRegistration } from '@/features/notifications/use-push';
+import { loadSleepTimer } from '@/audio/sleep-timer';
 import { loadHapticSettings } from '@/lib/haptics';
 import tokens from '@/theme/tokens.json';
 import PretendardRegular from '../assets/fonts/Pretendard-Regular.otf';
@@ -24,6 +25,7 @@ import CormorantGaramondSemiBold from '../assets/fonts/CormorantGaramond-SemiBol
 configureNotifications();
 void SplashScreen.preventAutoHideAsync();
 void loadHapticSettings();
+void loadSleepTimer();
 
 /** 앱 글꼴(DESIGN 3절). 이름은 tokens.json fontFamily와 같아야 한다. 라이선스: SIL OFL(assets/fonts/LICENSES.md) */
 const FONTS = {
