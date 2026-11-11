@@ -10,6 +10,7 @@ import { photoTextSoft, shadow, storyCardOverlay } from '@/theme/effects';
 import { storyCover } from '@/theme/images';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
+import { haptic } from '@/lib/haptics';
 
 /** 홈 "당신을 위한 이야기" 카드(Figma Home / Story Card 260×340). 누르면 플레이어, 만드는 중이면 진행 화면 */
 export function HomeStoryCard({ story }: { story: LibraryStory }) {
@@ -22,10 +23,12 @@ export function HomeStoryCard({ story }: { story: LibraryStory }) {
         ? durationLabel(story.durationSec)
         : ko.stories.generating;
 
-  const open = () =>
-    playable
+  const open = () => {
+    haptic('light');
+    return playable
       ? router.push({ pathname: '/player/[storyId]', params: { storyId: story.id } })
       : router.push({ pathname: '/manifest/[id]/progress', params: { id: story.id } });
+  };
 
   return (
     <Pressable

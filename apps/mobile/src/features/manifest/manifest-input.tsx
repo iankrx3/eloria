@@ -8,6 +8,7 @@ import { shadow } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
 import { useCreateManifest } from './use-create-manifest';
+import { haptic } from '@/lib/haptics';
 
 type Props = {
   value: string;
@@ -25,6 +26,7 @@ export function ManifestInput({ value, onChangeText, onCreated }: Props) {
 
   const send = () => {
     if (!canSend) return;
+    haptic('medium');
     create.mutate(
       { text: trimmed },
       {

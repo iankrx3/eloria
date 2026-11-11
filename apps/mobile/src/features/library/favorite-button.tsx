@@ -2,6 +2,7 @@ import { Pressable } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { ko } from '@/i18n/ko';
 import { useFavorites, useToggleFavorite } from './use-library';
+import { haptic } from '@/lib/haptics';
 
 // Figma icon/heart(18×18 기준 경로)
 const HEART =
@@ -29,7 +30,10 @@ export function FavoriteButton({ storyId, color, activeColor, size = 22 }: Props
       accessibilityState={{ selected: liked }}
       hitSlop={10}
       disabled={!favorites.isSuccess}
-      onPress={() => toggle.mutate({ storyId, liked: !liked })}
+      onPress={() => {
+        haptic(liked ? 'light' : 'success');
+        toggle.mutate({ storyId, liked: !liked });
+      }}
       className="h-12 w-12 items-center justify-center"
     >
       <Svg width={size} height={size} viewBox="0 0 18 18">

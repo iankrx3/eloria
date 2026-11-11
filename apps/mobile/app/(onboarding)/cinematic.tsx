@@ -13,6 +13,7 @@ import { ko } from '@/i18n/ko';
 import { photoOverlay, photoText } from '@/theme/effects';
 import { scenes, type SceneKey } from '@/theme/images';
 import { type } from '@/theme/typography';
+import { haptic } from '@/lib/haptics';
 
 /** 장면마다 2.8초 뒤 자동 전환(크로스페이드), 탭하면 바로 다음(Figma C1~C3 노트) */
 const AUTO_ADVANCE_MS = 2800;
@@ -45,6 +46,7 @@ export default function Cinematic() {
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
+    if (index === 2) haptic('soft');
     if (last) return;
     const timer = setTimeout(() => setIndex((i) => i + 1), AUTO_ADVANCE_MS);
     return () => clearTimeout(timer);
@@ -85,7 +87,13 @@ export default function Cinematic() {
               </Text>
             </View>
             {last && (
-              <PrimaryButton variant="pearl" label={t.start} loading={starting} onPress={start} />
+              <PrimaryButton
+                variant="pearl"
+                label={t.start}
+                loading={starting}
+                haptic="success"
+                onPress={start}
+              />
             )}
           </SafeAreaView>
         </Pressable>

@@ -11,6 +11,7 @@ import { ko } from '@/i18n/ko';
 import { photoOverlay, photoText, photoTextSoft } from '@/theme/effects';
 import { scenes } from '@/theme/images';
 import { type } from '@/theme/typography';
+import { haptic } from '@/lib/haptics';
 
 /** 2.5초 뒤 자동으로 다음 문항(탭하면 바로). Figma I01 노트 */
 const AUTO_ADVANCE_MS = 2500;
@@ -21,6 +22,7 @@ export default function QuizTransition() {
   const next = () => router.replace(`/quiz/${stepOf('dream_home')}`);
 
   useEffect(() => {
+    haptic('soft');
     const timer = setTimeout(next, AUTO_ADVANCE_MS);
     return () => clearTimeout(timer);
   }, []);

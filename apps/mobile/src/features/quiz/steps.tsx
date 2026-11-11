@@ -1,6 +1,7 @@
 import { AGE_MAX, AGE_MIN, PEOPLE_MAX, type Person } from '@eloria/shared';
 import { useState, type ComponentProps } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { GlassFill } from '@/components/glass';
 import { Icon } from '@/components/icons/icon';
 import { Logo } from '@/components/logo';
 import { PrimaryButton } from '@/components/primary-button';
@@ -11,6 +12,7 @@ import { type } from '@/theme/typography';
 import { GlassInput, GridCell, OptionCard } from './option-card';
 import { QuizScaffold } from './quiz-scaffold';
 import { guessRelation } from './relation';
+import { haptic } from '@/lib/haptics';
 
 type Scaffold = Omit<ComponentProps<typeof QuizScaffold>, 'children'>;
 type Option<K extends string> = { key: K; label: string };
@@ -29,15 +31,20 @@ function Continue({
   enabled,
   pending,
   onPress,
+  label = ko.common.continue,
+  hapticKind = 'light',
 }: {
   enabled: boolean;
   pending: boolean;
   onPress: () => void;
+  label?: string;
+  hapticKind?: 'light' | 'medium';
 }) {
   return (
     <PrimaryButton
       variant="pearl"
-      label={ko.common.continue}
+      haptic={hapticKind}
+      label={label}
       disabled={!enabled}
       loading={pending}
       onPress={onPress}
@@ -55,11 +62,14 @@ export function TextStep({
   placeholder,
   multiline = false,
   privacyNote = false,
+  continueHaptic = 'light',
 }: StepProps<string> & {
   maxLength: number;
   placeholder: string;
   multiline?: boolean;
   privacyNote?: boolean;
+  /** 마지막 문항은 medium(Figma Q13 노트) */
+  continueHaptic?: 'light' | 'medium';
 }) {
   const [value, setValue] = useState(initial ?? '');
   const trimmed = value.trim();
@@ -91,7 +101,12 @@ export function TextStep({
           {ko.quiz.privacy}
         </Text>
       )}
-      <Continue enabled={trimmed.length > 0} pending={pending} onPress={submit} />
+      <Continue
+        enabled={trimmed.length > 0}
+        pending={pending}
+        hapticKind={continueHaptic}
+        onPress={submit}
+      />
     </QuizScaffold>
   );
 }
@@ -146,7 +161,10 @@ export function SingleStep<K extends string>({
   );
 }
 
-/** 복수 선택 그리드(최대 개수). 마지막 보기가 홀수로 남으면 한 줄 전체를 쓴다. */
+/**
+ * 복수 선택 그리드(최대 개수, Figma Q12). 맨 아래 버튼은 아무것도 고르지 않았을 때 "지금 우리 집 창밖"(그대로 쓰기),
+ * 하나라도 고르면 "계속하기"가 된다(열린 질문 Q-11).
+ */
 export function GridStep<K extends string>({
   scaffold,
   initial,
@@ -154,7 +172,8 @@ export function GridStep<K extends string>({
   onSubmit,
   options,
   max,
-}: StepProps<K[]> & { options: Option<K>[]; max: number }) {
+  fallback,
+}: StepProps<K[]> & { options: Option<K>[]; max: number; fallback?: Option<K> }) {
   const [picked, setPicked] = useState<K[]>(initial ?? []);
   const toggle = (key: K) =>
     setPicked((prev) =>
@@ -171,17 +190,25 @@ export function GridStep<K extends string>({
         {ko.quiz.multiMax(max)}
       </Text>
       <View className="flex-row flex-wrap justify-between gap-y-3">
-        {options.map((o, i) => (
+        {options.map((o) => (
           <GridCell
             key={o.key}
             label={o.label}
             selected={picked.includes(o.key)}
             onPress={() => toggle(o.key)}
-            full={options.length % 2 === 1 && i === options.length - 1}
           />
         ))}
       </View>
-      <Continue enabled={picked.length > 0} pending={pending} onPress={() => onSubmit(picked)} />
+      {picked.length === 0 && fallback ? (
+        <Continue
+          enabled
+          pending={pending}
+          label={fallback.label}
+          onPress={() => onSubmit([fallback.key])}
+        />
+      ) : (
+        <Continue enabled={picked.length > 0} pending={pending} onPress={() => onSubmit(picked)} />
+      )}
     </QuizScaffold>
   );
 }
@@ -238,6 +265,7 @@ export function PeopleStep({ scaffold, initial, pending, onSubmit }: StepProps<P
 
   const add = () => {
     if (!canAdd) return;
+    haptic('light');
     setPeople((prev) => [...prev, { name: name.trim(), relation: guessRelation(name.trim()) }]);
     setName('');
   };
@@ -249,15 +277,19 @@ export function PeopleStep({ scaffold, initial, pending, onSubmit }: StepProps<P
           {people.map((p, i) => (
             <View
               key={`${p.name}-${i}`}
-              className="flex-row items-center gap-2 rounded-full border border-on-photo/70 bg-on-photo/60 py-[10px] pl-4 pr-3"
+              className="flex-row items-center gap-2 overflow-hidden rounded-full border border-on-photo/70 py-[10px] pl-4 pr-3"
             >
+              <GlassFill blur={10} fill="rgba(255,255,255,0.6)" />
               <Icon name="heartSmall" size={16} color={tokens.colors.plum} />
               <Text className={`${type.body} text-plum-deep`}>{p.name}</Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t.remove(p.name)}
                 hitSlop={10}
-                onPress={() => setPeople((prev) => prev.filter((_, j) => j !== i))}
+                onPress={() => {
+                  haptic('light');
+                  setPeople((prev) => prev.filter((_, j) => j !== i));
+                }}
               >
                 <Icon name="remove" size={14} color={tokens.colors['plum-deep']} />
               </Pressable>

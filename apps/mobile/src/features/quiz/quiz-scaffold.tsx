@@ -1,6 +1,7 @@
 import type { QuizQuestionKey } from '@eloria/shared';
 import type { ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PhotoBackground } from '@/components/backgrounds';
 import { quizProgress } from '@/features/onboarding/flow';
@@ -77,10 +78,8 @@ export function QuizScaffold({ item, title, brand, error, children }: Props) {
   return (
     <PhotoBackground source={scenes[scene]} overlay={photoOverlay(tint)}>
       <SafeAreaView className="flex-1">
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
+        {/* Android는 edge-to-edge라 창이 줄지 않는다. keyboard-controller가 두 플랫폼 모두 키보드 높이만큼 밀어 올린다. */}
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
           <ScrollView
             className="flex-1"
             contentContainerClassName="grow px-gutter pb-7 pt-5"

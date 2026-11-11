@@ -1,4 +1,4 @@
-import { formatTime, paragraphAt, splitParagraphs } from './timeline';
+import { formatTime, paragraphAt, readCharsInParagraph, splitParagraphs } from './timeline';
 
 describe('formatTime', () => {
   it('m:ss로 바꾸고 잘못된 값은 0:00', () => {
@@ -29,5 +29,16 @@ describe('paragraphAt', () => {
   it('길이를 모르면 첫 문단', () => {
     expect(paragraphAt(paragraphs, 10, 0)).toBe(0);
     expect(paragraphAt([], 10, 100)).toBe(0);
+  });
+});
+
+describe('readCharsInParagraph', () => {
+  const paragraphs = ['aaaa', 'bb', 'cccc'];
+  it('지금 문단에서 읽은 글자 수를 0~길이로 돌려준다', () => {
+    expect(readCharsInParagraph(paragraphs, 0, 0, 100)).toBe(0);
+    expect(readCharsInParagraph(paragraphs, 0, 20, 100)).toBe(2);
+    expect(readCharsInParagraph(paragraphs, 1, 50, 100)).toBe(1);
+    expect(readCharsInParagraph(paragraphs, 2, 100, 100)).toBe(4);
+    expect(readCharsInParagraph(paragraphs, 0, 10, 0)).toBe(0);
   });
 });

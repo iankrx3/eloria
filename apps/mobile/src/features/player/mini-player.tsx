@@ -8,6 +8,7 @@ import { ko } from '@/i18n/ko';
 import { storyCover } from '@/theme/images';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
+import { haptic } from '@/lib/haptics';
 
 /** 탭 바 위에 떠 있는 미니 플레이어(Figma Home / Mini Player). 재생 중인 트랙이 있을 때만 보인다. */
 export function MiniPlayer() {
@@ -43,7 +44,10 @@ export function MiniPlayer() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={status.playing ? ko.player.pause : ko.player.play}
-        onPress={togglePlay}
+        onPress={() => {
+          haptic('light');
+          togglePlay();
+        }}
         hitSlop={10}
       >
         <Icon

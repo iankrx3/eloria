@@ -1,19 +1,12 @@
 import type { ReactNode } from 'react';
-import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  type TextInputProps,
-  View,
-} from 'react-native';
+import { Modal, Pressable, Text, TextInput, type TextInputProps, View } from 'react-native';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrimaryButton } from '@/components/primary-button';
 import { ko } from '@/i18n/ko';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
+import { haptic } from '@/lib/haptics';
 
 /** 아래에서 올라오는 편집 시트(Figma P03 사람 추가). 배경을 누르면 닫힌다. */
 export function EditSheet({
@@ -39,11 +32,15 @@ export function EditSheet({
 }) {
   const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+    <Modal
+      visible={visible}
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={ko.common.close}
@@ -113,7 +110,10 @@ export function ChoiceChips<K extends string>({
             accessibilityRole="radio"
             accessibilityState={{ selected }}
             accessibilityLabel={o.label}
-            onPress={() => onChange(o.key)}
+            onPress={() => {
+              haptic('selection');
+              onChange(o.key);
+            }}
             className={`rounded-full px-4 py-[9px] ${
               selected
                 ? 'border-[1.5px] border-plum bg-on-photo'

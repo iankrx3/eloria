@@ -8,6 +8,7 @@ import { ko } from '@/i18n/ko';
 import { shadow } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
+import { haptic } from '@/lib/haptics';
 
 type TabKey = keyof typeof ko.tabs;
 
@@ -66,6 +67,7 @@ export function TabBar({ state, navigation }: BottomTabBarProps) {
               accessibilityState={{ selected: focused }}
               hitSlop={8}
               onPress={() => {
+                if (!focused) haptic('selection');
                 const event = navigation.emit({
                   type: 'tabPress',
                   target: route.key,

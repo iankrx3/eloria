@@ -45,8 +45,8 @@ export default function Stories() {
       <DawnBackdrop
         style={dawnScreenLong}
         glows={[
-          { x: 170, y: -60, size: 260, color: GLOW.pink },
-          { x: -110, y: 460, size: 260, color: GLOW.sky },
+          { x: 170, y: -60, width: 260, ...GLOW.pinkWide },
+          { x: -110, y: 460, width: 260, ...GLOW.periwinkleWide },
         ]}
       />
       <SafeAreaView edges={['top']} className="gap-4 px-gutter pb-2 pt-2">

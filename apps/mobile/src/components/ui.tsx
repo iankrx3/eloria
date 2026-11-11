@@ -1,10 +1,12 @@
 import type { ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { GlassFill } from '@/components/glass';
 import { Icon, type IconName } from '@/components/icons/icon';
 import { ko } from '@/i18n/ko';
 import { shadow } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
+import { haptic } from '@/lib/haptics';
 
 /** 원형 아이콘 버튼. photo = 사진 위 유리(흰 16%), light = 밝은 화면 유리(흰 62%) */
 export function RoundButton({
@@ -30,17 +32,19 @@ export function RoundButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
-      onPress={onPress}
+      onPress={() => {
+        haptic('light');
+        onPress();
+      }}
       hitSlop={6}
-      className={`items-center justify-center rounded-full border ${
-        photo
-          ? active
-            ? 'border-on-photo bg-on-photo/40'
-            : 'border-on-photo/40 bg-on-photo/15'
-          : 'border-glass-border bg-glass'
+      className={`items-center justify-center overflow-hidden rounded-full border ${
+        photo ? (active ? 'border-on-photo' : 'border-on-photo/40') : 'border-glass-border bg-glass'
       }`}
       style={[{ width: size, height: size }, photo ? undefined : shadow.glass]}
     >
+      {photo && (
+        <GlassFill blur={10} fill={active ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.16)'} />
+      )}
       <Icon
         name={icon}
         size={iconSize}
@@ -65,7 +69,10 @@ export function FilterChip({
       accessibilityRole="tab"
       accessibilityState={{ selected }}
       accessibilityLabel={label}
-      onPress={onPress}
+      onPress={() => {
+        haptic('light');
+        onPress();
+      }}
       className={`rounded-full px-[14px] py-[7px] ${
         selected ? 'bg-plum' : 'border border-glass-border bg-glass'
       }`}
@@ -91,9 +98,13 @@ export function GlassPill({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onPress={onPress}
-      className="flex-row items-center gap-2 self-start rounded-full border border-on-photo/45 bg-on-photo/15 py-[10px] pl-4 pr-[18px]"
+      onPress={() => {
+        haptic('light');
+        onPress();
+      }}
+      className="flex-row items-center gap-2 self-start overflow-hidden rounded-full border border-on-photo/45 py-[10px] pl-4 pr-[18px]"
     >
+      <GlassFill blur={10} fill="rgba(255,255,255,0.16)" />
       {icon && <Icon name={icon} size={18} color={tokens.colors['on-photo']} />}
       <Text className={`${type.caption} text-on-photo`}>{label}</Text>
     </Pressable>
@@ -120,7 +131,10 @@ export function SectionHeader({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`${title} ${ko.common.seeAll}`}
-            onPress={onSeeAll}
+            onPress={() => {
+              haptic('light');
+              onSeeAll();
+            }}
             hitSlop={8}
             className="flex-row items-center gap-[2px]"
           >
@@ -190,7 +204,13 @@ export function ListRow({
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={value ? `${label} ${value}` : label}
       disabled={!onPress}
-      onPress={onPress}
+      onPress={
+        onPress &&
+        (() => {
+          haptic('light');
+          onPress();
+        })
+      }
       className={`flex-row items-center gap-2 px-[18px] py-4 ${last ? '' : 'border-b border-hairline'}`}
     >
       <View className="flex-1 gap-[2px]">
@@ -224,7 +244,10 @@ export function RemovableChip({ label, onRemove }: { label: string; onRemove: ()
         accessibilityRole="button"
         accessibilityLabel={ko.me.remove(label)}
         hitSlop={10}
-        onPress={onRemove}
+        onPress={() => {
+          haptic('light');
+          onRemove();
+        }}
       >
         <Icon name="removeSmall" size={12} color={tokens.colors['ink-soft']} />
       </Pressable>
@@ -238,7 +261,10 @@ export function AddChip({ label, onPress }: { label: string; onPress: () => void
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onPress={onPress}
+      onPress={() => {
+        haptic('light');
+        onPress();
+      }}
       className="flex-row items-center gap-1 rounded-full border-[1.2px] border-dashed border-plum/50 px-4 py-[10px]"
     >
       <Icon name="plusSmall" size={14} color={tokens.colors.plum} />
@@ -253,7 +279,10 @@ export function AddRow({ label, onPress }: { label: string; onPress: () => void 
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      onPress={onPress}
+      onPress={() => {
+        haptic('light');
+        onPress();
+      }}
       className="flex-row items-center justify-center gap-[6px] py-[14px]"
     >
       <Icon name="plus" size={16} color={tokens.colors.plum} />

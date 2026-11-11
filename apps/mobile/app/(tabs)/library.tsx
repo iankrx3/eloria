@@ -55,10 +55,11 @@ export default function Library() {
         <DawnBackdrop
           style={dawnScreenLong}
           glows={[
-            { x: 170, y: -60, size: 260, color: GLOW.pink },
-            { x: -110, y: 460, size: 260, color: GLOW.sky },
-            { x: 170, y: 980, size: 260, color: GLOW.pink },
-            { x: -110, y: 1500, size: 260, color: GLOW.sky },
+            { x: 170, y: -60, width: 260, ...GLOW.pinkWide },
+            { x: -110, y: 460, width: 260, ...GLOW.periwinkleWide },
+            { x: 170, y: 980, width: 260, ...GLOW.pinkWide },
+            { x: -110, y: 1500, width: 260, ...GLOW.periwinkleWide },
+            { x: 170, y: 2020, width: 260, ...GLOW.pinkWide },
           ]}
         />
         <SafeAreaView edges={['top']} className="px-gutter pt-2">

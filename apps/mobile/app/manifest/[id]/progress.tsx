@@ -1,7 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
 import { ActivityIndicator, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PhotoBackground } from '@/components/backgrounds';
+import { GlassFill } from '@/components/glass';
 import { Icon, type IconName } from '@/components/icons/icon';
 import { PrimaryButton } from '@/components/primary-button';
 import { RoundButton } from '@/components/ui';
@@ -10,6 +12,7 @@ import { CrisisSupport } from '@/features/safety/crisis-support';
 import { progressState, type ProgressMessage } from '@/features/story/progress-state';
 import { useStory, useStoryRealtime } from '@/features/story/use-story';
 import { ko } from '@/i18n/ko';
+import { haptic } from '@/lib/haptics';
 import { photoText, photoTextSoft, progressOverlay } from '@/theme/effects';
 import { scenes, storyCover } from '@/theme/images';
 import tokens from '@/theme/tokens.json';
@@ -43,6 +46,11 @@ export default function ManifestProgress() {
   const name = useProfile().data?.displayName ?? null;
   const state = story.data ? progressState(story.data.status, story.data.errorCode) : undefined;
   useStoryRealtime(storyId, state?.kind === 'working');
+  // 완성되는 순간 success(Figma H04 노트)
+  const done = state?.kind === 'done';
+  useEffect(() => {
+    if (done) haptic('success');
+  }, [done]);
 
   const openText = () => router.push({ pathname: '/story/[storyId]/text', params: { storyId } });
   const home = () => router.replace('/');
@@ -146,7 +154,8 @@ export default function ManifestProgress() {
           </Text>
 
           {state.kind === 'working' && (
-            <View className="mt-6 gap-3 rounded-[20px] border border-on-photo/40 bg-on-photo/15 px-[22px] py-[18px]">
+            <View className="mt-6 gap-3 overflow-hidden rounded-[20px] border border-on-photo/40 px-[22px] py-[18px]">
+              <GlassFill blur={12} fill="rgba(255,255,255,0.16)" />
               {stepStates(state.message).map((s, i) => {
                 const label = [
                   ko.progress.steps.plan,

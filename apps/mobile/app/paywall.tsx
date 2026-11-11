@@ -11,6 +11,7 @@ import { paywallPhotoFade, paywallScreen, shadow } from '@/theme/effects';
 import { scenes } from '@/theme/images';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
+import { haptic } from '@/lib/haptics';
 
 type Plan = 'yearly' | 'monthly';
 
@@ -120,7 +121,10 @@ function PlanCard({
       accessibilityRole="radio"
       accessibilityState={{ selected }}
       accessibilityLabel={`${name} ${price}`}
-      onPress={onPress}
+      onPress={() => {
+        haptic('selection');
+        onPress();
+      }}
       className={`flex-1 gap-1 rounded-[18px] px-4 pb-[14px] pt-4 ${
         selected
           ? 'border-[1.5px] border-plum bg-on-photo'

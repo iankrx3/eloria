@@ -10,6 +10,7 @@ import { libraryCover, libraryFeatureImage } from '@/theme/images';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
 import type { RitualItem } from './group-rituals';
+import { haptic } from '@/lib/haptics';
 
 const titleShadow = {
   textShadowColor: 'rgba(46,33,64,0.35)',
@@ -19,6 +20,7 @@ const titleShadow = {
 
 /** 잠금(페이월이 켜졌을 때만, 판단은 서버)이면 페이월로, 아니면 플레이어로 */
 function openItem(item: RitualItem) {
+  haptic('medium');
   if (LIBRARY_ACCESS.PAYWALL_ENABLED && !item.isFree) return router.push('/paywall');
   router.push({ pathname: '/player/[storyId]', params: { storyId: item.storyId } });
 }

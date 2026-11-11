@@ -12,6 +12,7 @@ import { ko } from '@/i18n/ko';
 import { loginOverlay, photoText, photoTextSoft } from '@/theme/effects';
 import { scenes } from '@/theme/images';
 import { type } from '@/theme/typography';
+import { haptic } from '@/lib/haptics';
 
 type Status = 'idle' | 'pending' | KakaoConnectResult['kind'] | 'cancelled' | 'failed' | 'apple';
 
@@ -44,15 +45,18 @@ export default function LinkAccount() {
   };
 
   async function onKakao() {
+    haptic('light');
     setStatus('pending');
     try {
       const result = await connectKakao();
+      haptic('success');
       setStatus(result.kind);
       leave();
     } catch (e) {
       // 개발 빌드에서만 원인을 Metro 로그로 남긴다(토큰 값은 담기지 않는다).
       if (__DEV__) console.warn('[link-account] kakao failed', e);
       const cancelled = e instanceof Error && /cancel/i.test(e.message);
+      if (!cancelled) haptic('error');
       setStatus(cancelled ? 'cancelled' : 'failed');
     }
   }

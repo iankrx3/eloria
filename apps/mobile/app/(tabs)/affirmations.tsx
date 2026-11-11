@@ -16,9 +16,9 @@ export default function Affirmations() {
       <DawnBackdrop
         style={dawnScreen}
         glows={[
-          { x: 170, y: -60, size: 260, color: GLOW.pink },
-          { x: -110, y: 420, size: 240, color: GLOW.sky },
-          { x: 80, y: 240, size: 200, color: GLOW.white },
+          { x: 170, y: -60, width: 260, ...GLOW.pinkWide },
+          { x: -110, y: 420, width: 240, ...GLOW.periwinkle },
+          { x: 80, y: 240, width: 200, ...GLOW.cream },
         ]}
       />
       <SafeAreaView edges={['top']} className="flex-1 px-gutter pt-2">

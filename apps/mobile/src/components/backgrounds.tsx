@@ -1,59 +1,26 @@
-import type { ReactNode } from 'react';
+import { BlurTargetView } from 'expo-blur';
+import { useRef, type ReactNode } from 'react';
 import { Image, type ImageSourcePropType, StyleSheet, View, type ViewStyle } from 'react-native';
-import { glow, photoOverlay } from '@/theme/effects';
+import { BlurTargetContext } from '@/components/glass';
+import { type GlowSpec, SoftGlow } from '@/components/soft-glow';
+import { photoOverlay } from '@/theme/effects';
 
-/** Figma "Glow" 타원 색 */
-export const GLOW = {
-  pink: 'rgba(246, 201, 218, 0.7)',
-  lavender: 'rgba(217, 207, 240, 0.75)',
-  sky: 'rgba(204, 214, 242, 0.8)',
-  white: 'rgba(255, 255, 255, 0.8)',
-} as const;
+export { GLOW } from '@/components/soft-glow';
 
-/** 흐릿한 빛 덩어리. 부모 기준 절대 위치(Figma 좌표 그대로) */
-export function Glow({
-  x,
-  y,
-  size,
-  height,
-  color,
-}: {
-  x: number;
-  y: number;
-  size: number;
-  height?: number;
-  color: string;
-}) {
-  // Figma의 블러 반경만큼 바깥으로 번지게 그린다(타원 크기의 약 1.6배).
-  const w = size * 1.6;
-  const h = (height ?? size) * 1.6;
+/** 밝은 화면 바탕(그라디언트 + Figma Glow). 스크롤 안에서 콘텐츠와 함께 움직이도록 children 뒤에 깐다. */
+export function DawnBackdrop({ style, glows }: { style: ViewStyle; glows?: GlowSpec[] }) {
   return (
-    <View
-      pointerEvents="none"
-      style={[
-        { position: 'absolute', left: x - (w - size) / 2, top: y - (h - (height ?? size)) / 2 },
-        { width: w, height: h, borderRadius: w / 2 },
-        glow(color),
-      ]}
-    />
-  );
-}
-
-/** 밝은 화면 바탕(그라디언트 + 빛). 스크롤 안에서 콘텐츠와 함께 움직이도록 children 뒤에 깐다. */
-export function DawnBackdrop({
-  style,
-  glows,
-}: {
-  style: ViewStyle;
-  glows?: { x: number; y: number; size: number; height?: number; color: string }[];
-}) {
-  return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, style]}>
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, style, { overflow: 'hidden' }]}>
       {glows?.map((g, i) => (
-        <Glow key={i} {...g} />
+        <SoftGlow key={i} {...g} />
       ))}
     </View>
   );
+}
+
+/** 개발 빌드에서 사진을 못 그리면 Metro 로그에 원인을 남긴다. */
+export function logImageError(e: { nativeEvent: { error?: unknown } }) {
+  if (__DEV__) console.warn('[image] load failed', e.nativeEvent.error);
 }
 
 /** 사진 전체 배경 + 보랏빛 오버레이(퀴즈·시네마틱·플레이어) */
@@ -66,16 +33,21 @@ export function PhotoBackground({
   overlay?: ViewStyle;
   children?: ReactNode;
 }) {
+  // 사진(과 오버레이)을 흐림 대상으로 감싸, 위의 유리 요소(GlassView)가 사진을 흐리게 비추게 한다.
+  const target = useRef<View>(null);
   return (
     <View className="flex-1 bg-twilight">
-      <Image
-        source={source}
-        resizeMode="cover"
-        style={StyleSheet.absoluteFill}
-        accessible={false}
-      />
-      <View pointerEvents="none" style={[StyleSheet.absoluteFill, overlay ?? photoOverlay()]} />
-      {children}
+      <BlurTargetView ref={target} style={StyleSheet.absoluteFill}>
+        <Image
+          source={source}
+          resizeMode="cover"
+          style={StyleSheet.absoluteFill}
+          accessible={false}
+          onError={logImageError}
+        />
+        <View pointerEvents="none" style={[StyleSheet.absoluteFill, overlay ?? photoOverlay()]} />
+      </BlurTargetView>
+      <BlurTargetContext.Provider value={target}>{children}</BlurTargetContext.Provider>
     </View>
   );
 }

@@ -13,6 +13,7 @@ import { FavoriteButton } from './favorite-button';
 import { canDeleteStory, type LibraryStory } from './group-stories';
 import { dateLabel, durationLabel } from './labels';
 import { useDeleteStory } from './use-library';
+import { haptic } from '@/lib/haptics';
 
 /** 저장한 이야기 한 줄(Figma Library / List Row 모양). 들을 수 있으면 플레이어로, 만드는 중이면 생성 진행 화면으로 간다. */
 export function StoryCard({ story }: { story: LibraryStory }) {
@@ -28,12 +29,15 @@ export function StoryCard({ story }: { story: LibraryStory }) {
       ? ko.stories.generating
       : [dateLabel(story.createdAt), durationLabel(story.durationSec)].filter(Boolean).join(' · ');
 
-  const open = () =>
-    playable
+  const open = () => {
+    haptic('light');
+    return playable
       ? router.push({ pathname: '/player/[storyId]', params: { storyId: story.id } })
       : router.push({ pathname: '/manifest/[id]/progress', params: { id: story.id } });
+  };
 
-  const confirmDelete = () =>
+  const confirmDelete = () => {
+    haptic('warning');
     Alert.alert(ko.stories.deleteTitle, ko.stories.deleteBody, [
       { text: ko.stories.deleteCancel, style: 'cancel' },
       {
@@ -53,6 +57,7 @@ export function StoryCard({ story }: { story: LibraryStory }) {
         },
       },
     ]);
+  };
 
   return (
     <View

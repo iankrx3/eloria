@@ -131,6 +131,7 @@ export function QuizStepScreen({ step }: { step: number }) {
           maxLength={QUIZ_TEXT_MAX}
           placeholder={copy.placeholder}
           multiline
+          continueHaptic={key === 'dream_days' ? 'medium' : 'light'}
         />
       );
     }
@@ -193,7 +194,10 @@ export function QuizStepScreen({ step }: { step: number }) {
           scaffold={{ ...scaffold, title: q.dream_home.title }}
           initial={initial.dream_home}
           onSubmit={submit('dream_home')}
-          options={options(question.options, q.dream_home.options)}
+          options={options(question.options, q.dream_home.options).filter(
+            (o) => o.key !== 'current_window',
+          )}
+          fallback={{ key: 'current_window', label: q.dream_home.options.current_window }}
           max={question.max}
         />
       );

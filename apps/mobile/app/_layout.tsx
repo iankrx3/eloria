@@ -5,11 +5,14 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PlayerProvider } from '@/audio/player-provider';
 import { AuthProvider } from '@/features/auth/auth-provider';
 import { configureNotifications } from '@/features/notifications/push';
 import { usePushRegistration } from '@/features/notifications/use-push';
+import { loadHapticSettings } from '@/lib/haptics';
 import tokens from '@/theme/tokens.json';
 import PretendardRegular from '../assets/fonts/Pretendard-Regular.otf';
 import PretendardMedium from '../assets/fonts/Pretendard-Medium.otf';
@@ -20,6 +23,7 @@ import CormorantGaramondSemiBold from '../assets/fonts/CormorantGaramond-SemiBol
 
 configureNotifications();
 void SplashScreen.preventAutoHideAsync();
+void loadHapticSettings();
 
 /** 앱 글꼴(DESIGN 3절). 이름은 tokens.json fontFamily와 같아야 한다. 라이선스: SIL OFL(assets/fonts/LICENSES.md) */
 const FONTS = {
@@ -50,33 +54,37 @@ export default function RootLayout() {
   if (!ready) return null;
 
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <PushRegistration />
-          <PlayerProvider>
-            <StatusBar style="dark" />
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                animation: 'fade',
-                contentStyle: { backgroundColor: tokens.colors.pearl },
-              }}
-            >
-              <Stack.Screen name="(onboarding)" />
-              <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
-              <Stack.Screen name="manifest/[id]/progress" options={{ gestureEnabled: false }} />
-              <Stack.Screen name="stories/index" options={{ animation: 'slide_from_right' }} />
-              <Stack.Screen name="paywall" options={{ presentation: 'fullScreenModal' }} />
-              <Stack.Screen name="story/[storyId]/text" options={{ presentation: 'modal' }} />
-              <Stack.Screen
-                name="player/[storyId]"
-                options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
-              />
-            </Stack>
-          </PlayerProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <QueryClientProvider client={queryClient}>
+            <AuthProvider>
+              <PushRegistration />
+              <PlayerProvider>
+                <StatusBar style="dark" />
+                <Stack
+                  screenOptions={{
+                    headerShown: false,
+                    animation: 'fade',
+                    contentStyle: { backgroundColor: tokens.colors.pearl },
+                  }}
+                >
+                  <Stack.Screen name="(onboarding)" />
+                  <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
+                  <Stack.Screen name="manifest/[id]/progress" options={{ gestureEnabled: false }} />
+                  <Stack.Screen name="stories/index" options={{ animation: 'slide_from_right' }} />
+                  <Stack.Screen name="paywall" options={{ presentation: 'fullScreenModal' }} />
+                  <Stack.Screen name="story/[storyId]/text" options={{ presentation: 'modal' }} />
+                  <Stack.Screen
+                    name="player/[storyId]"
+                    options={{ presentation: 'fullScreenModal', animation: 'slide_from_bottom' }}
+                  />
+                </Stack>
+              </PlayerProvider>
+            </AuthProvider>
+          </QueryClientProvider>
+        </SafeAreaProvider>
+      </KeyboardProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -8,6 +8,7 @@ import { ko } from '@/i18n/ko';
 import { shadow } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
+import { haptic } from '@/lib/haptics';
 
 export function IconButton({
   icon,
@@ -27,7 +28,10 @@ export function IconButton({
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
-      onPress={onPress}
+      onPress={() => {
+        haptic('light');
+        onPress();
+      }}
       hitSlop={8}
       className="h-12 w-12 items-center justify-center"
     >
@@ -111,7 +115,10 @@ export function PlayerControls({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={playing ? ko.player.pause : ko.player.play}
-        onPress={togglePlay}
+        onPress={() => {
+          haptic('light');
+          togglePlay();
+        }}
         className="h-[72px] w-[72px] items-center justify-center rounded-full bg-pearl"
         style={shadow.playLarge}
       >
@@ -138,6 +145,7 @@ export function RepeatToggle() {
       accessibilityLabel={ko.player.repeat}
       accessibilityState={{ selected: status.loop }}
       onPress={() => {
+        haptic('selection');
         player.loop = !player.loop;
       }}
       hitSlop={6}

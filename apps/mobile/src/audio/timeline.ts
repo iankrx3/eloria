@@ -26,3 +26,21 @@ export function paragraphAt(paragraphs: readonly string[], currentTime: number, 
   }
   return paragraphs.length - 1;
 }
+
+/**
+ * 지금 문단 안에서 읽은 글자 수(0~길이). 플레이어 자막을 "읽은 만큼 흰색으로 차오르게" 그릴 때 쓴다(Figma H07 노트).
+ * paragraphAt과 같은 글자 수 비례 근사다.
+ */
+export function readCharsInParagraph(
+  paragraphs: readonly string[],
+  index: number,
+  currentTime: number,
+  duration: number,
+) {
+  const p = paragraphs[index];
+  if (!p || !(duration > 0)) return 0;
+  const total = paragraphs.reduce((sum, x) => sum + x.length, 0);
+  const before = paragraphs.slice(0, index).reduce((sum, x) => sum + x.length, 0);
+  const target = Math.min(Math.max(currentTime / duration, 0), 1) * total;
+  return Math.round(Math.min(Math.max(target - before, 0), p.length));
+}

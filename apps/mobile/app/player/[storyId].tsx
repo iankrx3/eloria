@@ -5,7 +5,7 @@ import { ActivityIndicator, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayer } from '@/audio/player-provider';
 import { usePlayerStore } from '@/audio/player-store';
-import { paragraphAt, splitParagraphs } from '@/audio/timeline';
+import { paragraphAt, readCharsInParagraph, splitParagraphs } from '@/audio/timeline';
 import { PhotoBackground } from '@/components/backgrounds';
 import { GlassPill, RoundButton } from '@/components/ui';
 import { PlayerControls, RepeatToggle, SeekBar } from '@/features/player/player-controls';
@@ -48,7 +48,11 @@ export default function Player() {
   const paragraphs = useMemo(() => splitParagraphs(story.data?.script ?? ''), [story.data?.script]);
   const isThisTrack = current?.storyId === storyId;
   const index = isThisTrack ? paragraphAt(paragraphs, status.currentTime, status.duration) : 0;
-  const subtitle = paragraphs[index];
+  const subtitle = paragraphs[index] ?? '';
+  // 읽은 부분은 흰색, 아직 읽지 않은 부분은 흰 42%(Figma H07)
+  const read = isThisTrack
+    ? readCharsInParagraph(paragraphs, index, status.currentTime, status.duration)
+    : 0;
   const nextLine = paragraphs[index + 1];
 
   const notice =
@@ -84,12 +88,13 @@ export default function Player() {
             <ActivityIndicator color={tokens.colors['on-photo']} />
           ) : (
             <Text
-              accessibilityLiveRegion="polite"
+              accessibilityLabel={subtitle}
               numberOfLines={6}
               className={`${type.subtitle} text-on-photo`}
               style={subtitleShadow}
             >
-              {subtitle}
+              {subtitle.slice(0, read)}
+              <Text className="text-on-photo/40">{subtitle.slice(read)}</Text>
             </Text>
           )}
           <GlassPill

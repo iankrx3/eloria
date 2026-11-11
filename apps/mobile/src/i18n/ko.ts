@@ -129,6 +129,7 @@ export const ko = {
     title: '라이브러리',
     search: '검색',
     all: '전체',
+    saved: '저장함',
     trending: 'TRENDING',
     categories: {
       money: '부와 풍요',

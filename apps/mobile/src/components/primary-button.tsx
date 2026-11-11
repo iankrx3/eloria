@@ -1,5 +1,7 @@
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { GlassFill } from '@/components/glass';
 import { Icon } from '@/components/icons/icon';
+import { haptic as playHaptic, type HapticKind } from '@/lib/haptics';
 import { shadow } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
@@ -19,6 +21,8 @@ type Props = {
   variant?: Variant;
   /** 글자 오른쪽 화살표(Button / Primary "스토리 만들기 >") */
   chevron?: boolean;
+  /** 누를 때 햅틱(Figma 노트). 기본 light, null이면 없음 */
+  haptic?: HapticKind | null;
 };
 
 const STYLE: Record<Variant, { box: string; text: string; spinner: string }> = {
@@ -36,11 +40,12 @@ export function PrimaryButton({
   disabled = false,
   variant = 'plum',
   chevron = false,
+  haptic = 'light',
 }: Props) {
   const inactive = disabled || loading;
   const glassDisabled = disabled && variant === 'pearl';
   const s = STYLE[variant];
-  const box = glassDisabled ? 'border border-on-photo/60 bg-on-photo/40' : s.box;
+  const box = glassDisabled ? 'overflow-hidden border border-on-photo/60' : s.box;
   const text = glassDisabled ? 'text-ink-faint' : s.text;
   const elevation =
     glassDisabled || variant.startsWith('ghost')
@@ -55,10 +60,14 @@ export function PrimaryButton({
       accessibilityLabel={label}
       accessibilityState={{ busy: loading, disabled: inactive }}
       disabled={inactive}
-      onPress={onPress}
+      onPress={() => {
+        playHaptic(haptic ?? undefined);
+        onPress();
+      }}
       className={`h-14 flex-row items-center justify-center gap-2 rounded-full px-6 ${box}`}
       style={elevation}
     >
+      {glassDisabled && <GlassFill blur={12} fill="rgba(255,255,255,0.38)" />}
       {loading ? (
         <ActivityIndicator color={s.spinner} />
       ) : (

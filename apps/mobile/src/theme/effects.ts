@@ -88,13 +88,6 @@ export const personGradients: ViewStyle[] = [
   { experimental_backgroundImage: 'linear-gradient(135deg, #A9C3E9 14%, #C79AD8 86%)' },
 ];
 
-/** 배경의 흐릿한 빛 덩어리(Figma "Glow" 타원). 색 반경을 넉넉히 두고 가장자리는 투명 */
-export function glow(color: string): ViewStyle {
-  return {
-    experimental_backgroundImage: `radial-gradient(circle, ${color} 0%, rgba(255,255,255,0) 70%)`,
-  };
-}
-
 export const shadow = {
   /** 유리 카드·그룹 */
   glass: { boxShadow: '0px 6px 18px 0px rgba(113,77,127,0.08)' } as ViewStyle,

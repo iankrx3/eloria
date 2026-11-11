@@ -58,6 +58,25 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-secure-store',
     'expo-font',
+    'expo-sharing',
+    [
+      'expo-image-picker',
+      {
+        // 홈 "내 비전 사진"(Figma H01). 카메라 촬영은 쓰지 않고 앨범에서만 고른다.
+        photosPermission: '내 비전 사진을 고르려면 사진 접근 권한이 필요해요.',
+        cameraPermission: false,
+        microphonePermission: false,
+      },
+    ],
+    [
+      'expo-media-library',
+      {
+        // 확언 공유 이미지 저장(Figma A05)
+        photosPermission: '확언 카드 이미지를 앨범에 저장하려면 사진 접근 권한이 필요해요.',
+        savePhotosPermission: '확언 카드 이미지를 앨범에 저장할게요.',
+        isAccessMediaLocationEnabled: false,
+      },
+    ],
     [
       'expo-audio',
       {
