@@ -95,6 +95,8 @@ const LIBRARY = {
 } satisfies Record<string, ImageSourcePropType>;
 
 export const libraryFeatureImage = LIBRARY.feature;
+/** 21일 챌린지 머리 사진(Figma H12 = library 보름달) */
+export const challengeHeroImage = LIBRARY.fullMoon;
 
 const LIBRARY_BY_CATEGORY: Record<LibraryCategory, ImageSourcePropType[]> = {
   money: [LIBRARY.e, LIBRARY.song3, LIBRARY.a],

@@ -205,3 +205,27 @@ export function MoonHero({ children }: { children?: ReactNode }) {
     </View>
   );
 }
+
+/** 작은 금빛 초승달(연속 기록 달력의 "달이 뜬 날", Figma icon/moon) */
+export function GoldCrescent({ size }: { size: number }) {
+  const id = `goldCrescent${size}`;
+  return (
+    <Svg width={size} height={size} viewBox="18 18 66 66">
+      <Defs>
+        <LinearGradient
+          id={id}
+          x1={28.668}
+          y1={28.751}
+          x2={72.422}
+          y2={72.089}
+          gradientUnits="userSpaceOnUse"
+        >
+          <Stop offset={0} stopColor="#FFFBF4" />
+          <Stop offset={0.55} stopColor="#F6DDB8" />
+          <Stop offset={1} stopColor="#E2B57E" />
+        </LinearGradient>
+      </Defs>
+      <Path d={CRESCENT} fill={`url(#${id})`} />
+    </Svg>
+  );
+}

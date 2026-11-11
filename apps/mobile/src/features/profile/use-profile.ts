@@ -1,4 +1,12 @@
-import { personalProfileSchema, toCamel, type PersonalProfile } from '@eloria/shared';
+import {
+  personalProfileSchema,
+  profileSettingsSchema,
+  storyScenesSchema,
+  toCamel,
+  type PersonalProfile,
+  type ProfileSettings,
+  type TablesUpdate,
+} from '@eloria/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -17,12 +25,15 @@ export function useProfile() {
       const { data, error } = await supabase
         .from('profiles')
         .select(
-          'id, display_name, tone, likes, dislikes, onboarding_completed_at, preferred_soundscape_id',
+          'id, display_name, tone, likes, dislikes, onboarding_completed_at, preferred_soundscape_id, preferred_voice_id, location, occupation, desired_changes, story_scenes, narrator_speed, affirmation_notify_at, notify_affirmation, notify_story, notify_challenge, vision_photo_path, challenge_started_on, timezone',
         )
         .eq('id', userId!)
         .single();
       if (error) throw error;
-      return toCamel(data);
+      const row = toCamel(data);
+      // jsonb는 형식을 보장하지 않으므로 읽을 때 검증한다(틀리면 빈 목록).
+      const scenes = storyScenesSchema.safeParse(row.storyScenes);
+      return { ...row, storyScenes: scenes.success ? scenes.data : [] };
     },
   });
 }
@@ -71,6 +82,41 @@ export function useUpdatePersonal() {
           ...(v.dislikes !== undefined && { dislikes: v.dislikes }),
         })
         .eq('id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: profileKey(userId) }),
+  });
+}
+
+/** camelCase 설정 → profiles 컬럼 */
+function settingsRow(v: Partial<ProfileSettings>): TablesUpdate<'profiles'> {
+  return {
+    ...(v.location !== undefined && { location: v.location }),
+    ...(v.occupation !== undefined && { occupation: v.occupation }),
+    ...(v.desiredChanges !== undefined && { desired_changes: v.desiredChanges }),
+    ...(v.storyScenes !== undefined && { story_scenes: v.storyScenes }),
+    ...(v.narratorSpeed !== undefined && { narrator_speed: v.narratorSpeed }),
+    ...(v.preferredVoiceId !== undefined && { preferred_voice_id: v.preferredVoiceId }),
+    ...(v.affirmationNotifyAt !== undefined && { affirmation_notify_at: v.affirmationNotifyAt }),
+    ...(v.notifyAffirmation !== undefined && { notify_affirmation: v.notifyAffirmation }),
+    ...(v.notifyStory !== undefined && { notify_story: v.notifyStory }),
+    ...(v.notifyChallenge !== undefined && { notify_challenge: v.notifyChallenge }),
+    ...(v.visionPhotoPath !== undefined && { vision_photo_path: v.visionPhotoPath }),
+    ...(v.challengeStartedOn !== undefined && { challenge_started_on: v.challengeStartedOn }),
+  };
+}
+
+/** 마이페이지·설정·목표 수정의 나머지 프로필 값(D-44). RLS 본인 수정, 쓰기 전에 공용 스키마로 검증한다. */
+export function useUpdateSettings() {
+  const auth = useAuth();
+  const queryClient = useQueryClient();
+  const userId = auth.status === 'signed-in' ? auth.session.user.id : undefined;
+
+  return useMutation({
+    mutationFn: async (patch: Partial<ProfileSettings>) => {
+      if (!userId) throw new Error('no session');
+      const v = profileSettingsSchema.partial().parse(patch);
+      const { error } = await supabase.from('profiles').update(settingsRow(v)).eq('id', userId);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: profileKey(userId) }),

@@ -2,6 +2,7 @@ import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/tabs';
 import { ActivityIndicator, View } from 'react-native';
 import { PrimaryButton } from '@/components/primary-button';
+import { ListenTracker } from '@/features/activity/listen-tracker';
 import { useAuth } from '@/features/auth/auth-provider';
 import { TabBar } from '@/features/navigation/tab-bar';
 import { useNotificationNavigation } from '@/features/notifications/use-push';
@@ -46,6 +47,7 @@ export default function TabsLayout() {
   return (
     <>
       <NotificationNavigator />
+      <ListenTracker />
       <Tabs
         tabBar={(props) => <TabBar {...props} />}
         screenOptions={{
