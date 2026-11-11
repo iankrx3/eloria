@@ -1,12 +1,19 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { PrimaryButton } from '@/components/primary-button';
+import { PhotoBackground } from '@/components/backgrounds';
+import { Icon } from '@/components/icons/icon';
+import { MoonSymbol } from '@/components/moon';
+import { RoundButton } from '@/components/ui';
 import { connectKakao, type KakaoConnectResult } from '@/features/auth/kakao';
+import { useProfile, useSetOnboardingCompleted } from '@/features/profile/use-profile';
 import { ko } from '@/i18n/ko';
+import { loginOverlay, photoText, photoTextSoft } from '@/theme/effects';
+import { scenes } from '@/theme/images';
+import { type } from '@/theme/typography';
 
-type Status = 'idle' | 'pending' | KakaoConnectResult['kind'] | 'cancelled' | 'failed';
+type Status = 'idle' | 'pending' | KakaoConnectResult['kind'] | 'cancelled' | 'failed' | 'apple';
 
 const MESSAGE: Partial<Record<Status, string>> = {
   linked: ko.linkAccount.linked,
@@ -14,24 +21,27 @@ const MESSAGE: Partial<Record<Status, string>> = {
   'signed-in': ko.linkAccount.signedIn,
   cancelled: ko.linkAccount.cancelled,
   failed: ko.linkAccount.failed,
+  apple: ko.linkAccount.appleSoon,
 };
 
-// 딥링크로 임의 경로에 보내지 못하게 다음 화면은 허용 목록에서만 고른다.
-const NEXT_ROUTES = ['/paywall'] as const;
-type NextRoute = (typeof NEXT_ROUTES)[number];
-const isNextRoute = (v: string | undefined): v is NextRoute => NEXT_ROUTES.includes(v as NextRoute);
-
 /**
- * 익명 계정에 소셜 계정을 연결한다(PRD F-01, DECISIONS D-08).
- * 지금은 카카오만 있다. Apple·Google은 키를 받은 뒤 같은 화면에 추가한다.
- * 온보딩에서는 `next`(페이월)로 이어지고, 마이 탭에서 열면 연결 후 돌아간다.
+ * 로그인(Figma S01). 익명 계정에 소셜 계정을 연결한다(PRD F-01, DECISIONS D-08·D-19).
+ * 온보딩(next=home)에서는 시네마틱 다음에 열리고, 끝나면 온보딩을 마치고 홈으로 간다(홈이 페이월을 띄운다).
+ * 마이페이지에서 열면 연결 후 돌아간다. Apple은 개발자 계정이 생기면 붙인다.
  */
 export default function LinkAccount() {
   const [status, setStatus] = useState<Status>('idle');
-  const param = useLocalSearchParams<{ next?: string }>().next;
-  const next = isNextRoute(param) ? param : undefined;
+  const onboarding = useLocalSearchParams<{ next?: string }>().next === 'home';
+  const complete = useSetOnboardingCompleted();
+  const name = useProfile().data?.displayName ?? null;
 
-  const leave = () => (next ? router.replace(next) : router.back());
+  const leave = () => {
+    if (!onboarding) return router.back();
+    complete.mutate(true, {
+      onSuccess: () => router.replace({ pathname: '/', params: { welcome: '1' } }),
+      onError: () => setStatus('failed'),
+    });
+  };
 
   async function onKakao() {
     setStatus('pending');
@@ -48,50 +58,103 @@ export default function LinkAccount() {
   }
 
   const message = MESSAGE[status];
+  const busy = status === 'pending' || complete.isPending;
 
   return (
-    <SafeAreaView className="flex-1 bg-dawn">
-      <View className="flex-1 justify-between px-gutter py-6">
-        {next ? (
-          <View />
-        ) : (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={ko.linkAccount.close}
-            onPress={() => router.back()}
-            className="self-end py-2"
-          >
-            <Text className="text-[16px] text-ink-muted">{ko.linkAccount.close}</Text>
-          </Pressable>
+    <PhotoBackground source={scenes.dawnRiver} overlay={loginOverlay}>
+      <SafeAreaView className="flex-1 px-gutter pb-10 pt-5">
+        {!onboarding && (
+          <View className="absolute right-gutter top-14 z-10">
+            <RoundButton
+              icon="close"
+              label={ko.linkAccount.close}
+              tone="photo"
+              onPress={() => router.back()}
+            />
+          </View>
         )}
 
-        <View className="gap-4">
-          <Text className="text-[28px] leading-[38px] text-plum-deep">{ko.linkAccount.title}</Text>
-          <Text className="text-[16px] leading-[24px] text-ink-muted">{ko.linkAccount.body}</Text>
+        <View
+          accessible
+          accessibilityLabel={ko.brand.name}
+          className="items-center gap-[6px] pt-10"
+        >
+          <MoonSymbol size={40} />
+          <Text className="font-display text-[40px] tracking-[8px] text-on-photo" style={photoText}>
+            {ko.brand.name}
+          </Text>
+          <Text className="font-display-semibold text-[12px] tracking-[2.2px] text-on-photo/80">
+            {ko.brand.tagline}
+          </Text>
         </View>
 
-        <View className="gap-3">
+        <View className="flex-1" />
+
+        <Text accessibilityRole="header" className={`${type.h1} text-on-photo`} style={photoText}>
+          {ko.linkAccount.title(name)}
+        </Text>
+        <Text className={`${type.body} mt-[10px] text-on-photo/90`} style={photoTextSoft}>
+          {ko.linkAccount.body}
+        </Text>
+
+        <View className="mt-7 gap-3">
           {message && (
-            <Text accessibilityLiveRegion="polite" className="text-center text-[13px] text-plum">
+            <Text
+              accessibilityLiveRegion="polite"
+              className={`${type.caption} text-center text-on-photo`}
+              style={photoTextSoft}
+            >
               {message}
             </Text>
           )}
+          {/* 카카오 디자인 가이드: #FEE500, 말풍선 검정 90%, 글자 #191919, 라운드 12 */}
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={ko.linkAccount.kakao}
-            disabled={status === 'pending'}
+            disabled={busy}
             onPress={onKakao}
-            className="h-[52px] flex-row items-center justify-center rounded-kakao bg-kakao"
+            className="h-[52px] flex-row items-center justify-center gap-2 rounded-kakao bg-kakao"
           >
-            {status === 'pending' ? (
-              <ActivityIndicator />
+            {busy ? (
+              <ActivityIndicator color="#191919" />
             ) : (
-              <Text className="text-[16px] text-kakao-label">{ko.linkAccount.kakao}</Text>
+              <>
+                <Icon name="kakao" size={18} />
+                <Text className={`${type.bodyMedium} text-kakao-label`}>
+                  {ko.linkAccount.kakao}
+                </Text>
+              </>
             )}
           </Pressable>
-          {next && <PrimaryButton variant="ghost" label={ko.common.later} onPress={leave} />}
+          {Platform.OS === 'ios' && (
+            // Apple 가이드: 다른 로그인 버튼보다 작게 만들지 않는다.
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={ko.linkAccount.apple}
+              disabled={busy}
+              onPress={() => setStatus('apple')}
+              className="h-[52px] flex-row items-center justify-center gap-[6px] rounded-kakao bg-on-photo"
+            >
+              <Icon name="apple" size={17} />
+              <Text className={`${type.bodyMedium} text-black`}>{ko.linkAccount.apple}</Text>
+            </Pressable>
+          )}
+          {onboarding && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={ko.linkAccount.later}
+              disabled={busy}
+              onPress={leave}
+              className="items-center py-1"
+            >
+              <Text className={`${type.caption} text-on-photo/80`}>{ko.linkAccount.later}</Text>
+            </Pressable>
+          )}
+          <Text className={`${type.caption} text-center text-on-photo/70`}>
+            {ko.linkAccount.consent}
+          </Text>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </PhotoBackground>
   );
 }

@@ -1,16 +1,18 @@
-import { PERSON_RELATION, PEOPLE_MAX, type Person } from '@eloria/shared';
-import * as Notifications from 'expo-notifications';
-import { SymbolView } from 'expo-symbols';
+import { AGE_MAX, AGE_MIN, PEOPLE_MAX, type Person } from '@eloria/shared';
 import { useState, type ComponentProps } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
+import { Icon } from '@/components/icons/icon';
+import { Logo } from '@/components/logo';
 import { PrimaryButton } from '@/components/primary-button';
-import { registerPushToken } from '@/features/notifications/push';
 import { ko } from '@/i18n/ko';
+import { photoTextSoft } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
-import { OptionCard } from './option-card';
+import { type } from '@/theme/typography';
+import { GlassInput, GridCell, OptionCard } from './option-card';
 import { QuizScaffold } from './quiz-scaffold';
+import { guessRelation } from './relation';
 
-type Scaffold = Omit<ComponentProps<typeof QuizScaffold>, 'children' | 'footer'>;
+type Scaffold = Omit<ComponentProps<typeof QuizScaffold>, 'children'>;
 type Option<K extends string> = { key: K; label: string };
 
 type StepProps<T> = {
@@ -20,10 +22,30 @@ type StepProps<T> = {
   onSubmit: (answer: T) => void;
 };
 
-const inputClass =
-  'min-h-[56px] rounded-field border border-rose bg-surface px-4 text-[16px] text-plum-deep';
+/** 단일 선택 탭 뒤 고른 보기를 잠깐 보여 주고 넘어가는 시간(Figma 노트: 0.2초) */
+const ADVANCE_DELAY_MS = 200;
 
-/** 이름·자유 입력 */
+function Continue({
+  enabled,
+  pending,
+  onPress,
+}: {
+  enabled: boolean;
+  pending: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <PrimaryButton
+      variant="pearl"
+      label={ko.common.continue}
+      disabled={!enabled}
+      loading={pending}
+      onPress={onPress}
+    />
+  );
+}
+
+/** 이름·자유 서술 */
 export function TextStep({
   scaffold,
   initial,
@@ -32,47 +54,71 @@ export function TextStep({
   maxLength,
   placeholder,
   multiline = false,
-}: StepProps<string> & { maxLength: number; placeholder: string; multiline?: boolean }) {
+  privacyNote = false,
+}: StepProps<string> & {
+  maxLength: number;
+  placeholder: string;
+  multiline?: boolean;
+  privacyNote?: boolean;
+}) {
   const [value, setValue] = useState(initial ?? '');
   const trimmed = value.trim();
+  const submit = () => trimmed && onSubmit(trimmed);
 
   return (
     <QuizScaffold
       {...scaffold}
-      footer={
-        trimmed.length > 0 && (
-          <PrimaryButton
-            label={ko.common.next}
-            loading={pending}
-            onPress={() => onSubmit(trimmed)}
-          />
-        )
+      brand={
+        privacyNote ? (
+          <View className="pb-7">
+            <Logo size={48} tone="photo" showTagline />
+          </View>
+        ) : undefined
       }
     >
-      <View className="gap-2">
-        <TextInput
-          value={value}
-          onChangeText={setValue}
-          maxLength={maxLength}
-          placeholder={placeholder}
-          placeholderTextColor={tokens.colors['ink-muted']}
-          accessibilityLabel={placeholder}
-          multiline={multiline}
-          autoFocus
-          returnKeyType={multiline ? 'default' : 'next'}
-          onSubmitEditing={() => !multiline && trimmed && onSubmit(trimmed)}
-          className={`${inputClass} ${multiline ? 'min-h-[120px] py-4' : ''}`}
-          textAlignVertical={multiline ? 'top' : 'center'}
-        />
-        <Text className="self-end text-[13px] text-ink-muted">
-          {ko.quiz.counter(value.length, maxLength)}
+      <GlassInput
+        value={value}
+        onChangeText={setValue}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        accessibilityLabel={placeholder}
+        multiline={multiline}
+        returnKeyType={multiline ? 'default' : 'next'}
+        onSubmitEditing={() => !multiline && submit()}
+      />
+      {privacyNote && (
+        <Text className={`${type.caption} text-center text-on-photo/90`} style={photoTextSoft}>
+          {ko.quiz.privacy}
         </Text>
-      </View>
+      )}
+      <Continue enabled={trimmed.length > 0} pending={pending} onPress={submit} />
     </QuizScaffold>
   );
 }
 
-/** 단일 선택: 누르면 바로 저장하고 다음 문항으로 간다(DESIGN 4절). */
+/** 나이(숫자 키패드). 만 14세 미만은 안내만 하고 넘어가지 않는다. */
+export function NumberStep({ scaffold, initial, pending, onSubmit }: StepProps<number>) {
+  const [value, setValue] = useState(initial ? String(initial) : '');
+  const n = Number(value);
+  const valid = value.length > 0 && Number.isInteger(n) && n >= AGE_MIN && n <= AGE_MAX;
+  const underAge = value.length > 0 && Number.isInteger(n) && n > 0 && n < AGE_MIN;
+
+  return (
+    <QuizScaffold {...scaffold} error={underAge ? ko.quiz.questions.age.underAge : scaffold.error}>
+      <GlassInput
+        value={value}
+        onChangeText={(t) => setValue(t.replace(/[^0-9]/g, ''))}
+        maxLength={2}
+        keyboardType="number-pad"
+        placeholder={ko.quiz.questions.age.placeholder}
+        accessibilityLabel={ko.quiz.questions.age.placeholder}
+      />
+      <Continue enabled={valid} pending={pending} onPress={() => valid && onSubmit(n)} />
+    </QuizScaffold>
+  );
+}
+
+/** 단일 선택: 누르면 고른 보기가 흰 배경으로 바뀌고 잠시 뒤 저장·다음으로 간다. */
 export function SingleStep<K extends string>({
   scaffold,
   initial,
@@ -84,209 +130,164 @@ export function SingleStep<K extends string>({
 
   return (
     <QuizScaffold {...scaffold}>
-      <View className="gap-3">
-        {options.map((o) => (
-          <OptionCard
-            key={o.key}
-            mode="single"
-            label={o.label}
-            selected={picked === o.key}
-            disabled={pending}
-            onPress={() => {
-              setPicked(o.key);
-              onSubmit(o.key);
-            }}
-          />
-        ))}
-      </View>
+      {options.map((o) => (
+        <OptionCard
+          key={o.key}
+          label={o.label}
+          selected={picked === o.key}
+          disabled={pending}
+          onPress={() => {
+            setPicked(o.key);
+            setTimeout(() => onSubmit(o.key), ADVANCE_DELAY_MS);
+          }}
+        />
+      ))}
     </QuizScaffold>
   );
 }
 
-/** 복수 선택(최대 개수 제한 가능) */
-export function MultiStep<K extends string>({
+/** 복수 선택 그리드(최대 개수). 마지막 보기가 홀수로 남으면 한 줄 전체를 쓴다. */
+export function GridStep<K extends string>({
   scaffold,
   initial,
   pending,
   onSubmit,
   options,
   max,
-}: StepProps<K[]> & { options: Option<K>[]; max?: number }) {
+}: StepProps<K[]> & { options: Option<K>[]; max: number }) {
   const [picked, setPicked] = useState<K[]>(initial ?? []);
-  const limit = max ?? options.length;
-
   const toggle = (key: K) =>
     setPicked((prev) =>
       prev.includes(key)
         ? prev.filter((k) => k !== key)
-        : prev.length < limit
+        : prev.length < max
           ? [...prev, key]
           : prev,
     );
 
   return (
-    <QuizScaffold
-      {...scaffold}
-      helper={max ? ko.quiz.maxHint(max) : ko.quiz.multiHint}
-      footer={
-        picked.length > 0 && (
-          <PrimaryButton
-            label={ko.common.next}
-            loading={pending}
-            onPress={() => onSubmit(picked)}
-          />
-        )
-      }
-    >
-      <View className="gap-3">
-        {options.map((o) => (
-          <OptionCard
+    <QuizScaffold {...scaffold}>
+      <Text className={`${type.caption} text-center text-on-photo/90`} style={photoTextSoft}>
+        {ko.quiz.multiMax(max)}
+      </Text>
+      <View className="flex-row flex-wrap justify-between gap-y-3">
+        {options.map((o, i) => (
+          <GridCell
             key={o.key}
-            mode="multi"
             label={o.label}
             selected={picked.includes(o.key)}
             onPress={() => toggle(o.key)}
+            full={options.length % 2 === 1 && i === options.length - 1}
           />
         ))}
       </View>
+      <Continue enabled={picked.length > 0} pending={pending} onPress={() => onSubmit(picked)} />
     </QuizScaffold>
   );
 }
 
-/** 소중한 사람(이름·관계, 여러 명, 선택 입력) */
+/** 건너뛸 수 있는 자유 서술(바라는 사랑). 건너뛰면 null을 저장한다. */
+export function SkippableTextStep({
+  scaffold,
+  initial,
+  pending,
+  onSubmit,
+  maxLength,
+  placeholder,
+  skipLabel,
+}: StepProps<string | null> & { maxLength: number; placeholder: string; skipLabel: string }) {
+  const [value, setValue] = useState(initial ?? '');
+  const trimmed = value.trim();
+
+  return (
+    <QuizScaffold {...scaffold}>
+      <GlassInput
+        value={value}
+        onChangeText={setValue}
+        maxLength={maxLength}
+        placeholder={placeholder}
+        accessibilityLabel={placeholder}
+        multiline
+      />
+      <Continue
+        enabled={trimmed.length > 0}
+        pending={pending}
+        onPress={() => trimmed && onSubmit(trimmed)}
+      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={skipLabel}
+        disabled={pending}
+        onPress={() => onSubmit(null)}
+        className="items-center py-1"
+      >
+        <Text className={`${type.body} text-on-photo/90`} style={photoTextSoft}>
+          {skipLabel}
+        </Text>
+      </Pressable>
+    </QuizScaffold>
+  );
+}
+
+/** 소중한 사람 칩(엔터 = 추가, × = 삭제). 0명이면 넘어가지 않는다. 관계는 마이페이지에서 고칠 수 있다. */
 export function PeopleStep({ scaffold, initial, pending, onSubmit }: StepProps<Person[]>) {
   const t = ko.quiz.questions.people;
   const [people, setPeople] = useState<Person[]>(initial ?? []);
   const [name, setName] = useState('');
-  const [relation, setRelation] = useState<Person['relation']>('partner');
   const canAdd = name.trim().length > 0 && people.length < PEOPLE_MAX;
 
   const add = () => {
     if (!canAdd) return;
-    setPeople((prev) => [...prev, { name: name.trim(), relation }]);
+    setPeople((prev) => [...prev, { name: name.trim(), relation: guessRelation(name.trim()) }]);
     setName('');
   };
 
   return (
-    <QuizScaffold
-      {...scaffold}
-      footer={
-        people.length > 0 ? (
-          <PrimaryButton
-            label={ko.common.next}
-            loading={pending}
-            onPress={() => onSubmit(people)}
-          />
-        ) : (
-          <PrimaryButton
-            variant="ghost"
-            label={ko.quiz.skip}
-            loading={pending}
-            onPress={() => onSubmit([])}
-          />
-        )
-      }
-    >
+    <QuizScaffold {...scaffold}>
       {people.length > 0 && (
-        <View className="gap-2">
+        <View className="flex-row flex-wrap gap-2">
           {people.map((p, i) => (
             <View
               key={`${p.name}-${i}`}
-              className="min-h-[48px] flex-row items-center justify-between rounded-field bg-surface px-4"
+              className="flex-row items-center gap-2 rounded-full border border-on-photo/70 bg-on-photo/60 py-[10px] pl-4 pr-3"
             >
-              <Text className="text-[16px] text-plum-deep">
-                {p.name} · {t.relations[p.relation]}
-              </Text>
+              <Icon name="heartSmall" size={16} color={tokens.colors.plum} />
+              <Text className={`${type.body} text-plum-deep`}>{p.name}</Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={t.remove(p.name)}
-                hitSlop={8}
+                hitSlop={10}
                 onPress={() => setPeople((prev) => prev.filter((_, j) => j !== i))}
               >
-                <SymbolView
-                  name={{ ios: 'xmark', android: 'close' }}
-                  size={18}
-                  tintColor={tokens.colors['ink-muted']}
-                />
+                <Icon name="remove" size={14} color={tokens.colors['plum-deep']} />
               </Pressable>
             </View>
           ))}
         </View>
       )}
-
       {people.length < PEOPLE_MAX && (
-        <View className="gap-3">
-          <TextInput
-            value={name}
-            onChangeText={setName}
-            maxLength={20}
-            placeholder={t.namePlaceholder}
-            placeholderTextColor={tokens.colors['ink-muted']}
-            accessibilityLabel={t.namePlaceholder}
-            onSubmitEditing={add}
-            className={inputClass}
-          />
-          <View className="flex-row flex-wrap gap-2">
-            {PERSON_RELATION.map((r) => (
-              <Pressable
-                key={r}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: relation === r }}
-                accessibilityLabel={t.relations[r]}
-                onPress={() => setRelation(r)}
-                className={`rounded-full border px-4 py-2 ${
-                  relation === r ? 'border-plum bg-plum' : 'border-rose bg-surface'
-                }`}
-              >
-                <Text
-                  className={`text-[13px] ${relation === r ? 'text-on-dusk' : 'text-plum-deep'}`}
-                >
-                  {t.relations[r]}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-          <PrimaryButton variant="ghost" label={t.add} onPress={add} />
-        </View>
+        <GlassInput
+          value={name}
+          onChangeText={setName}
+          maxLength={20}
+          placeholder={t.placeholder}
+          accessibilityLabel={t.placeholder}
+          returnKeyType="done"
+          blurOnSubmit={false}
+          onSubmitEditing={add}
+        />
       )}
-    </QuizScaffold>
-  );
-}
-
-/** 알림 허용(PRD 5절 12번: 시스템 권한 프롬프트 전에 이유를 설명한다) */
-export function NotificationStep({ scaffold, pending, onSubmit }: StepProps<{ granted: boolean }>) {
-  const [asking, setAsking] = useState(false);
-
-  const allow = async () => {
-    setAsking(true);
-    try {
-      const { granted } = await Notifications.requestPermissionsAsync();
-      if (granted) void registerPushToken();
-      onSubmit({ granted });
-    } finally {
-      setAsking(false);
-    }
-  };
-
-  return (
-    <QuizScaffold
-      {...scaffold}
-      footer={
-        <>
-          <PrimaryButton
-            label={ko.quiz.questions.notification.allow}
-            loading={asking || pending}
-            onPress={allow}
-          />
-          <PrimaryButton
-            variant="ghost"
-            label={ko.common.later}
-            onPress={() => onSubmit({ granted: false })}
-          />
-        </>
-      }
-    >
-      <View />
+      <Continue
+        enabled={people.length > 0 || canAdd}
+        pending={pending}
+        onPress={() => {
+          // 입력만 하고 엔터를 누르지 않았으면 그 이름까지 담는다.
+          const all = canAdd
+            ? [...people, { name: name.trim(), relation: guessRelation(name.trim()) }]
+            : people;
+          if (all.length > 0) onSubmit(all);
+        }}
+      />
     </QuizScaffold>
   );
 }
