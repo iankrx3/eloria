@@ -3,6 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, SectionList, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { DawnBackdrop, GLOW } from '@/components/backgrounds';
+import { useRecentPlays } from '@/audio/recent-plays';
 import { PrimaryButton } from '@/components/primary-button';
 import { FilterChip, RoundButton } from '@/components/ui';
 import { groupByDesire } from '@/features/library/group-stories';
@@ -13,7 +14,8 @@ import { dawnScreenLong } from '@/theme/effects';
 import tokens from '@/theme/tokens.json';
 import { type } from '@/theme/typography';
 
-type Filter = 'all' | 'liked' | 'past';
+type Filter = 'all' | 'liked' | 'recent' | 'past';
+const FILTERS: readonly Filter[] = ['all', 'liked', 'recent', 'past'];
 
 /** 지난 이야기: 만든 지 30일이 넘은 것(마이 보관함) */
 const PAST_DAYS = 30;
@@ -28,7 +30,8 @@ export default function Stories() {
   const favorites = useFavorites();
   const bottom = useSafeAreaInsets().bottom + 24;
   const params = useLocalSearchParams<{ filter?: string }>();
-  const [filter, setFilter] = useState<Filter>(params.filter === 'past' ? 'past' : 'all');
+  const recent = useRecentPlays((r) => r.items);
+  const [filter, setFilter] = useState<Filter>(FILTERS.find((f) => f === params.filter) ?? 'all');
 
   // 다른 화면에서 만든 이야기·좋아요가 바로 보이도록 들어올 때마다 다시 읽는다.
   useFocusEffect(
@@ -41,6 +44,12 @@ export default function Stories() {
 
   const sections = useMemo(() => {
     const list = stories.data ?? [];
+    if (filter === 'recent') {
+      // 최근 들은 순서 그대로 한 묶음으로 보여 준다(기기 기록).
+      const byId = new Map(list.map((s) => [s.id, s]));
+      const data = recent.flatMap((r) => byId.get(r.storyId) ?? []);
+      return data.length ? [{ key: 'recent', title: ko.stories.recent, data }] : [];
+    }
     const visible =
       filter === 'liked'
         ? list.filter((s) => favorites.data?.has(s.id))
@@ -48,7 +57,7 @@ export default function Stories() {
           ? list.filter((s) => isPast(s.createdAt))
           : list;
     return groupByDesire(visible);
-  }, [stories.data, favorites.data, filter]);
+  }, [stories.data, favorites.data, filter, recent]);
 
   return (
     <View className="flex-1">
@@ -67,21 +76,14 @@ export default function Stories() {
           </Text>
         </View>
         <View accessibilityRole="tablist" className="flex-row gap-2">
-          <FilterChip
-            label={ko.stories.all}
-            selected={filter === 'all'}
-            onPress={() => setFilter('all')}
-          />
-          <FilterChip
-            label={ko.stories.liked}
-            selected={filter === 'liked'}
-            onPress={() => setFilter('liked')}
-          />
-          <FilterChip
-            label={ko.stories.past}
-            selected={filter === 'past'}
-            onPress={() => setFilter('past')}
-          />
+          {FILTERS.map((f) => (
+            <FilterChip
+              key={f}
+              label={ko.stories[f]}
+              selected={filter === f}
+              onPress={() => setFilter(f)}
+            />
+          ))}
         </View>
       </SafeAreaView>
 
@@ -113,7 +115,9 @@ export default function Stories() {
                   ? ko.stories.emptyLiked
                   : filter === 'past'
                     ? ko.stories.emptyPast
-                    : ko.stories.empty}
+                    : filter === 'recent'
+                      ? ko.stories.emptyRecent
+                      : ko.stories.empty}
               </Text>
               {filter === 'all' && (
                 <PrimaryButton

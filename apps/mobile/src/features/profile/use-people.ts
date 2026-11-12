@@ -60,3 +60,22 @@ export function useRemovePerson() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: peopleKey(userId) }),
   });
 }
+
+/** 사람 이름·관계 고치기(Figma P01 ✎) */
+export function useUpdatePerson() {
+  const userId = useUserId();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...person }: PersonRow) => {
+      if (!userId) throw new Error('no session');
+      const p = personSchema.parse(person);
+      const { error } = await supabase
+        .from('people')
+        .update({ name: p.name, relation: p.relation })
+        .eq('id', id)
+        .eq('user_id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: peopleKey(userId) }),
+  });
+}

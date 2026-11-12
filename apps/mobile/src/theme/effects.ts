@@ -103,6 +103,8 @@ export const shadow = {
   chip: { boxShadow: '0px 4px 14px 0px rgba(113,77,127,0.1)' } as ViewStyle,
   playKnob: { boxShadow: '0px 4px 12px 0px rgba(46,33,64,0.2)' } as ViewStyle,
   playLarge: { boxShadow: '0px 8px 24px 0px rgba(0,0,0,0.25)' } as ViewStyle,
+  /** 마이 ⊕ 버튼(Figma P01 FAB) */
+  fab: { boxShadow: '0px 10px 22px 0px rgba(113,77,127,0.35)' } as ViewStyle,
 };
 
 /** 확언 카드(Figma A01): 맨 앞 카드 면, 뒤 카드 그림자 */

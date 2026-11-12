@@ -9,6 +9,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, type ReactN
 import { useSoundscapeDefault } from '@/features/soundscape/use-soundscapes';
 import { ko } from '@/i18n/ko';
 import { usePlayerStore, type Track } from './player-store';
+import { useRecentPlays } from './recent-plays';
 import { SOUNDSCAPE_VOLUME } from './soundscape';
 import { useSleepTimer } from './sleep-timer';
 
@@ -93,6 +94,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
         );
       }
       player.play();
+      useRecentPlays.getState().add(next.storyId);
     },
     [player, track?.storyId, setTrack],
   );

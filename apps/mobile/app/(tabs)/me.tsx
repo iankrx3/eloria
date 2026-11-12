@@ -12,7 +12,7 @@ import {
 } from '@eloria/shared';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { DawnBackdrop, GLOW } from '@/components/backgrounds';
 import { Icon } from '@/components/icons/icon';
@@ -31,7 +31,14 @@ import { useSavedAffirmationCount } from '@/features/affirmations/use-saved-affi
 import { DevStatus } from '@/features/dev/dev-status';
 import { useBottomSpace } from '@/features/navigation/tab-bar';
 import { ChoiceChips, EditSheet, FieldLabel, SheetInput } from '@/features/profile/edit-sheet';
-import { useAddPerson, usePeople, useRemovePerson } from '@/features/profile/use-people';
+import { useLifestyleSuggestions } from '@/features/profile/use-lifestyle-suggestions';
+import {
+  useAddPerson,
+  usePeople,
+  useRemovePerson,
+  useUpdatePerson,
+  type PersonRow,
+} from '@/features/profile/use-people';
 import {
   useProfile,
   useSetOnboardingCompleted,
@@ -40,6 +47,8 @@ import {
 } from '@/features/profile/use-profile';
 import { useQuizAnswers, useSaveQuizAnswer } from '@/features/quiz/use-quiz';
 import { ko } from '@/i18n/ko';
+import { ApiClientError } from '@/lib/api-client';
+import { haptic } from '@/lib/haptics';
 import {
   avatarGradient,
   dawnScreenLong,
@@ -57,10 +66,16 @@ type Sheet =
   | 'location'
   | 'occupation'
   | 'person'
+  | 'editPerson'
   | 'pet'
   | 'lifestyle'
   | 'exclude'
+  | 'quick'
   | null;
+
+/** ⊕ 나에 대해 더 알려주기(빠른 추가)에서 고를 수 있는 시트 */
+const QUICK = ['person', 'pet', 'lifestyle', 'exclude', 'location', 'occupation'] as const;
+type QuickKey = (typeof QUICK)[number];
 
 const PERSON_RELATIONS = [
   'partner',
@@ -84,6 +99,8 @@ export default function Me() {
   const updateSettings = useUpdateSettings();
   const addPerson = useAddPerson();
   const removePerson = useRemovePerson();
+  const updatePerson = useUpdatePerson();
+  const suggestions = useLifestyleSuggestions();
   const setOnboarding = useSetOnboardingCompleted();
   const bottom = useBottomSpace();
 
@@ -91,6 +108,8 @@ export default function Me() {
   const [draft, setDraft] = useState('');
   const [relation, setRelation] = useState<Person['relation']>('family');
   const [gender, setGender] = useState<(typeof GENDER)[number]>();
+  const [editing, setEditing] = useState<PersonRow | null>(null);
+  const [quick, setQuick] = useState<QuickKey>('person');
   const [error, setError] = useState<string>();
 
   if (profile.isPending) {
@@ -111,8 +130,15 @@ export default function Me() {
   const answers = quiz.data ?? {};
   const fullPeople = allPeople.length >= PEOPLE_MAX;
 
-  const open = (s: Exclude<Sheet, null>) => {
+  const open = (s: Exclude<Sheet, null>, person?: PersonRow) => {
     setError(undefined);
+    setEditing(person ?? null);
+    if (person) {
+      setDraft(person.name);
+      setRelation(person.relation);
+      setSheet(s);
+      return;
+    }
     setDraft(
       s === 'name'
         ? name
@@ -139,7 +165,7 @@ export default function Me() {
       ? Boolean(gender)
       : sheet === 'age'
         ? Number.isInteger(age) && age >= AGE_MIN && age <= AGE_MAX
-        : sheet === 'location' || sheet === 'occupation'
+        : sheet === 'location' || sheet === 'occupation' || sheet === 'quick'
           ? true
           : trimmed.length > 0;
 
@@ -157,6 +183,10 @@ export default function Me() {
         return updateSettings.mutate({ occupation: trimmed || null }, done);
       case 'person':
         return addPerson.mutate({ name: trimmed, relation }, done);
+      case 'editPerson':
+        return editing && updatePerson.mutate({ id: editing.id, name: trimmed, relation }, done);
+      case 'quick':
+        return open(quick);
       case 'pet':
         return addPerson.mutate({ name: trimmed, relation: 'pet' }, done);
       case 'lifestyle':
@@ -164,6 +194,31 @@ export default function Me() {
       case 'exclude':
         return update.mutate({ dislikes: addPersonalItem(dislikes, trimmed) }, done);
     }
+  };
+
+  /** ↻ AI 추천 다시 받기: 지금 칩을 추천으로 바꾼다(칩이 있으면 먼저 묻는다). */
+  const refreshLifestyle = () => {
+    setError(undefined);
+    haptic('light');
+    const apply = () =>
+      suggestions.mutate(undefined, {
+        onSuccess: ({ items }) => {
+          if (items.length === 0) return;
+          haptic('selection');
+          update.mutate({ likes: items.slice(0, PERSONAL_LIST_MAX) }, { onError });
+        },
+        onError: (e) =>
+          setError(
+            e instanceof ApiClientError && e.code === 'RATE_LIMITED'
+              ? ko.me.refreshLimit
+              : ko.me.refreshFailed,
+          ),
+      });
+    if (likes.length === 0) return apply();
+    Alert.alert(ko.me.refreshTitle, ko.me.refreshBody, [
+      { text: ko.common.cancel, style: 'cancel' },
+      { text: ko.me.refreshConfirm, onPress: apply },
+    ]);
   };
 
   const s = ko.me.sheet;
@@ -177,6 +232,8 @@ export default function Me() {
     location: { title: s.locationTitle, submit: s.save },
     occupation: { title: s.occupationTitle, submit: s.save },
     person: { title: s.personTitle, desc: s.personDesc, submit: s.submit },
+    editPerson: { title: s.editPersonTitle, submit: s.save },
+    quick: { title: ko.me.quickTitle, desc: ko.me.quickDesc, submit: ko.me.quickNext },
     pet: { title: s.petTitle, desc: s.petDesc, submit: s.submit },
     lifestyle: { title: s.lifestyleTitle, submit: s.submit },
     exclude: { title: s.excludeTitle, submit: s.submit },
@@ -218,6 +275,8 @@ export default function Me() {
             <RoundButton
               icon="gear"
               label={ko.me.settings}
+              size={44}
+              iconSize={22}
               onPress={() => router.push('/settings')}
             />
           </View>
@@ -273,14 +332,17 @@ export default function Me() {
           </View>
 
           <View className="mt-7 gap-[10px]">
-            <SectionLabel icon="archive" label={ko.me.archive} />
+            <SectionLabel icon="sparkle" label={ko.me.myLibrary} />
             <ListGroup>
               <ListRow label={ko.me.savedStories} onPress={() => router.push('/stories')} />
-              <ListRow label={ko.me.gratitude} onPress={() => router.push('/gratitude')} />
               <ListRow
-                label={ko.me.pastStories}
-                sub={ko.me.pastStoriesSub}
-                onPress={() => router.push({ pathname: '/stories', params: { filter: 'past' } })}
+                label={ko.me.recent}
+                onPress={() => router.push({ pathname: '/stories', params: { filter: 'recent' } })}
+              />
+              <ListRow
+                label={ko.me.stats.savedAffirmations}
+                value={String(savedAffirmations.data ?? 0)}
+                onPress={() => router.push('/saved-affirmations')}
                 last
               />
             </ListGroup>
@@ -300,13 +362,6 @@ export default function Me() {
                 onPress={() => open('age')}
               />
               <ListRow
-                label={ko.me.gender}
-                value={
-                  answers.gender ? ko.quiz.questions.gender.options[answers.gender] : ko.me.notSet
-                }
-                onPress={() => open('gender')}
-              />
-              <ListRow
                 label={ko.me.location}
                 value={p?.location || ko.me.notSet}
                 onPress={() => open('location')}
@@ -315,6 +370,13 @@ export default function Me() {
                 label={ko.me.occupation}
                 value={p?.occupation || ko.me.notSet}
                 onPress={() => open('occupation')}
+              />
+              <ListRow
+                label={ko.me.gender}
+                value={
+                  answers.gender ? ko.quiz.questions.gender.options[answers.gender] : ko.me.notSet
+                }
+                onPress={() => open('gender')}
                 last
               />
             </ListGroup>
@@ -340,6 +402,15 @@ export default function Me() {
                       {ko.quiz.relations[person.relation]}
                     </Text>
                   </View>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={ko.me.edit(person.name)}
+                    hitSlop={10}
+                    onPress={() => open('editPerson', person)}
+                    className="mr-3"
+                  >
+                    <Icon name="edit" size={16} color={tokens.colors['ink-soft']} />
+                  </Pressable>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel={ko.me.remove(person.name)}
@@ -389,7 +460,26 @@ export default function Me() {
           </View>
 
           <View className="mt-7 gap-[10px]">
-            <SectionLabel icon="sparkle" label={ko.me.lifestyle} />
+            <SectionLabel
+              icon="sparkle"
+              label={ko.me.lifestyle}
+              right={
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={ko.me.refreshLifestyle}
+                  accessibilityState={{ busy: suggestions.isPending }}
+                  disabled={suggestions.isPending}
+                  hitSlop={12}
+                  onPress={refreshLifestyle}
+                >
+                  {suggestions.isPending ? (
+                    <ActivityIndicator size="small" color={tokens.colors.plum} />
+                  ) : (
+                    <Icon name="refresh" size={16} color={tokens.colors.plum} />
+                  )}
+                </Pressable>
+              }
+            />
             <View className="flex-row flex-wrap gap-2">
               {likes.map((item) => (
                 <RemovableChip
@@ -424,6 +514,18 @@ export default function Me() {
             </View>
           </View>
 
+          <View className="mt-7 gap-[10px]">
+            <SectionLabel icon="archive" label={ko.me.archive} />
+            <ListGroup>
+              <ListRow label={ko.me.gratitude} onPress={() => router.push('/gratitude')} />
+              <ListRow
+                label={ko.me.pastStories}
+                onPress={() => router.push({ pathname: '/stories', params: { filter: 'past' } })}
+                last
+              />
+            </ListGroup>
+          </View>
+
           {__DEV__ && (
             <View className="mt-7 gap-3">
               <DevStatus />
@@ -440,6 +542,21 @@ export default function Me() {
         </SafeAreaView>
       </ScrollView>
 
+      {/* ⊕ 나에 대해 더 알려주기(Figma P01 FAB) */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={ko.me.quickTitle}
+        onPress={() => {
+          haptic('light');
+          setQuick('person');
+          open('quick');
+        }}
+        className="absolute right-gutter h-14 w-14 items-center justify-center rounded-full bg-plum"
+        style={[{ bottom: bottom - 10 }, shadow.fab]}
+      >
+        <Icon name="plus" size={24} color={tokens.colors['on-photo']} />
+      </Pressable>
+
       {sheet && (
         <EditSheet
           visible
@@ -451,12 +568,19 @@ export default function Me() {
             update.isPending ||
             updateSettings.isPending ||
             addPerson.isPending ||
+            updatePerson.isPending ||
             saveAnswer.isPending
           }
           onSubmit={submit}
           onClose={close}
         >
-          {sheet === 'gender' ? (
+          {sheet === 'quick' ? (
+            <ChoiceChips
+              options={QUICK.map((k) => ({ key: k, label: ko.me.quick[k] }))}
+              value={quick}
+              onChange={setQuick}
+            />
+          ) : sheet === 'gender' ? (
             <ChoiceChips
               options={GENDER.map((g) => ({ key: g, label: ko.quiz.questions.gender.options[g] }))}
               value={gender}
@@ -464,7 +588,9 @@ export default function Me() {
             />
           ) : (
             <>
-              {(sheet === 'person' || sheet === 'pet') && <FieldLabel>{s.nameLabel}</FieldLabel>}
+              {(sheet === 'person' || sheet === 'editPerson' || sheet === 'pet') && (
+                <FieldLabel>{s.nameLabel}</FieldLabel>
+              )}
               <SheetInput
                 value={draft}
                 onChangeText={(t) => setDraft(sheet === 'age' ? t.replace(/[^0-9]/g, '') : t)}
@@ -480,7 +606,7 @@ export default function Me() {
                         : NAME_MAX
                 }
                 placeholder={
-                  sheet === 'person'
+                  sheet === 'person' || sheet === 'editPerson'
                     ? s.namePlaceholder
                     : sheet === 'pet'
                       ? s.petPlaceholder
@@ -497,7 +623,7 @@ export default function Me() {
                 accessibilityLabel={sheetCopy[sheet].title}
                 onSubmitEditing={() => canSubmit && submit()}
               />
-              {sheet === 'person' && (
+              {(sheet === 'person' || sheet === 'editPerson') && (
                 <>
                   <FieldLabel>{s.relationLabel}</FieldLabel>
                   <ChoiceChips
