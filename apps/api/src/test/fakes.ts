@@ -5,6 +5,9 @@ import type { StoryEvents } from '../inngest/events';
 import { createSupabaseVerifier } from '../middleware/auth';
 import type { PushRepo } from '../repos/push-repo';
 import type { AccountRepo } from '../repos/account-repo';
+import type { AffirmationRepo, NewAffirmation } from '../repos/affirmation-repo';
+import { createMockProviders } from '@eloria/providers';
+import type { AffirmationItem } from '@eloria/shared';
 import type { ProfileRow, ProfileUpdate, QuizRepo } from '../repos/quiz-repo';
 import type { StoryRepo } from '../repos/story-repo';
 
@@ -159,6 +162,45 @@ export function createFakeAccountRepo() {
   return { repo, deleted };
 }
 
+/** 메모리 확언 저장소. 같은 날 다시 저장하면 무시한다(실제 upsert ignoreDuplicates와 같게). */
+export function createFakeAffirmationRepo(opts: { callsSoFar?: number; timezone?: string } = {}) {
+  const days = new Map<string, (AffirmationItem & { promptVersion: string })[]>();
+  const calls: string[] = [];
+  let counter = 0;
+  const repo: AffirmationRepo = {
+    async loadUser() {
+      return {
+        timezone: opts.timezone ?? 'Asia/Seoul',
+        context: { dream: '바닷가 책방', displayName: '서아', tone: 'calm', people: [] },
+      };
+    },
+    async listForDay(userId, day) {
+      return (days.get(`${userId}:${day}`) ?? []).map(({ promptVersion: _, ...item }) => item);
+    },
+    async countCallsSince() {
+      return (opts.callsSoFar ?? 0) + calls.length;
+    },
+    async recordCall({ step }) {
+      calls.push(step);
+    },
+    async saveDay(userId, day, items: NewAffirmation[], promptVersion) {
+      const key = `${userId}:${day}`;
+      if (days.has(key)) return;
+      days.set(
+        key,
+        items.map((a, i) => ({
+          id: `00000000-0000-4000-8000-${String(++counter).padStart(12, '0')}`,
+          position: i + 1,
+          text: a.text,
+          theme: a.theme,
+          promptVersion,
+        })),
+      );
+    },
+  };
+  return { repo, days, calls };
+}
+
 /** 테스트용 앱. 필요한 의존성만 바꿔 끼운다. */
 export function createTestApp(overrides: Partial<AppDeps> = {}) {
   return createApp({
@@ -168,6 +210,7 @@ export function createTestApp(overrides: Partial<AppDeps> = {}) {
     storyEvents: createFakeStoryEvents().events,
     pushRepo: createFakePushRepo().repo,
     accountRepo: createFakeAccountRepo().repo,
+    affirmations: { repo: createFakeAffirmationRepo().repo, providers: createMockProviders() },
     ...overrides,
   });
 }

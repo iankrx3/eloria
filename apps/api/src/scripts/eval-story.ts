@@ -1,9 +1,10 @@
 /**
  * 프롬프트 평가 세트 실행(docs/AI_PIPELINE.md 5절). 실제 API 비용이 든다(음성은 만들지 않음).
  *
- *   pnpm eval:story                         GEMINI_STORY_MODEL 하나로 30개
- *   pnpm eval:story --models a,b,c          모델 여러 개를 블라인드 비교(A·B·C로 섞어 저장)
- *   pnpm eval:story --only love-06,health-06 일부 케이스만
+ *   pnpm eval:story --live                  GEMINI_STORY_MODEL 하나로 30개(실제 호출, 플래그 필수)
+ *   pnpm eval:story --live --models a,b,c   모델 여러 개를 블라인드 비교(A·B·C로 섞어 저장)
+ *   pnpm eval:story --live --only love-06   일부 케이스만
+ *   pnpm eval:story --live --max-calls 40   이번 실행의 Gemini 호출 상한(기본 150, 무료 쿼터 보호)
  *   pnpm eval:story --mock                  외부 호출 없이 실행기만 확인(결과는 mock 글)
  *
  * 결과: packages/prompts/eval/out/<날짜-시각>/ (gitignore). 위험 입력이 새어 나가면 종료 코드 1.
@@ -12,7 +13,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
 import { parseEvalCases, REASON_LABEL, type EvalCase } from '@eloria/prompts';
-import { createProviders, type StoryModel } from '@eloria/providers';
+import { createMemoryBudget, createProviders, type StoryModel } from '@eloria/providers';
 import { LIMITS, type SafetyVerdict } from '@eloria/shared';
 import { judgeEvalResult, runEvalCase, type EvalResult } from '../eval/run-eval';
 
@@ -22,6 +23,8 @@ const EVAL_DIR = join(ROOT, 'packages/prompts/eval');
 const { values: args } = parseArgs({
   options: {
     mock: { type: 'boolean', default: false },
+    live: { type: 'boolean', default: false },
+    'max-calls': { type: 'string', default: '150' },
     models: { type: 'string' },
     only: { type: 'string' },
   },
@@ -38,6 +41,16 @@ const only = split(args.only);
 const cases = only.length ? allCases.filter((c) => only.includes(c.id)) : allCases;
 if (cases.length === 0) throw new Error(`--only에 맞는 케이스가 없습니다: ${args.only}`);
 
+if (args.mock === args.live) {
+  console.error(
+    '--mock(외부 호출 없음) 또는 --live(실제 Gemini 호출, 비용·쿼터 사용) 중 하나를 붙이세요.',
+  );
+  process.exit(1);
+}
+const maxCalls = Number(args['max-calls']);
+if (!Number.isInteger(maxCalls) || maxCalls < 1)
+  throw new Error('--max-calls는 1 이상의 정수입니다');
+
 const models = args.mock ? ['mock'] : split(args.models);
 if (!args.mock && models.length === 0) {
   const fromEnv = process.env.GEMINI_STORY_MODEL;
@@ -46,12 +59,15 @@ if (!args.mock && models.length === 0) {
   models.push(fromEnv);
 }
 
+/** 모델이 여러 개여도 이번 실행 전체에서 상한 하나를 나눠 쓴다. */
+const budget = createMemoryBudget(maxCalls);
+
 function storyModelFor(model: string): StoryModel {
   const env = args.mock
     ? { ...process.env, PROVIDER_MODE: 'mock' }
-    : { ...process.env, PROVIDER_MODE: 'live', GEMINI_STORY_MODEL: model };
+    : { ...process.env, PROVIDER_MODE: 'mock', GEMINI_MODE: 'live', GEMINI_STORY_MODEL: model };
   try {
-    return createProviders(env).story;
+    return createProviders(env, { budget }).story;
   } catch (error) {
     console.error(error instanceof Error ? error.message : error);
     console.error('실행기만 확인하려면 --mock을 붙이세요.');

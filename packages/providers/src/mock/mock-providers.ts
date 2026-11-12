@@ -1,3 +1,4 @@
+import { FALLBACK_AFFIRMATIONS } from '@eloria/prompts';
 import type { SafetyVerdict, ScenePlan } from '@eloria/shared';
 import type { Providers, StoryContext, Usage } from '../types';
 import { chimeWav } from './chime-wav';
@@ -108,6 +109,21 @@ export function createMockProviders(opts: { delayMs?: number } = {}): Providers 
           ? { verdict: 'block', reasons: ['self_harm'] }
           : { verdict: 'pass', reasons: [] };
         return { verdict, usage: usage() };
+      },
+    },
+    affirmation: {
+      promptVersion: 'mock@v0',
+      async writeAffirmations(ctx) {
+        await wait();
+        // 첫 장만 꿈을 넣어 개인화를 흉내 낸다. 나머지는 기본 확언.
+        const first = {
+          text: `나는 ${ctx.dream.slice(0, 30)}을 향해 걷고 있다.`.slice(0, 60),
+          theme: '꿈',
+        };
+        return {
+          set: { items: [first, ...FALLBACK_AFFIRMATIONS.slice(1)] },
+          usage: usage({ inputTokens: 0, outputTokens: 0 }),
+        };
       },
     },
     tts: {

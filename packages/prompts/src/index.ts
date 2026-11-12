@@ -15,6 +15,12 @@ export const PROMPT_VERSIONS = {
 /** stories.prompt_version에 기록하는 값. 세 프롬프트 중 하나만 바뀌어도 구분된다. */
 export const STORY_PROMPT_VERSION = Object.values(PROMPT_VERSIONS).join('+');
 
+export {
+  AFFIRMATION_V1,
+  affirmationPromptV1,
+  FALLBACK_AFFIRMATIONS,
+  type AffirmationContext,
+} from './affirmation/v1';
 export * from './checks';
 export * from './context';
 export * from './eval/cases';

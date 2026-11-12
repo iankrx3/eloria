@@ -11,6 +11,11 @@ const envSchema = z.object({
   // 레거시 HS256 프로젝트에서만 쓴다. 비어 있으면 JWKS로 검증한다(docs/SETUP.md 3절).
   SUPABASE_JWT_SECRET: optional,
   PROVIDER_MODE: z.enum(['live', 'mock']).default('live'),
+  // 글(Gemini)·음성(ElevenLabs)을 따로 바꾼다. 없으면 PROVIDER_MODE를 따른다(D-45).
+  GEMINI_MODE: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['live', 'mock']).optional()),
+  TTS_MODE: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['live', 'mock']).optional()),
+  // 서버 전체 하루 Gemini 호출 상한(UTC 날짜). 무료 쿼터 보호용 기본값.
+  GEMINI_DAILY_CALL_LIMIT: z.coerce.number().int().min(0).default(50),
   // expo.dev의 푸시 보안(Enhanced Security)을 켰을 때만 필요하다.
   EXPO_ACCESS_TOKEN: optional,
 });

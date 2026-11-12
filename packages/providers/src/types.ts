@@ -1,7 +1,7 @@
-import type { SafetyTarget, StoryContext } from '@eloria/prompts';
-import type { SafetyVerdict, ScenePlan } from '@eloria/shared';
+import type { AffirmationContext, SafetyTarget, StoryContext } from '@eloria/prompts';
+import type { AffirmationSet, SafetyVerdict, ScenePlan } from '@eloria/shared';
 
-export type { SafetyTarget, StoryContext };
+export type { AffirmationContext, SafetyTarget, StoryContext };
 
 /** 호출 1회의 사용량과 추정 비용. generation_jobs에 그대로 기록한다(CLAUDE.md 권한·원가). */
 export type Usage = {
@@ -45,4 +45,13 @@ export interface TtsProvider {
   }>;
 }
 
-export type Providers = { story: StoryModel; tts: TtsProvider };
+/** 오늘의 확언 10장(A01). 검수는 StoryModel.reviewSafety(target 'script')로 한다. */
+export interface AffirmationModel {
+  readonly promptVersion: string;
+  writeAffirmations(
+    ctx: AffirmationContext,
+    opts?: { safetyFeedback?: SafetyVerdict },
+  ): Promise<{ set: AffirmationSet; usage: Usage }>;
+}
+
+export type Providers = { story: StoryModel; affirmation: AffirmationModel; tts: TtsProvider };

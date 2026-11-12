@@ -1,4 +1,4 @@
-import { createMockProviders, type Providers } from '@eloria/providers';
+import { createMockProviders, ProviderError, type Providers } from '@eloria/providers';
 import type { SafetyVerdict, StoryStatus } from '@eloria/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PipelineRepo, StoryJobContext } from '../repos/pipeline-repo';
@@ -235,6 +235,17 @@ describe('handlePipelineFailure', () => {
     fake.state.status = 'writing';
     await handlePipelineFailure(fake.repo, STORY, new Error('boom'));
     expect(fake.state).toMatchObject({ status: 'failed', errorCode: 'GENERATION_FAILED' });
+  });
+
+  it('하루 호출 상한·공급자 한도로 멈추면 AI_BUSY', async () => {
+    const fake = createFakePipelineRepo();
+    fake.state.status = 'planning';
+    await handlePipelineFailure(fake.repo, STORY, new ProviderError('BUDGET_EXCEEDED', 'limit'));
+    expect(fake.state).toMatchObject({ status: 'failed', errorCode: 'AI_BUSY' });
+    // Inngest가 직렬화해 넘긴 일반 Error도 메시지로 알아본다.
+    fake.state.status = 'planning';
+    await handlePipelineFailure(fake.repo, STORY, new Error('[RATE_LIMITED] gemini 429'));
+    expect(fake.state.errorCode).toBe('AI_BUSY');
   });
 });
 

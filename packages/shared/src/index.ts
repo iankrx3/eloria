@@ -1,3 +1,4 @@
+export * from './ai/affirmation';
 export * from './ai/safety-verdict';
 export * from './ai/scene-plan';
 export * from './api/errors';
@@ -6,6 +7,7 @@ export * from './api/manifests';
 export * from './api/media';
 export * from './api/quiz';
 export * from './api/account';
+export * from './api/affirmations';
 export * from './case';
 export * from './config/defaults';
 export * from './config/limits';

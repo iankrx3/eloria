@@ -200,12 +200,17 @@ export async function runStoryPipeline(
  * 재시도를 다 쓰고 실패했을 때. 텍스트까지 나왔으면 읽기는 계속 열어 두고(AI_PIPELINE 2절: tts 실패해도
  * 텍스트 유지) 오류 코드만 남긴다.
  */
+/** 하루 호출 상한·공급자 한도로 멈춘 실패는 따로 표시한다(앱은 "잠시 후 다시" 안내, D-45). */
+function failureCode(error: Error) {
+  return /[(BUDGET_EXCEEDED|RATE_LIMITED)]/.test(error.message) ? 'AI_BUSY' : 'GENERATION_FAILED';
+}
+
 export async function handlePipelineFailure(repo: PipelineRepo, storyId: string, error: Error) {
   const status = await repo.getStatus(storyId);
   if (status === 'text_ready' || status === 'audio_ready') {
     await repo.setStatus(storyId, status, status === 'text_ready' ? 'TTS_FAILED' : 'FINISH_FAILED');
   } else if (status !== 'ready') {
-    await repo.setStatus(storyId, 'failed', 'GENERATION_FAILED');
+    await repo.setStatus(storyId, 'failed', failureCode(error));
   }
   await repo.updateStoryJob(storyId, 'failed', 'failed', error.message.slice(0, 500));
 }

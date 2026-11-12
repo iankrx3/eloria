@@ -1,8 +1,15 @@
 import { readFileSync } from 'node:fs';
-import { DESIRED_LIFE, type ScenePlan } from '@eloria/shared';
+import {
+  AFFIRMATION_TEXT_MAX,
+  affirmationSetSchema,
+  DESIRED_LIFE,
+  type ScenePlan,
+} from '@eloria/shared';
 import { describe, expect, it } from 'vitest';
 import {
+  affirmationPromptV1,
   checkScript,
+  FALLBACK_AFFIRMATIONS,
   parseEvalCases,
   PROMPT_VERSIONS,
   safetyPromptV1,
@@ -205,5 +212,33 @@ describe('퀴즈 v2 사용자 정보(D-39)', () => {
     expect(user).toContain('이 꿈이 간절한 이유: 나만의 공간에서 쉬고 싶어서');
     expect(user).not.toContain('바라는 사랑');
     expect(user).not.toContain('정보 없음');
+  });
+});
+
+describe('affirmation v1', () => {
+  it('걸림돌·바라는 변화를 넣고, 꺾쇠를 지운다', () => {
+    const { system, user } = affirmationPromptV1({
+      ...ctx,
+      blocker: '<자신감>이 없어요',
+      changes: ['love', 'career', 'unknown'],
+    });
+    expect(system).toContain('보장하지 않는다');
+    expect(user).toContain('지금 가장 큰 걸림돌: 자신감이 없어요');
+    expect(user).toContain('바라는 변화: 사랑, 커리어');
+  });
+
+  it('검수 이유를 받으면 다시 쓰라고 알려 준다', () => {
+    const { user } = affirmationPromptV1(ctx, {
+      safetyFeedback: { verdict: 'rewrite', reasons: ['guaranteed_outcome'] },
+    });
+    expect(user).toContain('다시 쓴다');
+  });
+
+  it('기본 확언도 스키마를 통과하고 결과를 약속하지 않는다', () => {
+    expect(affirmationSetSchema.safeParse({ items: FALLBACK_AFFIRMATIONS }).success).toBe(true);
+    for (const a of FALLBACK_AFFIRMATIONS) {
+      expect(a.text.length).toBeLessThanOrEqual(AFFIRMATION_TEXT_MAX);
+      expect(a.text).not.toMatch(/반드시|무조건|100%|보장/);
+    }
   });
 });

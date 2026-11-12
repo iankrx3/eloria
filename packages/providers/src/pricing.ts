@@ -1,9 +1,14 @@
 /**
- * 단위 원가(docs/AI_PIPELINE.md 6절, 2026-09 기준). 출시 전에 공식 가격표로 다시 확인한다.
+ * 단위 원가(docs/AI_PIPELINE.md 6절, Gemini는 2026-11-12 공식 가격표 Standard 등급). 출시 전에 공식 가격표로 다시 확인한다.
  * 모델 ID는 환경 변수로 바뀌므로, 표에 없는 모델은 비용 0으로 계산하지 않고 에러를 던진다.
  */
 export const GEMINI_PRICING_PER_MTOK: Record<string, { input: number; output: number }> = {
   'gemini-3-flash-preview': { input: 0.5, output: 3.0 },
+  // 3.6·3.8 Flash는 2026-12-31까지 가격. 2027-01-01부터 입력 1.5·출력 7.5로 오른다.
+  'gemini-3.6-flash': { input: 0.75, output: 3.75 },
+  'gemini-3.8-flash': { input: 0.75, output: 3.75 },
+  'gemini-3.5-flash-lite': { input: 0.3, output: 2.5 },
+  'gemini-3.1-flash-lite': { input: 0.25, output: 1.5 },
 };
 
 export const ELEVENLABS_PRICING_PER_KCHAR: Record<string, number> = {
