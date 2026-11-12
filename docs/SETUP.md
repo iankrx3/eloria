@@ -47,6 +47,7 @@ Expo Go는 쓰지 않는다. 결제·카카오 로그인·백그라운드 오디
 | `ELEVENLABS_API_KEY`, `ELEVENLABS_WEBHOOK_SECRET`, `ELEVENLABS_*_MODEL` | API | |
 | `REVENUECAT_WEBHOOK_AUTH`, `REVENUECAT_SECRET_KEY` | API | |
 | `PORT` | API | 기본 8787 |
+| `DAILY_PREGEN_ENABLED` | API | `1`이면 매일 새벽 5시(서울) 데일리 사전 생성 크론을 돌린다. 기본 꺼짐(무료 쿼터 보호). 꺼져 있어도 홈을 열면 `POST /v1/daily`로 만든다 |
 | `PROVIDER_MODE` | API | `live`(기본) 또는 `mock`. mock은 외부 AI를 호출하지 않는다. 프로덕션 금지 |
 | `INNGEST_DEV` | API | 로컬은 `1`(dev server 사용) |
 | `INNGEST_EVENT_KEY`, `INNGEST_SIGNING_KEY` | API | 배포 환경 |

@@ -36,7 +36,9 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | POST `/v1/stories/:id/retry` | 실패한 단계 재시도 | — | `202` |
 | DELETE `/v1/stories/:id` | 스토리 삭제(본인 것, 생성이 끝난 것만). 음성·표지 파일과 행을 지우고, 남은 스토리가 없는 꿈도 지운다. 생성 기록은 남긴다 | — | `204`, 생성 중이면 `409 CONFLICT` |
 | GET `/v1/stories/:id/media` | 서명 URL 발급(본인 스토리 또는 공용 리추얼, 1시간). 리추얼은 `canAccessLibraryItem`(페이월 전에는 모두 허용) | — | `{ audioUrl, coverUrl, expiresAt }`, 볼 수 없거나 음성이 없으면 `404`, 구독 필요 시 `403 FORBIDDEN` |
-| POST `/v1/daily` | 오늘의 순간 즉시 생성(없을 때) | — | `200 { storyId }` 또는 `202` |
+| POST `/v1/visions` | 비전 고르기(H04 → H05, D-48). 꿈을 등록하고 입력 검수 → 장면 4개 제안(Gemini 2회, 음성 없음). 막히면 장면 없이 `blocked`. 사용자당 24시간 기록 12행, 넘거나 서버 상한이면 `429` | `{ text, category? }` | `200 { desireId, blocked: null \| SAFETY_BLOCKED \| SAFETY_CRISIS, visions: [{ position, title, summary, place, timeOfDay, storyId }] }` |
+| POST `/v1/visions/:desireId/:position/story` | 고른 장면으로 이야기 생성 시작(`stories.vision`, scene-plan@v2). 같은 장면을 다시 누르면 같은 storyId | — | `202 { storyId }`, 남의 꿈·없는 장면이면 `404` |
+| POST `/v1/daily` | 오늘의 이야기(H01 매일 갱신, D-48). 사용자 시간대 새벽 5시 기준 날짜로 없으면 가장 최근 꿈으로 짧은 이야기(700자) 생성을 시작한다. `last_active_at`도 갱신 | — | `200 { day, storyId }`(꿈이 없으면 `storyId: null`) |
 | GET `/v1/affirmations/today` | 오늘의 확언 10장(A01). 사용자 시간대의 날짜로 없으면 이 요청에서 만든다(작성 → 검수 → rewrite면 1회 재작성, 수 초). 검수를 끝내 통과 못 하거나 하루 상한·공급자 한도에 걸리면 기본 확언(`FALLBACK_AFFIRMATIONS`)을 저장한다. 사용자당 24시간 Gemini 기록 8행까지(D-45) | — | `{ day, items: [{ id, position, text, theme }] }`(`todayAffirmationsResponseSchema`) |
 | POST `/v1/profile/lifestyle-suggestions` | 라이프스타일 AI 추천(마이 ↻, `lifestyle@v1`). 퀴즈 답·프로필로 키워드 최대 6개, 이미 있는 칩·피할 것과 겹치면 뺀다. 저장은 앱이 한다. 사용자당 24시간 3회, 넘거나 서버 상한이면 `429 RATE_LIMITED` | — | `{ items: string[] }`(`lifestyleSuggestionsResponseSchema`) |
 | POST `/v1/affirmations/:id/audio` | 확언 음성(캐시 우선, ElevenLabs 후) | `{ voiceKey? }` | `{ audioUrl }` |
@@ -61,8 +63,7 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | `story/generate.requested` { storyId } | `generateStory`: plan → write → review → (tts ‖ cover 요청) → finish → notify(완료 푸시, 실패해도 스토리는 ready) | 사용자당 동시 2, 전체 동시성은 ElevenLabs 플랜 한도 이하, step별 재시도 3 |
 | `story/revise.requested` { storyId } | `reviseStory`: write(원본+요청) → review → tts, 표지 재사용 | 위와 동일 |
 | `story/cover.completed` { storyId, generationId } | `saveCover`: 다운로드 → storage → status 갱신 | 재시도 5 |
-| `daily/tick` (cron `0 * * * *`) | `scheduleDaily`: 대상 사용자 조회 → `daily/generate.requested` fan-out | — |
-| `daily/generate.requested` { userId } | `generateDaily` → 완료 푸시 | 사용자당 하루 1회(idempotency key = userId+date) |
+| cron `TZ=Asia/Seoul 0 5 * * *` | `dailyPregen`: 최근 3일 안에 앱을 연 사용자(최대 20명)의 오늘 이야기를 만들고 `story/generate.requested`로 넘긴다. `DAILY_PREGEN_ENABLED=1`일 때만 돈다(기본 꺼짐, 무료 쿼터 보호) | 재시도 1, 사용자당 하루 1편(`stories.daily_on` 유일 색인) |
 | `affirmation/audio.requested` { affirmationId, voiceKey } | `renderAffirmationAudio` | 해시 캐시 확인 후 생성 |
 | `user/delete.requested` { userId } | `deleteUser`: 스토리지 → DB → auth 사용자 삭제 | 재시도 5 |
 | `library/seed.requested` { categories? } (수동) | `seedLibrary`: 카탈로그(`apps/api/src/library/catalog.ts`)에서 아직 없는 항목(seed_key 기준)을 만들고 `library/story.requested` fan-out | 관리자 전용, 다시 보내도 중복 없음 |

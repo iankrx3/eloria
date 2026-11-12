@@ -110,7 +110,14 @@ SafetyVerdict = {
 - 칩은 이야기 프롬프트의 "좋아하는 것"으로만 들어가고 사용자가 고친 뒤 저장되므로 따로 안전 검수를 부르지 않는다(무료 쿼터 절약).
 - 2026-11-12 live 1회: 1.5초, 입력 476·출력 64토큰, 약 $0.0006.
 
-### 4.6 수정(revise)
+### 4.6 비전 고르기·데일리(`vision@v1`, `scene-plan@v2`, D-48)
+
+- `vision@v1`: 사용자 정보로 장소·시간대·분위기가 겹치지 않는 장면 4개(`visionSetSchema`: 제목 ≤30자, 한 문장 ≤120자, 장소, 시간대). 음성은 만들지 않고, 사용자가 재생한 장면만 전체 파이프라인을 탄다(원가 절감).
+- `scene-plan@v2` = v1 + `<chosen_scene>` 블록. 고른 장면이 있으면 setting.place·timeOfDay를 그대로 쓴다. 장면이 없으면 v1과 같다. 입력 검수에는 꿈과 장면 제목·문장을 함께 넣는다.
+- 데일리(kind = daily)는 같은 파이프라인에 `DAILY_TARGET_CHARS`(700)·`DAILY_MAX_CHARS`(1,000)를 쓴다.
+- 2026-11-12 live 1회(장면 제안): 3.2초, 입력 532·출력 393토큰, 약 $0.002. scene-plan@v2 평가 세트는 아직 돌리지 않았다(ROADMAP).
+
+### 4.7 수정(revise)
 
 입력 = 원본 ScenePlan + 원본 스크립트 + 수정 요청. 출력 = 새 ScenePlan과 스크립트, 그리고 `changedParagraphIndexes: number[]`(앱의 하이라이트용). 표지는 재사용한다.
 

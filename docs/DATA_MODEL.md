@@ -43,7 +43,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 
 **people** (소중한 사람): user_id, name, relation text(partner, family, friend, pet, other), pronunciation text null
 
-**desires** (꿈): user_id, text(≤200자), category text(wealth, love, career, health, confidence, other), status text(active, achieved, archived), achieved_at timestamptz null
+**desires** (꿈): user_id, text(≤200자), category text(wealth, love, career, health, confidence, other), status text(active, achieved, archived), achieved_at timestamptz null, visions jsonb null(비전 고르기 장면 ≤4개, `visionSchema` — 서버가 쓰고 본인이 읽는다, 마이그레이션 20261112120000)
 
 **consents**: user_id, kind text(privacy, marketing, ai_processing), version text, granted boolean, granted_at — 바꿀 때마다 새 행을 쌓고 가장 최근 행으로 판단한다(설정 P02 혜택·이벤트 소식, 버전 `marketing-v1`)
 
@@ -64,7 +64,9 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 | script | text | 최종 스크립트 |
 | script_chars | int | |
 | voice_id | uuid null → voices | tts 단계에서 정한다(voices 시드 전에도 생성 흐름을 돌리려고 null 허용) |
-| prompt_version | text | 예: story@2026-10-01 |
+| prompt_version | text | 예: scene-plan@v2+story@v1+safety@v1 |
+| vision | jsonb null | 비전 고르기에서 고른 장면(`visionSchema`). 장면 계획이 이 장면을 중심으로 한다 |
+| daily_on | date null | 데일리(kind = daily)의 날짜(사용자 시간대, 새벽 5시 기준). `(user_id, daily_on)` 유일 |
 | error_code | text null | ENQUEUE_FAILED, SAFETY_BLOCKED, SAFETY_CRISIS(도움 안내 화면), TTS_FAILED(텍스트는 계속 읽기 가능), GENERATION_FAILED |
 | updated_at | timestamptz | 공통 트리거 |
 
