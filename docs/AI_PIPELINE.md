@@ -6,14 +6,16 @@
 
 | 용도 | 환경 변수 | 기본값 | 비고 |
 | --- | --- | --- | --- |
-| 장면 계획·스토리 | `GEMINI_STORY_MODEL` | `gemini-3-flash-preview` | 2주차 블라인드 테스트로 3.8 Flash·3.1 Pro와 비교 후 확정 |
-| 안전 검수·분류 | `GEMINI_SAFETY_MODEL` | `gemini-3.1-flash-lite` | JSON 출력 |
+| 장면 계획·스토리·확언 | `GEMINI_STORY_MODEL` | `gemini-3.6-flash` | 안정판(2026-11-12 공식 문서). 블라인드 테스트로 3.8 Flash와 비교 후 확정. 생각 수준 low |
+| 안전 검수·분류 | `GEMINI_SAFETY_MODEL` | `gemini-3.1-flash-lite` | JSON 출력, 생각 수준 minimal |
 | 스토리 음성 | `ELEVENLABS_STORY_MODEL` | `eleven_v3` | 요청당 5,000자 한도, 요청 스티칭 불가 |
 | 짧은 음성(확언·데일리 후보) | `ELEVENLABS_SHORT_MODEL` | `eleven_flash_v2_5` | 비용 절반 |
 | 긴 콘텐츠 예비 | `ELEVENLABS_LONG_MODEL` | `eleven_multilingual_v2` | 10,000자, 스티칭 가능 |
 | 표지 이미지 | `ELEVENLABS_IMAGE_MODEL` | `gemini-3.1-flash-image` | Image API는 ElevenLabs Pro 플랜 이상 필요 |
 
-모델 ID는 자주 바뀌므로 구현 시 공식 문서에서 다시 확인한다. Gemini는 유료 티어 키만 쓴다(무료 티어 입력은 Google 제품 개선에 쓰일 수 있음).
+모델 ID는 자주 바뀌므로 구현 시 공식 문서에서 다시 확인한다. 출시·실사용자 데이터에는 유료 티어 키만 쓴다(무료 티어 입력은 Google 제품 개선에 쓰일 수 있음). 개발 중 무료 키는 가짜 프로필 시험에만 쓴다(D-45).
+
+어댑터(`packages/providers/src/gemini`)는 `@google/genai`의 `generateContent`에 `responseJsonSchema`(zod `toJSONSchema`)로 구조화 출력을 받는다. 재시도(408·429·5xx, 최대 3회)와 타임아웃(60초)은 SDK `httpOptions`가 하고, JSON이 스키마에 안 맞으면 어댑터가 한 번만 다시 부른다. 출력 토큰에는 생각 토큰을 더해 비용을 계산한다. 테스트와 `eval:story`는 기본으로 Gemini를 부르지 않는다(`eval:story --live` 필요, `--max-calls` 기본 150).
 
 ## 2. 파이프라인 단계
 
@@ -95,7 +97,14 @@ SafetyVerdict = {
 - 입력(꿈) 단계에서도 같은 분류를 먼저 돌려, `block`이면 생성하지 않고 부드러운 안내 문구를 보여 준다.
 - 자해·위기 신호가 있으면 스토리를 만들지 않고, 도움을 받을 수 있는 곳을 안내하는 화면으로 보낸다(문구는 `ko.ts`의 `safety.support*`).
 
-### 4.4 수정(revise)
+### 4.4 오늘의 확언(`affirmation@v1`, D-45)
+
+- 입력: 스토리와 같은 사용자 정보 + 퀴즈 "걸림돌"(desire_blocker) + 목표 수정 "바라는 변화". 출력: `affirmationSetSchema`(10개, 문장 ≤60자, 주제 ≤12자).
+- 1인칭 현재 평서형("나는 ~다"), 결과 보장·투자·의료·실존 인물 금지. 걸림돌은 반대편의 나로 2~3개 바꿔 말한다.
+- 10개를 번호 붙인 한 글로 이어 `reviewSafety(…, 'script')`로 검수한다. rewrite면 이유를 넣어 1회 다시 쓰고, 그래도 통과 못 하면 기본 확언 10개(`FALLBACK_AFFIRMATIONS`, `prompt_version = fallback@v1`).
+- 2026-11-12 live 1회: 10개 4.2초, 입력 650·출력 394토큰, 약 $0.002. 검수 1.0초.
+
+### 4.5 수정(revise)
 
 입력 = 원본 ScenePlan + 원본 스크립트 + 수정 요청. 출력 = 새 ScenePlan과 스크립트, 그리고 `changedParagraphIndexes: number[]`(앱의 하이라이트용). 표지는 재사용한다.
 
@@ -121,6 +130,8 @@ SafetyVerdict = {
 | `SUB_VERSIONS_PER_DESIRE` | 3 | 꿈당 버전 수 |
 | `DAILY_PREGEN_ACTIVE_DAYS` | 3 | 최근 N일 활성 구독자만 데일리 사전 생성 |
 | `MAX_CONCURRENT_TTS` | 8 | ElevenLabs 플랜 동시성보다 낮게 |
+| `GEMINI_DAILY_CALL_LIMIT` | 50 | 서버 전체 하루(UTC) Gemini 호출 상한(env). `generation_jobs`의 gemini 행과 이 프로세스가 가져간 수 중 큰 값으로 센다. 무료 쿼터 보호(D-45) |
+| `AFFIRMATION_CALLS_PER_DAY` | 8 | 사용자당 24시간 확언 생성 기록 행(작성·검수·재작성·재검수 = 최대 4행, 2회 시도) |
 
 ### 단위 원가(2026-09 기준, 출시 전 재확인)
 

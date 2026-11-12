@@ -37,7 +37,8 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | DELETE `/v1/stories/:id` | 스토리 삭제(본인 것, 생성이 끝난 것만). 음성·표지 파일과 행을 지우고, 남은 스토리가 없는 꿈도 지운다. 생성 기록은 남긴다 | — | `204`, 생성 중이면 `409 CONFLICT` |
 | GET `/v1/stories/:id/media` | 서명 URL 발급(본인 스토리 또는 공용 리추얼, 1시간). 리추얼은 `canAccessLibraryItem`(페이월 전에는 모두 허용) | — | `{ audioUrl, coverUrl, expiresAt }`, 볼 수 없거나 음성이 없으면 `404`, 구독 필요 시 `403 FORBIDDEN` |
 | POST `/v1/daily` | 오늘의 순간 즉시 생성(없을 때) | — | `200 { storyId }` 또는 `202` |
-| POST `/v1/affirmations/:id/audio` | 확언 음성(캐시 우선) | `{ voiceKey? }` | `{ audioUrl }` |
+| GET `/v1/affirmations/today` | 오늘의 확언 10장(A01). 사용자 시간대의 날짜로 없으면 이 요청에서 만든다(작성 → 검수 → rewrite면 1회 재작성, 수 초). 검수를 끝내 통과 못 하거나 하루 상한·공급자 한도에 걸리면 기본 확언(`FALLBACK_AFFIRMATIONS`)을 저장한다. 사용자당 24시간 Gemini 기록 8행까지(D-45) | — | `{ day, items: [{ id, position, text, theme }] }`(`todayAffirmationsResponseSchema`) |
+| POST `/v1/affirmations/:id/audio` | 확언 음성(캐시 우선, ElevenLabs 후) | `{ voiceKey? }` | `{ audioUrl }` |
 | POST `/v1/push-tokens` | 푸시 토큰 등록(Expo 푸시 토큰, 멱등). 같은 토큰이 다른 계정에 있으면 지금 사용자로 옮긴다 | `{ token, platform }` | `204` |
 | POST `/v1/promo/redeem` | 크리에이터 코드 | `{ code }` | `{ grant }` |
 | POST `/v1/account/delete` | 회원 탈퇴(P04). 사유만 `account_deletions`에 익명으로 남기고, 본인 폴더 파일(`story-audio`·`story-covers`·`vision-photos`)을 지운 뒤 auth 사용자를 지운다(행은 cascade). 요청 안에서 끝낸다(D-44) | `{ reasons? }`(`DELETE_REASONS`) | `204` |
