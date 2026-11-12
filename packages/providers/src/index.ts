@@ -3,6 +3,7 @@ import {
   createGeminiAffirmationModel,
   createGeminiLifestyleModel,
   createGeminiStoryModel,
+  createGeminiVisionModel,
   type CallBudget,
 } from './gemini/gemini';
 import { createMockProviders } from './mock/mock-providers';
@@ -39,6 +40,7 @@ export function createProviders(
   let story = mock.story;
   let affirmation = mock.affirmation;
   let lifestyle = mock.lifestyle;
+  let vision = mock.vision;
   if (modes.gemini === 'live') {
     if (!env.GEMINI_API_KEY) throw new Error('GEMINI_MODE=live에는 GEMINI_API_KEY가 필요합니다');
     if (!opts.budget) throw new Error('live Gemini에는 하루 호출 상한(budget)이 필요합니다');
@@ -58,10 +60,11 @@ export function createProviders(
       budget: opts.budget,
     });
     lifestyle = createGeminiLifestyleModel({ generate, model: storyModel, budget: opts.budget });
+    vision = createGeminiVisionModel({ generate, model: storyModel, budget: opts.budget });
   }
 
   if (modes.tts === 'live') {
     throw new Error('ElevenLabs 어댑터는 아직 없습니다. TTS_MODE=mock을 쓰세요.');
   }
-  return { story, affirmation, lifestyle, tts: mock.tts };
+  return { story, vision, affirmation, lifestyle, tts: mock.tts };
 }

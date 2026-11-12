@@ -4,7 +4,8 @@ import {
   lifestylePromptV1,
   STORY_PROMPT_VERSION,
   safetyPromptV1,
-  scenePlanPromptV1,
+  scenePlanPromptV2,
+  visionPromptV1,
   storyPromptV1,
   type PromptMessages,
 } from '@eloria/prompts';
@@ -13,11 +14,12 @@ import {
   lifestyleSetSchema,
   safetyVerdictSchema,
   scenePlanSchema,
+  visionSetSchema,
 } from '@eloria/shared';
 import { ApiError, GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { z } from 'zod';
 import { estimateGeminiCostUsd } from '../pricing';
-import type { AffirmationModel, LifestyleModel, StoryModel, Usage } from '../types';
+import type { AffirmationModel, LifestyleModel, StoryModel, Usage, VisionModel } from '../types';
 
 /** 공급자 호출 실패. code로 재시도·사용자 안내를 고른다. */
 export class ProviderError extends Error {
@@ -117,6 +119,7 @@ const MAX_OUTPUT = {
   safety: 1_000,
   affirmation: 2_000,
   lifestyle: 600,
+  vision: 1_500,
 } as const;
 
 /**
@@ -187,7 +190,7 @@ export function createGeminiStoryModel(opts: {
     async planScenes(ctx) {
       const { value, usage } = await run.json(scenePlanSchema, {
         model: story,
-        messages: scenePlanPromptV1(ctx),
+        messages: scenePlanPromptV2(ctx),
         thinking: 'low',
         maxOutputTokens: MAX_OUTPUT.plan,
       });
@@ -249,6 +252,26 @@ export function createGeminiLifestyleModel(opts: {
         messages: lifestylePromptV1(ctx),
         thinking: 'minimal',
         maxOutputTokens: MAX_OUTPUT.lifestyle,
+      });
+      return { set: value, usage };
+    },
+  };
+}
+
+/** 비전 장면 제안 live 어댑터(한 번 호출로 4개) */
+export function createGeminiVisionModel(opts: {
+  generate: GeminiGenerate;
+  model: string;
+  budget?: CallBudget;
+}): VisionModel {
+  const run = createGeminiRunner(opts.generate, opts.budget);
+  return {
+    async suggest(ctx) {
+      const { value, usage } = await run.json(visionSetSchema, {
+        model: opts.model,
+        messages: visionPromptV1(ctx),
+        thinking: 'low',
+        maxOutputTokens: MAX_OUTPUT.vision,
       });
       return { set: value, usage };
     },

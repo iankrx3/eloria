@@ -15,6 +15,8 @@ export type StoryContext = {
   loveDesired?: string;
   dreamHome?: string[];
   dreamDays?: string;
+  /** 비전 고르기(H05)에서 고른 장면. 있으면 장면 계획이 이 장면을 중심으로 한다(scene-plan@v2). */
+  vision?: { title: string; summary: string; place: string; timeOfDay: string };
   /** Personal(PRD F-11): 장면에 자연스럽게 넣을 것과 피할 것 */
   likes?: string[];
   dislikes?: string[];

@@ -5,9 +5,11 @@ import type { StoryEvents } from '../inngest/events';
 import { createSupabaseVerifier } from '../middleware/auth';
 import type { PushRepo } from '../repos/push-repo';
 import type { AccountRepo } from '../repos/account-repo';
+import type { DailyRepo } from '../repos/daily-repo';
+import type { VisionRepo } from '../repos/vision-repo';
 import type { AffirmationRepo, NewAffirmation } from '../repos/affirmation-repo';
 import { createMockProviders } from '@eloria/providers';
-import type { AffirmationItem } from '@eloria/shared';
+import type { AffirmationItem, Vision } from '@eloria/shared';
 import type { ProfileRow, ProfileUpdate, QuizRepo } from '../repos/quiz-repo';
 import type { StoryRepo } from '../repos/story-repo';
 
@@ -204,6 +206,68 @@ export function createFakeAffirmationRepo(opts: { callsSoFar?: number; timezone?
   return { repo, days, calls };
 }
 
+/** 메모리 비전 저장소 */
+export function createFakeVisionRepo() {
+  const desires = new Map<string, { userId: string; text: string; visions: Vision[] }>();
+  const stories: { storyId: string; desireId: string; vision: Vision }[] = [];
+  let n = 0;
+  const id = () => `00000000-0000-4000-9000-${String(++n).padStart(12, '0')}`;
+  const repo: VisionRepo = {
+    async createDesire(userId, { text }) {
+      const desireId = id();
+      desires.set(desireId, { userId, text, visions: [] });
+      return desireId;
+    },
+    async saveVisions(desireId, visions) {
+      const d = desires.get(desireId);
+      if (d) d.visions = visions;
+    },
+    async findVisions(userId, desireId) {
+      const d = desires.get(desireId);
+      return d && d.userId === userId ? d.visions : null;
+    },
+    async createVisionStory(_userId, desireId, vision) {
+      const storyId = id();
+      stories.push({ storyId, desireId, vision });
+      return storyId;
+    },
+  };
+  return { repo, desires, stories };
+}
+
+/** 메모리 데일리 저장소 */
+export function createFakeDailyRepo(opts: { desireId?: string | null } = {}) {
+  const dailies = new Map<string, string>();
+  const touched: string[] = [];
+  let n = 0;
+  const repo: DailyRepo = {
+    async touchActive(userId) {
+      touched.push(userId);
+    },
+    async timezone() {
+      return 'Asia/Seoul';
+    },
+    async findDaily(userId, day) {
+      return dailies.get(`${userId}:${day}`) ?? null;
+    },
+    async latestDesireId() {
+      return opts.desireId === undefined ? '00000000-0000-4000-8000-0000000000d1' : opts.desireId;
+    },
+    async createDaily(userId, _desireId, day) {
+      const key = `${userId}:${day}`;
+      const existing = dailies.get(key);
+      if (existing) return { storyId: existing, created: false };
+      const storyId = `00000000-0000-4000-a000-${String(++n).padStart(12, '0')}`;
+      dailies.set(key, storyId);
+      return { storyId, created: true };
+    },
+    async activeUserIds() {
+      return ['user-1', 'user-2'];
+    },
+  };
+  return { repo, dailies, touched };
+}
+
 /** 테스트용 앱. 필요한 의존성만 바꿔 끼운다. */
 export function createTestApp(overrides: Partial<AppDeps> = {}) {
   return createApp({
@@ -215,6 +279,8 @@ export function createTestApp(overrides: Partial<AppDeps> = {}) {
     accountRepo: createFakeAccountRepo().repo,
     affirmations: { repo: createFakeAffirmationRepo().repo, providers: createMockProviders() },
     profile: { repo: createFakeAffirmationRepo().repo, providers: createMockProviders() },
+    visions: { repo: createFakeVisionRepo().repo, providers: createMockProviders() },
+    daily: { repo: createFakeDailyRepo().repo },
     ...overrides,
   });
 }

@@ -147,6 +147,6 @@ describe('공급자 모드', () => {
     expect(
       createProviders({ ...env, GEMINI_API_KEY: 'x' }, { budget: createMemoryBudget(1) }).story
         .promptVersion,
-    ).toContain('scene-plan@v1');
+    ).toContain('scene-plan@v2');
   });
 });

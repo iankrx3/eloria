@@ -8,14 +8,20 @@ import { errorJson, handleError } from './lib/errors';
 import { createRateLimiter, type RateLimiter } from './lib/rate-limit';
 import { requireAuth, type AuthVariables, type TokenVerifier } from './middleware/auth';
 import type { TodayDeps } from './affirmations/today';
+import type { DailyDeps } from './daily/daily';
 import type { LifestyleDeps } from './profile/lifestyle';
+import type { DailyRepo } from './repos/daily-repo';
+import type { VisionRepo } from './repos/vision-repo';
+import type { VisionDeps } from './visions/visions';
 import type { AccountRepo } from './repos/account-repo';
 import type { PushRepo } from './repos/push-repo';
 import type { QuizRepo } from './repos/quiz-repo';
 import type { StoryRepo } from './repos/story-repo';
 import { createAccountRoutes } from './routes/account';
 import { createAffirmationRoutes } from './routes/affirmations';
+import { createDailyRoutes } from './routes/daily';
 import { createProfileRoutes } from './routes/profile';
+import { createVisionRoutes } from './routes/visions';
 import { health } from './routes/health';
 import { createManifestRoutes } from './routes/manifests';
 import { createPushTokenRoutes } from './routes/push-tokens';
@@ -32,6 +38,9 @@ export type AppDeps = {
   affirmations: TodayDeps;
   /** 라이프스타일 추천: 같은 저장소와 글 어댑터 */
   profile: LifestyleDeps;
+  /** 비전 고르기: 저장소와 글 어댑터(이벤트·한도는 앱 공통 값을 쓴다) */
+  visions: { repo: VisionRepo; providers: VisionDeps['providers'] };
+  daily: { repo: DailyRepo };
   storyEvents: StoryEvents;
   /** 생성 요청 분당 한도. 기본값은 LIMITS.GENERATION_REQUESTS_PER_MINUTE */
   generationLimiter?: RateLimiter;
@@ -61,14 +70,28 @@ export function createApp(deps: AppDeps) {
   v1.route('/account', createAccountRoutes(deps.accountRepo));
   v1.route('/affirmations', createAffirmationRoutes(deps.affirmations));
   v1.route('/profile', createProfileRoutes(deps.profile));
+  const generationLimiter =
+    deps.generationLimiter ??
+    createRateLimiter({ limit: LIMITS.GENERATION_REQUESTS_PER_MINUTE, windowMs: 60_000 });
+  v1.route(
+    '/visions',
+    createVisionRoutes({
+      repo: deps.visions.repo,
+      providers: deps.visions.providers,
+      personal: deps.affirmations.repo,
+      stories: deps.storyRepo,
+      events: deps.storyEvents,
+      limiter: generationLimiter,
+    }),
+  );
+  const dailyDeps: DailyDeps = { repo: deps.daily.repo, events: deps.storyEvents };
+  v1.route('/daily', createDailyRoutes(dailyDeps));
   v1.route(
     '/manifests',
     createManifestRoutes({
       repo: deps.storyRepo,
       events: deps.storyEvents,
-      limiter:
-        deps.generationLimiter ??
-        createRateLimiter({ limit: LIMITS.GENERATION_REQUESTS_PER_MINUTE, windowMs: 60_000 }),
+      limiter: generationLimiter,
     }),
   );
   app.route('/v1', v1);

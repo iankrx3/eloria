@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   challengeState,
   cleanGratitudeLines,
+  dailyDay,
   GRATITUDE_LINE_MAX,
   isRecordedDay,
   localDay,
@@ -79,5 +80,12 @@ describe('cleanGratitudeLines', () => {
     const out = cleanGratitudeLines([long, 'b', 'c', 'd']);
     expect(out).toHaveLength(3);
     expect(out[0]).toHaveLength(GRATITUDE_LINE_MAX);
+  });
+});
+
+describe('dailyDay', () => {
+  it('새벽 5시(서울) 전에는 전날', () => {
+    expect(dailyDay(new Date('2026-11-12T19:30:00Z'), 'Asia/Seoul')).toBe('2026-11-12'); // 13일 04:30
+    expect(dailyDay(new Date('2026-11-12T20:30:00Z'), 'Asia/Seoul')).toBe('2026-11-13'); // 13일 05:30
   });
 });

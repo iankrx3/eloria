@@ -4,6 +4,7 @@ import { createExpoPushClient, createProviders } from '@eloria/providers';
 import {
   createGenerateLibraryStory,
   createGenerateStory,
+  createDailyPregen,
   createSeedLibrary,
   ping,
 } from './inngest';
@@ -20,6 +21,8 @@ import { createSupabaseQuizRepo } from './repos/quiz-repo';
 import { createSupabaseStoryRepo } from './repos/story-repo';
 import { createSupabaseAccountRepo } from './repos/account-repo';
 import { createSupabaseAffirmationRepo } from './repos/affirmation-repo';
+import { createSupabaseDailyRepo } from './repos/daily-repo';
+import { createSupabaseVisionRepo } from './repos/vision-repo';
 
 const env = loadEnv();
 const db = createAdminClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
@@ -29,6 +32,7 @@ const providers = createProviders(process.env, {
 const pushRepo = createSupabasePushRepo(db);
 const pipelineRepo = createSupabasePipelineRepo(db);
 const affirmationRepo = createSupabaseAffirmationRepo(db);
+const dailyRepo = createSupabaseDailyRepo(db);
 const notifier = createStoryNotifier({
   repo: pushRepo,
   client: createExpoPushClient({ accessToken: env.EXPO_ACCESS_TOKEN }),
@@ -39,6 +43,8 @@ const app = createApp({
   accountRepo: createSupabaseAccountRepo(db),
   affirmations: { repo: affirmationRepo, providers },
   profile: { repo: affirmationRepo, providers },
+  visions: { repo: createSupabaseVisionRepo(db), providers },
+  daily: { repo: dailyRepo },
   pushRepo,
   storyEvents: inngestStoryEvents,
   inngestFunctions: [
@@ -46,6 +52,11 @@ const app = createApp({
     createGenerateStory({ repo: pipelineRepo, providers, notifier }),
     createSeedLibrary({ repo: createSupabaseLibraryRepo(db) }),
     createGenerateLibraryStory({ repo: pipelineRepo, providers }),
+    createDailyPregen({
+      repo: dailyRepo,
+      events: inngestStoryEvents,
+      enabled: env.DAILY_PREGEN_ENABLED,
+    }),
   ],
   verifyToken: createSupabaseVerifier({
     supabaseUrl: env.SUPABASE_URL,

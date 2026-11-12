@@ -48,7 +48,20 @@ function toStoryContext(ctx: StoryJobContext, tone: StoryContext['tone']): Story
     dreamDays: ctx.quiz.dream_days,
     likes: ctx.likes,
     dislikes: ctx.dislikes,
+    ...(ctx.vision && {
+      vision: {
+        title: ctx.vision.title,
+        summary: ctx.vision.summary,
+        place: ctx.vision.place,
+        timeOfDay: ctx.vision.timeOfDay,
+      },
+    }),
   };
+}
+
+/** 입력 검수 대상: 꿈 + (있으면) 고른 장면. 장면 글도 사용자가 고칠 수 있는 데이터라 함께 본다. */
+function inputText(ctx: StoryJobContext) {
+  return ctx.vision ? `${ctx.dream}\n${ctx.vision.title}\n${ctx.vision.summary}` : ctx.dream;
 }
 
 /**
@@ -94,8 +107,9 @@ export async function runStoryPipeline(
 
   const inputVerdict = await step('review-input', async () => {
     await repo.setStatus(storyId, 'planning');
-    return (await call(ctx, 'review-input', () => providers.story.reviewSafety(ctx.dream, 'dream')))
-      .verdict;
+    return (
+      await call(ctx, 'review-input', () => providers.story.reviewSafety(inputText(ctx), 'dream'))
+    ).verdict;
   });
   if (inputVerdict.verdict === 'block') {
     const errorCode = blockCode(inputVerdict);
@@ -116,8 +130,8 @@ export async function runStoryPipeline(
       await repo.setStatus(storyId, 'writing');
       const { script } = await call(ctx, id, () =>
         providers.story.writeStory(plan, storyCtx, {
-          targetChars: LIMITS.STORY_TARGET_CHARS,
-          maxChars: LIMITS.STORY_MAX_CHARS,
+          targetChars: ctx.kind === 'daily' ? LIMITS.DAILY_TARGET_CHARS : LIMITS.STORY_TARGET_CHARS,
+          maxChars: ctx.kind === 'daily' ? LIMITS.DAILY_MAX_CHARS : LIMITS.STORY_MAX_CHARS,
           safetyFeedback,
         }),
       );

@@ -1,5 +1,5 @@
 import { createMockProviders, ProviderError, type Providers } from '@eloria/providers';
-import type { SafetyVerdict, StoryStatus } from '@eloria/shared';
+import { LIMITS, type SafetyVerdict, type StoryStatus, type Vision } from '@eloria/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PipelineRepo, StoryJobContext } from '../repos/pipeline-repo';
 import { audioCacheKey, handlePipelineFailure, runStoryPipeline } from './story-pipeline';
@@ -7,7 +7,9 @@ import { audioCacheKey, handlePipelineFailure, runStoryPipeline } from './story-
 const STORY = '33333333-3333-4333-8333-333333333333';
 const USER = '11111111-1111-4111-8111-111111111111';
 
-function createFakePipelineRepo(opts: { cachedAudio?: boolean; library?: boolean } = {}) {
+function createFakePipelineRepo(
+  opts: { cachedAudio?: boolean; library?: boolean; daily?: boolean; vision?: Vision } = {},
+) {
   const statuses: StoryStatus[] = [];
   const state = {
     status: 'queued' as StoryStatus,
@@ -29,6 +31,8 @@ function createFakePipelineRepo(opts: { cachedAudio?: boolean; library?: boolean
     dislikes: [],
     people: [{ name: '민준', relation: 'partner' }],
     quiz: { dream_home: ['jeju_sea'] },
+    kind: opts.library ? 'library' : opts.daily ? 'daily' : 'on_demand',
+    vision: opts.vision ?? null,
   };
 
   const repo: PipelineRepo = {
@@ -254,5 +258,40 @@ describe('audioCacheKey', () => {
     expect(audioCacheKey('m', 'v', '안녕  하세요')).toBe(audioCacheKey('m', 'v', '안녕 하세요 '));
     expect(audioCacheKey('m', 'v', '안녕')).not.toBe(audioCacheKey('m', 'v2', '안녕'));
     expect(audioCacheKey('m', 'v', '안녕')).not.toBe(audioCacheKey('m2', 'v', '안녕'));
+  });
+});
+
+describe('비전·데일리(D-48)', () => {
+  const vision: Vision = {
+    position: 2,
+    title: '노을 진 작업실의 저녁',
+    summary: '창밖 바다를 보며 하루를 정리한다',
+    place: '바닷가 작업실',
+    timeOfDay: 'evening',
+    storyId: null,
+  };
+
+  it('고른 장면을 입력 검수와 장면 계획에 넘긴다', async () => {
+    const fake = createFakePipelineRepo({ vision });
+    const providers = createMockProviders();
+    const review = vi.spyOn(providers.story, 'reviewSafety');
+    const plan = vi.spyOn(providers.story, 'planScenes');
+    await runStoryPipeline({ repo: fake.repo, providers }, { storyId: STORY }, (_id, fn) => fn());
+    expect(review.mock.calls[0]?.[0]).toContain('노을 진 작업실의 저녁');
+    expect(plan.mock.calls[0]?.[0].vision).toMatchObject({
+      place: '바닷가 작업실',
+      timeOfDay: 'evening',
+    });
+  });
+
+  it('데일리는 짧은 목표 길이로 쓴다', async () => {
+    const fake = createFakePipelineRepo({ daily: true });
+    const providers = createMockProviders();
+    const write = vi.spyOn(providers.story, 'writeStory');
+    await runStoryPipeline({ repo: fake.repo, providers }, { storyId: STORY }, (_id, fn) => fn());
+    expect(write.mock.calls[0]?.[2]).toMatchObject({
+      targetChars: LIMITS.DAILY_TARGET_CHARS,
+      maxChars: LIMITS.DAILY_MAX_CHARS,
+    });
   });
 });

@@ -1,5 +1,5 @@
 import { SAFETY_V1 } from './safety/v1';
-import { SCENE_PLAN_V1 } from './scene-plan/v1';
+import { SCENE_PLAN_V2 } from './scene-plan/v2';
 import { STORY_V1 } from './story/v1';
 
 /**
@@ -7,7 +7,7 @@ import { STORY_V1 } from './story/v1';
  * 지금 쓰는 버전만 여기서 내보낸다.
  */
 export const PROMPT_VERSIONS = {
-  scenePlan: SCENE_PLAN_V1,
+  scenePlan: SCENE_PLAN_V2,
   story: STORY_V1,
   safety: SAFETY_V1,
 } as const satisfies Record<string, `${string}@v${number}`>;
@@ -27,4 +27,6 @@ export * from './context';
 export * from './eval/cases';
 export { safetyPromptV1, REASON_LABEL, type SafetyTarget } from './safety/v1';
 export { scenePlanPromptV1 } from './scene-plan/v1';
+export { scenePlanPromptV2 } from './scene-plan/v2';
+export { VISION_V1, visionPromptV1 } from './vision/v1';
 export { storyPromptV1, type StoryPromptOptions } from './story/v1';

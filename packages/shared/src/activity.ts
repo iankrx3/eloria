@@ -122,3 +122,11 @@ export function cleanGratitudeLines(lines: readonly string[]): string[] {
     .filter((l) => l.length > 0)
     .slice(0, GRATITUDE_LINES);
 }
+
+/** "당신을 위한 이야기"가 바뀌는 시각(사용자 시간대, H01 카운트다운). */
+export const DAILY_REFRESH_HOUR = 5;
+
+/** 데일리 날짜: 새벽 5시 전이면 아직 어제의 데일리다. */
+export function dailyDay(now: Date, timezone?: string) {
+  return localDay(new Date(now.getTime() - DAILY_REFRESH_HOUR * 60 * 60 * 1000), timezone);
+}

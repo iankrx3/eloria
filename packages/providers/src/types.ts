@@ -4,7 +4,13 @@ import type {
   SafetyTarget,
   StoryContext,
 } from '@eloria/prompts';
-import type { AffirmationSet, LifestyleSet, SafetyVerdict, ScenePlan } from '@eloria/shared';
+import type {
+  AffirmationSet,
+  LifestyleSet,
+  SafetyVerdict,
+  ScenePlan,
+  VisionSet,
+} from '@eloria/shared';
 
 export type { AffirmationContext, LifestyleContext, SafetyTarget, StoryContext };
 
@@ -64,8 +70,14 @@ export interface LifestyleModel {
   suggest(ctx: LifestyleContext): Promise<{ set: LifestyleSet; usage: Usage }>;
 }
 
+/** 비전 고르기(H05): 한 꿈에 장면 4개 */
+export interface VisionModel {
+  suggest(ctx: StoryContext): Promise<{ set: VisionSet; usage: Usage }>;
+}
+
 export type Providers = {
   story: StoryModel;
+  vision: VisionModel;
   affirmation: AffirmationModel;
   lifestyle: LifestyleModel;
   tts: TtsProvider;

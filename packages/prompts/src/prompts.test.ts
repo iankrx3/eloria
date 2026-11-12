@@ -14,6 +14,8 @@ import {
   PROMPT_VERSIONS,
   safetyPromptV1,
   scenePlanPromptV1,
+  scenePlanPromptV2,
+  visionPromptV1,
   STORY_PROMPT_VERSION,
   storyPromptV1,
   type StoryContext,
@@ -128,11 +130,11 @@ describe('safety v1', () => {
 describe('버전', () => {
   it('stories.prompt_version에 세 프롬프트 버전을 함께 남긴다', () => {
     expect(PROMPT_VERSIONS).toEqual({
-      scenePlan: 'scene-plan@v1',
+      scenePlan: 'scene-plan@v2',
       story: 'story@v1',
       safety: 'safety@v1',
     });
-    expect(STORY_PROMPT_VERSION).toBe('scene-plan@v1+story@v1+safety@v1');
+    expect(STORY_PROMPT_VERSION).toBe('scene-plan@v2+story@v1+safety@v1');
   });
 });
 
@@ -240,5 +242,29 @@ describe('affirmation v1', () => {
       expect(a.text.length).toBeLessThanOrEqual(AFFIRMATION_TEXT_MAX);
       expect(a.text).not.toMatch(/반드시|무조건|100%|보장/);
     }
+  });
+});
+
+describe('scene-plan v2 · vision v1', () => {
+  it('고른 장면이 있을 때만 장면 블록을 넣는다', () => {
+    expect(scenePlanPromptV2(ctx)).toEqual(scenePlanPromptV1(ctx));
+    const { system, user } = scenePlanPromptV2({
+      ...ctx,
+      vision: {
+        title: '바닷가 <작업실>의 아침',
+        summary: '창을 연다',
+        place: '바닷가 작업실',
+        timeOfDay: 'morning',
+      },
+    });
+    expect(system).toContain('<chosen_scene>');
+    expect(user).toContain('제목: 바닷가 작업실의 아침');
+    expect(user).toContain('시간대: 아침');
+  });
+
+  it('비전 프롬프트는 서로 다른 장면 4개를 요구한다', () => {
+    const { system, user } = visionPromptV1(ctx);
+    expect(system).toContain('4개');
+    expect(user).toContain('<dream>바다가 보이는 작업실</dream>');
   });
 });

@@ -126,6 +126,35 @@ export function createMockProviders(opts: { delayMs?: number } = {}): Providers 
         };
       },
     },
+    vision: {
+      async suggest(ctx) {
+        await wait();
+        const dream = ctx.dream.slice(0, 20);
+        const scenes = [
+          {
+            place: '햇살이 드는 내 방',
+            timeOfDay: 'morning' as const,
+            title: '창을 열고 맞는 첫 아침',
+          },
+          {
+            place: '좋아하는 작업 공간',
+            timeOfDay: 'afternoon' as const,
+            title: '몰입하는 오후의 책상',
+          },
+          { place: '노을 진 강변', timeOfDay: 'evening' as const, title: '노을을 걷는 저녁 산책' },
+          { place: '조용한 창가', timeOfDay: 'night' as const, title: '하루를 돌아보는 밤' },
+        ];
+        return {
+          set: {
+            visions: scenes.map((sc) => ({
+              ...sc,
+              summary: `${dream}, 그 삶을 사는 내가 ${sc.place}에서 보내는 시간`,
+            })),
+          },
+          usage: usage({ inputTokens: 0, outputTokens: 0 }),
+        };
+      },
+    },
     lifestyle: {
       async suggest() {
         await wait();

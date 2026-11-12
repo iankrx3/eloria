@@ -6,7 +6,7 @@ import type { AdminClient } from '../lib/supabase-admin';
 export type AffirmationUserContext = { timezone: string | null; context: LifestyleContext };
 
 /** 사용자 한 명이 부르는 Gemini 기능(generation_jobs.kind) */
-export type PersonalJobKind = 'affirmation' | 'lifestyle';
+export type PersonalJobKind = 'affirmation' | 'lifestyle' | 'vision';
 
 export type NewAffirmation = { text: string; theme: string };
 

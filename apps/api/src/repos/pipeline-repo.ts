@@ -1,5 +1,7 @@
 import {
   collectQuizAnswers,
+  visionSchema,
+  type Vision,
   type QuizAnswers,
   type ScenePlan,
   type StoryStatus,
@@ -19,6 +21,10 @@ export type StoryJobContext = {
   dislikes: string[];
   people: { name: string; relation: string }[];
   quiz: Partial<QuizAnswers>;
+  /** on_demand·daily·library. 데일리는 짧게 만든다. */
+  kind: 'on_demand' | 'daily' | 'library';
+  /** 비전 고르기(H05)에서 고른 장면 */
+  vision: Vision | null;
 };
 
 export type CallRecord = {
@@ -88,6 +94,8 @@ function libraryContext(storyId: string, theme: string, tone: string): StoryJobC
     dislikes: [],
     people: [],
     quiz: {},
+    kind: 'library',
+    vision: null,
   };
 }
 
@@ -96,7 +104,7 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
     async loadContext(storyId) {
       const { data: story, error } = await db
         .from('stories')
-        .select('id, user_id, kind, desires(text), library_items(theme, tone)')
+        .select('id, user_id, kind, vision, desires(text), library_items(theme, tone)')
         .eq('id', storyId)
         .single();
       if (error) throw error;
@@ -133,6 +141,9 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
         dislikes: profile.data.dislikes,
         people: people.data,
         quiz: collectQuizAnswers(quiz.data),
+        kind: story.kind === 'daily' ? 'daily' : 'on_demand',
+        // JSON 컬럼은 zod로 검증한다(CLAUDE.md). 형식이 틀리면 장면 없이 만든다.
+        vision: story.vision ? (visionSchema.safeParse(story.vision).data ?? null) : null,
       };
     },
 
@@ -203,7 +214,7 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
           ...(status === 'running' ? { started_at: now } : { finished_at: now }),
         })
         .eq('story_id', storyId)
-        .in('kind', ['story', 'library'])
+        .in('kind', ['story', 'daily', 'library'])
         .is('provider', null);
       if (error) throw error;
     },

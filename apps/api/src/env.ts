@@ -16,6 +16,8 @@ const envSchema = z.object({
   TTS_MODE: z.preprocess((v) => (v === '' ? undefined : v), z.enum(['live', 'mock']).optional()),
   // 서버 전체 하루 Gemini 호출 상한(UTC 날짜). 무료 쿼터 보호용 기본값.
   GEMINI_DAILY_CALL_LIMIT: z.coerce.number().int().min(0).default(50),
+  // 데일리 사전 생성 크론(D-48). 무료 쿼터 보호로 기본 꺼짐. '1'이면 켠다.
+  DAILY_PREGEN_ENABLED: z.preprocess((v) => v === '1' || v === 'true', z.boolean()).default(false),
   // expo.dev의 푸시 보안(Enhanced Security)을 켰을 때만 필요하다.
   EXPO_ACCESS_TOKEN: optional,
 });
