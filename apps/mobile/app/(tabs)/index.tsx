@@ -14,7 +14,9 @@ import {
   HomeTopChips,
   VisionBadge,
 } from '@/features/home/home-widgets';
+import { DailyRefresh } from '@/features/home/daily-refresh';
 import { HomeStoryCard } from '@/features/home/story-card';
+import { useDaily } from '@/features/vision/use-visions';
 import { useMyStories } from '@/features/library/use-library';
 import { ManifestInput } from '@/features/manifest/manifest-input';
 import { useBottomSpace } from '@/features/navigation/tab-bar';
@@ -58,7 +60,13 @@ export default function Home() {
     }, []),
   );
 
-  const list = (stories.data ?? []).slice(0, FOR_YOU_LIMIT);
+  // 오늘의 이야기(매일 갱신)를 맨 앞에 둔다.
+  const daily = useDaily();
+  const dailyId = daily.data?.storyId;
+  const all = stories.data ?? [];
+  const list = (
+    dailyId ? [...all.filter((s) => s.id === dailyId), ...all.filter((s) => s.id !== dailyId)] : all
+  ).slice(0, FOR_YOU_LIMIT);
 
   return (
     <View className="flex-1">
@@ -103,9 +111,7 @@ export default function Home() {
             <ManifestInput
               value={text}
               onChangeText={setText}
-              onCreated={(storyId) =>
-                router.push({ pathname: '/manifest/[id]/progress', params: { id: storyId } })
-              }
+              onSubmit={(dream) => router.push({ pathname: '/vision', params: { text: dream } })}
             />
           </View>
         </SafeAreaView>
@@ -179,6 +185,10 @@ export default function Home() {
             </Text>
           </View>
         )}
+
+        <View className="mt-[26px] px-gutter">
+          <DailyRefresh />
+        </View>
 
         <View className="mt-[26px] px-gutter">
           <ChallengeCard />

@@ -138,6 +138,20 @@ export const shareText: TextStyle = {
   textShadowRadius: 10,
 };
 
+/** 비전 고르기 배경과 카드(Figma H05) */
+export const visionScreen: ViewStyle = {
+  experimental_backgroundImage: 'linear-gradient(180deg, #E6D9F0 0%, #EFE2F0 55%, #F6E6EA 100%)',
+};
+export const visionCard: ViewStyle = { boxShadow: '0px 16px 32px 0px rgba(62,42,79,0.18)' };
+
+/** 데일리 진행 막대(Figma H01 Refresh progress) */
+export function dailyProgress(ratio: number): ViewStyle {
+  const pct = Math.round(Math.min(1, Math.max(0, ratio)) * 1000) / 10;
+  return {
+    experimental_backgroundImage: `linear-gradient(90deg, #714D7F 0%, #714D7F ${pct}%, rgba(62,42,79,0.12) ${pct}%, rgba(62,42,79,0.12) 100%)`,
+  };
+}
+
 /** 소원 묶음 대표 사진(Figma L06 Theme hero) */
 export const wishHeroShadow: ViewStyle = { boxShadow: '0px 10px 30px 0px rgba(113,77,127,0.18)' };
 

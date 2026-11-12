@@ -43,6 +43,24 @@ export const ko = {
       { label: '여행', text: '나는 가고 싶던 나라에서 한 달을 살았다' },
     ],
   },
+  vision: {
+    headline: '들어가고 싶은\n장면을 골라보세요',
+    making: '장면을 그리고 있어요',
+    makingSub: '당신이 이미 그 삶을 사는 순간 네 가지를 준비하고 있어요',
+    label: (n: number) => `VISION ${String(n).padStart(2, '0')} · 3 MIN`,
+    hint: '‹  옆으로 넘겨 다른 장면 보기  ›',
+    play: (title: string) => `${title} 이야기로 듣기`,
+    failed: '장면을 만들지 못했어요. 잠시 후 다시 시도해 주세요.',
+    blocked: '이 꿈은 지금 장면으로 만들기 어려워요. 다른 표현으로 다시 적어 주세요.',
+    back: '다시 적기',
+  },
+  daily: {
+    eyebrow: 'NEXT STORY IN',
+    caption: '내일 아침, 새로운 이야기가 도착해요',
+    countdown: (h: number, m: number, s: number) =>
+      [h, m, s].map((v) => String(v).padStart(2, '0')).join(' : '),
+    countdownA11y: (h: number, m: number) => `다음 이야기까지 ${h}시간 ${m}분`,
+  },
   manifest: {
     submit: '이야기 만들기',
     counter: (length: number, max: number) => `${length} / ${max}`,

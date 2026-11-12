@@ -81,6 +81,7 @@ export default function RootLayout() {
                     name="library-section/[category]"
                     options={{ animation: 'slide_from_right' }}
                   />
+                  <Stack.Screen name="vision" options={{ animation: 'slide_from_right' }} />
                   <Stack.Screen name="wish/[theme]" options={{ animation: 'slide_from_right' }} />
                   <Stack.Screen
                     name="saved-affirmations"
