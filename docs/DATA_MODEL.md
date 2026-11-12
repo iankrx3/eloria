@@ -76,7 +76,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 
 **soundscapes**: key text unique, display_name, storage_path, loop_duration_sec, is_active
 
-**library_items**: story_id unique → stories(kind=library, on delete cascade), category text(money, love, career, confidence, meditation, affirmation, frequency, sleep, song), wish_theme text null(exam, home, job, love, body, travel — L06 소원별로 듣기), seed_key text unique(시드 카탈로그 key), theme text(생성 테마, 1~200자), tone text(calm, excited, powerful), sort int(카테고리 안 순서), is_free boolean — 로그인 사용자 select, 쓰기는 service role(마이그레이션 20261004130000). 음성은 `story-audio/library/{story_id}/…`라 앱은 서버 서명 URL(`GET /v1/stories/:id/media`)로 받는다
+**library_items**: story_id unique → stories(kind=library, on delete cascade), category text(money, love, career, confidence, meditation, affirmation, frequency, sleep, song), wish_theme text null(exam, home, job, love, body, travel — L06 소원별로 듣기), seed_key text unique(시드 카탈로그 key), theme text(생성 테마, 1~200자), tone text(calm, excited, powerful), sort int(카테고리 안 순서), is_free boolean — 로그인 사용자 select, 쓰기는 service role(마이그레이션 20261004130000). 음성은 `story-audio/library/{story_id}/…`라 앱은 서버 서명 URL(`GET /v1/stories/:id/media`)로 받는다. 주파수(`frequency-*`)는 파이프라인 없이 합성 MP3를 올린 ready 스토리다(`story_assets.provider = synth`, D-47)
 
 **affirmations** (오늘의 확언 10장, A01): user_id, day date, position int(1~10), text(≤120자), theme text null, status text(approved, blocked), prompt_version text null, unique(user_id, day, position) — 서버(service role)만 쓰고 사용자는 본인의 `approved`만 select(마이그레이션 20261111120000)
 
