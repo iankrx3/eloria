@@ -177,11 +177,14 @@ export function createFakeAffirmationRepo(opts: { callsSoFar?: number; timezone?
     async listForDay(userId, day) {
       return (days.get(`${userId}:${day}`) ?? []).map(({ promptVersion: _, ...item }) => item);
     },
-    async countCallsSince() {
-      return (opts.callsSoFar ?? 0) + calls.length;
+    async countCallsSince(_userId, kind) {
+      const mine = calls.filter((c) =>
+        kind === 'affirmation' ? !c.includes(':') : c.startsWith(`${kind}:`),
+      );
+      return (opts.callsSoFar ?? 0) + mine.length;
     },
-    async recordCall({ step }) {
-      calls.push(step);
+    async recordCall({ kind, step }) {
+      calls.push(kind === 'affirmation' ? step : `${kind}:${step}`);
     },
     async saveDay(userId, day, items: NewAffirmation[], promptVersion) {
       const key = `${userId}:${day}`;
@@ -211,6 +214,7 @@ export function createTestApp(overrides: Partial<AppDeps> = {}) {
     pushRepo: createFakePushRepo().repo,
     accountRepo: createFakeAccountRepo().repo,
     affirmations: { repo: createFakeAffirmationRepo().repo, providers: createMockProviders() },
+    profile: { repo: createFakeAffirmationRepo().repo, providers: createMockProviders() },
     ...overrides,
   });
 }

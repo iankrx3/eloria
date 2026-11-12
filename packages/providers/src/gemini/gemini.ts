@@ -1,17 +1,23 @@
 import {
   AFFIRMATION_V1,
   affirmationPromptV1,
+  lifestylePromptV1,
   STORY_PROMPT_VERSION,
   safetyPromptV1,
   scenePlanPromptV1,
   storyPromptV1,
   type PromptMessages,
 } from '@eloria/prompts';
-import { affirmationSetSchema, safetyVerdictSchema, scenePlanSchema } from '@eloria/shared';
+import {
+  affirmationSetSchema,
+  lifestyleSetSchema,
+  safetyVerdictSchema,
+  scenePlanSchema,
+} from '@eloria/shared';
 import { ApiError, GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { z } from 'zod';
 import { estimateGeminiCostUsd } from '../pricing';
-import type { AffirmationModel, StoryModel, Usage } from '../types';
+import type { AffirmationModel, LifestyleModel, StoryModel, Usage } from '../types';
 
 /** 공급자 호출 실패. code로 재시도·사용자 안내를 고른다. */
 export class ProviderError extends Error {
@@ -105,7 +111,13 @@ export function createGenAiGenerate(opts: { apiKey: string; timeoutMs?: number }
 export type GeminiModels = { story: string; safety: string };
 
 /** 장면 계획·스토리·검수 출력 상한(생각 토큰 포함). 스토리 3,800자 ≈ 3,000토큰 + 여유. */
-const MAX_OUTPUT = { plan: 4_000, story: 8_000, safety: 1_000, affirmation: 2_000 } as const;
+const MAX_OUTPUT = {
+  plan: 4_000,
+  story: 8_000,
+  safety: 1_000,
+  affirmation: 2_000,
+  lifestyle: 600,
+} as const;
 
 /**
  * 공통 실행: 상한 확인 → 호출 → (JSON이면) 스키마 검증. 형식이 틀리면 한 번만 다시 부른다.
@@ -217,6 +229,26 @@ export function createGeminiAffirmationModel(opts: {
         messages: affirmationPromptV1(ctx, o),
         thinking: 'low',
         maxOutputTokens: MAX_OUTPUT.affirmation,
+      });
+      return { set: value, usage };
+    },
+  };
+}
+
+/** 라이프스타일 추천 live 어댑터. 짧은 키워드라 생각 최소. */
+export function createGeminiLifestyleModel(opts: {
+  generate: GeminiGenerate;
+  model: string;
+  budget?: CallBudget;
+}): LifestyleModel {
+  const run = createGeminiRunner(opts.generate, opts.budget);
+  return {
+    async suggest(ctx) {
+      const { value, usage } = await run.json(lifestyleSetSchema, {
+        model: opts.model,
+        messages: lifestylePromptV1(ctx),
+        thinking: 'minimal',
+        maxOutputTokens: MAX_OUTPUT.lifestyle,
       });
       return { set: value, usage };
     },

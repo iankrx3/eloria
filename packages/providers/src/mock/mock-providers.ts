@@ -126,6 +126,24 @@ export function createMockProviders(opts: { delayMs?: number } = {}): Providers 
         };
       },
     },
+    lifestyle: {
+      async suggest() {
+        await wait();
+        return {
+          set: {
+            items: [
+              '느린 아침',
+              '필라테스',
+              '혼자 여행',
+              '주말 플리마켓',
+              '창가 독서',
+              '가족 저녁',
+            ],
+          },
+          usage: usage({ inputTokens: 0, outputTokens: 0 }),
+        };
+      },
+    },
     tts: {
       // 모델 이름이 음성 캐시 키에 들어간다. 소리 형식을 바꾸면 이름도 바꿔 예전 파일을 재사용하지 않게 한다.
       model: 'mock-chime',

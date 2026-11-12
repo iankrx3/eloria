@@ -1,9 +1,12 @@
-import type { AffirmationContext } from '@eloria/prompts';
+import type { LifestyleContext } from '@eloria/prompts';
 import type { Usage } from '@eloria/providers';
 import { collectQuizAnswers, type AffirmationItem } from '@eloria/shared';
 import type { AdminClient } from '../lib/supabase-admin';
 
-export type AffirmationUserContext = { timezone: string | null; context: AffirmationContext };
+export type AffirmationUserContext = { timezone: string | null; context: LifestyleContext };
+
+/** 사용자 한 명이 부르는 Gemini 기능(generation_jobs.kind) */
+export type PersonalJobKind = 'affirmation' | 'lifestyle';
 
 export type NewAffirmation = { text: string; theme: string };
 
@@ -11,10 +14,11 @@ export interface AffirmationRepo {
   loadUser(userId: string): Promise<AffirmationUserContext>;
   /** 그날의 통과한 확언(position 순) */
   listForDay(userId: string, day: string): Promise<AffirmationItem[]>;
-  /** 그날 확언을 만들려고 부른 Gemini 호출 수(시도 상한용) */
-  countCallsSince(userId: string, sinceIso: string): Promise<number>;
+  /** 이 기능으로 부른 Gemini 호출 기록 수(시도 상한용) */
+  countCallsSince(userId: string, kind: PersonalJobKind, sinceIso: string): Promise<number>;
   recordCall(call: {
     userId: string;
+    kind: PersonalJobKind;
     step: string;
     usage: Usage;
     startedAt: string;
@@ -35,7 +39,7 @@ export function createSupabaseAffirmationRepo(db: AdminClient): AffirmationRepo 
       const [profile, people, quiz, desire] = await Promise.all([
         db
           .from('profiles')
-          .select('display_name, likes, dislikes, desired_changes, timezone')
+          .select('display_name, likes, dislikes, desired_changes, timezone, location, occupation')
           .eq('id', userId)
           .single(),
         db.from('people').select('name, relation').eq('user_id', userId),
@@ -73,6 +77,8 @@ export function createSupabaseAffirmationRepo(db: AdminClient): AffirmationRepo 
           dislikes: profile.data.dislikes,
           blocker: answers.desire_blocker,
           changes: profile.data.desired_changes,
+          location: profile.data.location,
+          occupation: profile.data.occupation,
         },
       };
     },
@@ -89,21 +95,21 @@ export function createSupabaseAffirmationRepo(db: AdminClient): AffirmationRepo 
       return data;
     },
 
-    async countCallsSince(userId, sinceIso) {
+    async countCallsSince(userId, kind, sinceIso) {
       const { count, error } = await db
         .from('generation_jobs')
         .select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
-        .eq('kind', 'affirmation')
+        .eq('kind', kind)
         .gte('started_at', sinceIso);
       if (error) throw error;
       return count ?? 0;
     },
 
-    async recordCall({ userId, step, usage, startedAt, finishedAt }) {
+    async recordCall({ userId, kind, step, usage, startedAt, finishedAt }) {
       const { error } = await db.from('generation_jobs').insert({
         user_id: userId,
-        kind: 'affirmation',
+        kind,
         step,
         status: 'succeeded',
         attempts: 1,

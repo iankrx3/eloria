@@ -21,6 +21,7 @@ export {
   FALLBACK_AFFIRMATIONS,
   type AffirmationContext,
 } from './affirmation/v1';
+export { LIFESTYLE_V1, lifestylePromptV1, type LifestyleContext } from './lifestyle/v1';
 export * from './checks';
 export * from './context';
 export * from './eval/cases';

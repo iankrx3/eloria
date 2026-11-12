@@ -43,7 +43,7 @@ export async function getTodayAffirmations(
   };
 
   const since = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
-  if ((await repo.countCallsSince(userId, since)) >= AFFIRMATION_CALLS_PER_DAY) {
+  if ((await repo.countCallsSince(userId, 'affirmation', since)) >= AFFIRMATION_CALLS_PER_DAY) {
     return save(FALLBACK_AFFIRMATIONS, FALLBACK_PROMPT_VERSION);
   }
 
@@ -52,6 +52,7 @@ export async function getTodayAffirmations(
     const result = await fn();
     await repo.recordCall({
       userId,
+      kind: 'affirmation',
       step,
       usage: result.usage,
       startedAt,

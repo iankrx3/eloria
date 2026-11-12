@@ -28,6 +28,7 @@ const providers = createProviders(process.env, {
 });
 const pushRepo = createSupabasePushRepo(db);
 const pipelineRepo = createSupabasePipelineRepo(db);
+const affirmationRepo = createSupabaseAffirmationRepo(db);
 const notifier = createStoryNotifier({
   repo: pushRepo,
   client: createExpoPushClient({ accessToken: env.EXPO_ACCESS_TOKEN }),
@@ -36,7 +37,8 @@ const app = createApp({
   quizRepo: createSupabaseQuizRepo(db),
   storyRepo: createSupabaseStoryRepo(db),
   accountRepo: createSupabaseAccountRepo(db),
-  affirmations: { repo: createSupabaseAffirmationRepo(db), providers },
+  affirmations: { repo: affirmationRepo, providers },
+  profile: { repo: affirmationRepo, providers },
   pushRepo,
   storyEvents: inngestStoryEvents,
   inngestFunctions: [

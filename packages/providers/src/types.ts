@@ -1,7 +1,12 @@
-import type { AffirmationContext, SafetyTarget, StoryContext } from '@eloria/prompts';
-import type { AffirmationSet, SafetyVerdict, ScenePlan } from '@eloria/shared';
+import type {
+  AffirmationContext,
+  LifestyleContext,
+  SafetyTarget,
+  StoryContext,
+} from '@eloria/prompts';
+import type { AffirmationSet, LifestyleSet, SafetyVerdict, ScenePlan } from '@eloria/shared';
 
-export type { AffirmationContext, SafetyTarget, StoryContext };
+export type { AffirmationContext, LifestyleContext, SafetyTarget, StoryContext };
 
 /** 호출 1회의 사용량과 추정 비용. generation_jobs에 그대로 기록한다(CLAUDE.md 권한·원가). */
 export type Usage = {
@@ -54,4 +59,14 @@ export interface AffirmationModel {
   ): Promise<{ set: AffirmationSet; usage: Usage }>;
 }
 
-export type Providers = { story: StoryModel; affirmation: AffirmationModel; tts: TtsProvider };
+/** 라이프스타일 키워드 추천(마이 ↻) */
+export interface LifestyleModel {
+  suggest(ctx: LifestyleContext): Promise<{ set: LifestyleSet; usage: Usage }>;
+}
+
+export type Providers = {
+  story: StoryModel;
+  affirmation: AffirmationModel;
+  lifestyle: LifestyleModel;
+  tts: TtsProvider;
+};

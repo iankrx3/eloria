@@ -8,12 +8,14 @@ import { errorJson, handleError } from './lib/errors';
 import { createRateLimiter, type RateLimiter } from './lib/rate-limit';
 import { requireAuth, type AuthVariables, type TokenVerifier } from './middleware/auth';
 import type { TodayDeps } from './affirmations/today';
+import type { LifestyleDeps } from './profile/lifestyle';
 import type { AccountRepo } from './repos/account-repo';
 import type { PushRepo } from './repos/push-repo';
 import type { QuizRepo } from './repos/quiz-repo';
 import type { StoryRepo } from './repos/story-repo';
 import { createAccountRoutes } from './routes/account';
 import { createAffirmationRoutes } from './routes/affirmations';
+import { createProfileRoutes } from './routes/profile';
 import { health } from './routes/health';
 import { createManifestRoutes } from './routes/manifests';
 import { createPushTokenRoutes } from './routes/push-tokens';
@@ -28,6 +30,8 @@ export type AppDeps = {
   accountRepo: AccountRepo;
   /** 오늘의 확언: 저장소와 글 어댑터(Gemini 또는 mock) */
   affirmations: TodayDeps;
+  /** 라이프스타일 추천: 같은 저장소와 글 어댑터 */
+  profile: LifestyleDeps;
   storyEvents: StoryEvents;
   /** 생성 요청 분당 한도. 기본값은 LIMITS.GENERATION_REQUESTS_PER_MINUTE */
   generationLimiter?: RateLimiter;
@@ -56,6 +60,7 @@ export function createApp(deps: AppDeps) {
   v1.route('/push-tokens', createPushTokenRoutes(deps.pushRepo));
   v1.route('/account', createAccountRoutes(deps.accountRepo));
   v1.route('/affirmations', createAffirmationRoutes(deps.affirmations));
+  v1.route('/profile', createProfileRoutes(deps.profile));
   v1.route(
     '/manifests',
     createManifestRoutes({
