@@ -1,22 +1,32 @@
-import { LIBRARY_CATEGORY } from '@eloria/shared';
+import { WISH_BUNDLE_ORDER, WISH_THEMES } from '@eloria/shared';
 import { describe, expect, it } from 'vitest';
 import { LIBRARY_CATALOG } from './catalog';
 import { planLibrarySeed, seedLibrary, type LibraryRepo, type LibrarySeedItem } from './seed';
 
 describe('LIBRARY_CATALOG', () => {
-  it('카테고리마다 5개 이상, key는 겹치지 않는다', () => {
-    for (const category of LIBRARY_CATEGORY) {
-      expect(LIBRARY_CATALOG.filter((e) => e.category === category).length).toBeGreaterThanOrEqual(
-        5,
-      );
+  it('생성 섹션(확언·명상·수면)마다 2개 이상, 소원 테마마다 확언·명상·수면 한 편씩, key는 겹치지 않는다', () => {
+    for (const category of ['affirmation', 'meditation', 'sleep'] as const) {
+      const general = LIBRARY_CATALOG.filter((e) => e.category === category && !e.wishTheme);
+      expect(general.length).toBeGreaterThanOrEqual(2);
     }
+    for (const theme of WISH_THEMES) {
+      const bundle = LIBRARY_CATALOG.filter((e) => e.wishTheme === theme).map((e) => e.category);
+      expect([...bundle].sort()).toEqual([...WISH_BUNDLE_ORDER].sort());
+    }
+    // 주파수는 합성 음원(seed-library 스크립트), 노래는 아직 없다.
+    expect(LIBRARY_CATALOG.some((e) => e.category === 'frequency' || e.category === 'song')).toBe(
+      false,
+    );
     const keys = LIBRARY_CATALOG.map((e) => e.key);
     expect(new Set(keys).size).toBe(keys.length);
   });
 
   it('결과 보장·투자·의료 표현을 쓰지 않는다(PRD 10절)', () => {
     const banned = /반드시|무조건|보장|투자|주식|코인|치료|완치/;
-    for (const e of LIBRARY_CATALOG) expect(e.theme).not.toMatch(banned);
+    for (const e of LIBRARY_CATALOG) {
+      expect(e.theme).not.toMatch(banned);
+      expect(e.title ?? '').not.toMatch(banned);
+    }
   });
 });
 

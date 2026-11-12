@@ -11,10 +11,10 @@ export function createSupabaseLibraryRepo(db: AdminClient): LibraryRepo {
 
     // 트랜잭션이 없어 중간에 실패하면 주인 없는 스토리 행이 남을 수 있다. seed_key가 유일해서
     // 다시 돌려도 항목이 겹치지는 않고, 남은 queued 스토리는 리추얼 목록(ready만 보임)에 나오지 않는다.
-    async createItem({ key, category, theme, tone, sort, isFree }) {
+    async createItem({ key, category, theme, tone, sort, isFree, title, wishTheme }) {
       const { data: story, error: storyError } = await db
         .from('stories')
-        .insert({ user_id: null, kind: 'library', version: 1 })
+        .insert({ user_id: null, kind: 'library', version: 1, title: title ?? null })
         .select('id')
         .single();
       if (storyError) throw storyError;
@@ -27,6 +27,7 @@ export function createSupabaseLibraryRepo(db: AdminClient): LibraryRepo {
         tone,
         sort,
         is_free: isFree,
+        wish_theme: wishTheme ?? null,
       });
       if (itemError) throw itemError;
 

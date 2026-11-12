@@ -151,11 +151,18 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
     },
 
     async saveText(storyId, { scenePlan, script, promptVersion }) {
+      // 라이브러리 카드처럼 미리 정한 제목(Figma 문구)이 있으면 장면 계획 제목으로 덮지 않는다.
+      const { data: current, error: readError } = await db
+        .from('stories')
+        .select('title')
+        .eq('id', storyId)
+        .single();
+      if (readError) throw readError;
       const { error } = await db
         .from('stories')
         .update({
           status: 'text_ready',
-          title: scenePlan.title,
+          title: current.title ?? scenePlan.title,
           scene_plan: scenePlan,
           script,
           script_chars: script.length,
