@@ -78,6 +78,11 @@ export default function RootLayout() {
                   <Stack.Screen name="manifest/[id]/progress" options={{ gestureEnabled: false }} />
                   <Stack.Screen name="stories/index" options={{ animation: 'slide_from_right' }} />
                   <Stack.Screen
+                    name="library-section/[category]"
+                    options={{ animation: 'slide_from_right' }}
+                  />
+                  <Stack.Screen name="wish/[theme]" options={{ animation: 'slide_from_right' }} />
+                  <Stack.Screen
                     name="saved-affirmations"
                     options={{ animation: 'slide_from_right' }}
                   />

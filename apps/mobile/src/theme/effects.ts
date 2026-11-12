@@ -138,6 +138,9 @@ export const shareText: TextStyle = {
   textShadowRadius: 10,
 };
 
+/** 소원 묶음 대표 사진(Figma L06 Theme hero) */
+export const wishHeroShadow: ViewStyle = { boxShadow: '0px 10px 30px 0px rgba(113,77,127,0.18)' };
+
 /** 사진 위 글자 그림자(Figma text-shadow) */
 export const photoText: TextStyle = {
   textShadowColor: 'rgba(42,29,51,0.35)',

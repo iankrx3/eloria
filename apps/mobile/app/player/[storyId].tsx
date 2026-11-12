@@ -1,6 +1,6 @@
 import { canPlayStory } from '@eloria/shared';
 import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayer } from '@/audio/player-provider';
@@ -29,7 +29,7 @@ const subtitleShadow = {
  * 자막은 문단 단위 근사치다(ElevenLabs 타임스탬프를 받으면 문장 단위로 바꾼다).
  */
 export default function Player() {
-  const { storyId } = useLocalSearchParams<{ storyId: string }>();
+  const { storyId, loop } = useLocalSearchParams<{ storyId: string; loop?: string }>();
   const story = useStory(storyId);
   const playable = story.data ? canPlayStory(story.data.status) : false;
   const audio = useStoryAudio(storyId, story.data?.kind, playable);
@@ -39,11 +39,20 @@ export default function Player() {
   const [showSoundscape, setShowSoundscape] = useState(false);
   const soundscapeOn = usePlayerStore((s) => Boolean(s.soundscape));
 
+  // 화면을 연 이야기를 한 번만 재생한다. 그 뒤 트랙이 바뀌면(묶음 이어 듣기) 다시 되돌리지 않고 화면이 따라간다.
+  const startedFor = useRef<string | null>(null);
   useEffect(() => {
-    if (audio.data && current?.storyId !== storyId) {
-      playTrack({ storyId, title }, audio.data.url);
+    if (!audio.data || startedFor.current === storyId) return;
+    startedFor.current = storyId;
+    if (current?.storyId !== storyId) {
+      playTrack({ storyId, title, loop: loop === '1' }, audio.data.url);
     }
-  }, [audio.data, current?.storyId, storyId, title, playTrack]);
+  }, [audio.data, current?.storyId, storyId, title, loop, playTrack]);
+  useEffect(() => {
+    if (current && startedFor.current === storyId && current.storyId !== storyId) {
+      router.setParams({ storyId: current.storyId, loop: current.loop ? '1' : undefined });
+    }
+  }, [current, storyId]);
 
   const paragraphs = useMemo(() => splitParagraphs(story.data?.script ?? ''), [story.data?.script]);
   const isThisTrack = current?.storyId === storyId;

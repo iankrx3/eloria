@@ -1,3 +1,4 @@
+import { storyMediaResponseSchema } from '@eloria/shared';
 import {
   setAudioModeAsync,
   useAudioPlayer,
@@ -10,6 +11,7 @@ import { useSoundscapeDefault } from '@/features/soundscape/use-soundscapes';
 import { ko } from '@/i18n/ko';
 import { usePlayerStore, type Track } from './player-store';
 import { useRecentPlays } from './recent-plays';
+import { authedApi } from '@/lib/authed-api';
 import { SOUNDSCAPE_VOLUME } from './soundscape';
 import { useSleepTimer } from './sleep-timer';
 
@@ -86,6 +88,7 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     (next: Track, url: string) => {
       if (track?.storyId !== next.storyId) {
         player.replace({ uri: url });
+        player.loop = Boolean(next.loop);
         setTrack(next);
         player.setActiveForLockScreen(
           true,
@@ -98,6 +101,19 @@ export function PlayerProvider({ children }: { children: ReactNode }) {
     },
     [player, track?.storyId, setTrack],
   );
+
+  // 소원 묶음 이어 듣기: 지금 트랙이 끝나면 대기열의 다음 공용 콘텐츠를 서명 URL로 받아 재생한다.
+  const finished = status.didJustFinish;
+  useEffect(() => {
+    if (!finished) return;
+    const { queue, setQueue } = usePlayerStore.getState();
+    const [next, ...rest] = queue;
+    if (!next) return;
+    setQueue(rest);
+    authedApi(`/v1/stories/${next.storyId}/media`, { schema: storyMediaResponseSchema })
+      .then((media) => playTrack(next, media.audioUrl))
+      .catch(() => setQueue([]));
+  }, [finished, playTrack]);
 
   const togglePlay = useCallback(() => {
     if (player.playing) player.pause();

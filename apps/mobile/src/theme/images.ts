@@ -1,4 +1,4 @@
-import type { LibraryCategory } from '@eloria/shared';
+import type { LibraryCategory, WishTheme } from '@eloria/shared';
 import type { ImageSourcePropType } from 'react-native';
 import bedroomImg from '../../assets/images/scenes/bedroom.webp';
 import cityNightImg from '../../assets/images/scenes/city-night.webp';
@@ -25,6 +25,7 @@ import story11Img from '../../assets/images/stories/story-11.webp';
 import story12Img from '../../assets/images/stories/story-12.webp';
 import libFeatureImmersionImg from '../../assets/images/library/lib-feature-immersion.webp';
 import libCc8ceImg from '../../assets/images/library/lib-cc8ce.webp';
+import lib530f0Img from '../../assets/images/library/lib-530f0.webp';
 import lib8b1f8Img from '../../assets/images/library/lib-8b1f8.webp';
 import lib5dc55Img from '../../assets/images/library/lib-5dc55.webp';
 import libDcda7Img from '../../assets/images/library/lib-dcda7.webp';
@@ -106,7 +107,39 @@ export const shareBackgrounds: ImageSourcePropType[] = [
 /** 21일 챌린지 머리 사진(Figma H12 = library 보름달) */
 export const challengeHeroImage = LIBRARY.fullMoon;
 
+/** 소원 테마 카드 사진(Figma L01 소원별로 듣기, library/16~21 생성 전 임시 사진) */
+export const wishThemeImage: Record<WishTheme, ImageSourcePropType> = {
+  exam: LIBRARY.a,
+  home: LIBRARY.b,
+  job: lib530f0Img,
+  love: LIBRARY.c,
+  body: LIBRARY.d,
+  travel: LIBRARY.e,
+};
+
+/** Figma 카드에 정해진 사진(시드 key 기준) */
+const LIBRARY_BY_SEED_KEY: Record<string, ImageSourcePropType> = {
+  'affirmation-enough': LIBRARY.a,
+  'affirmation-loved': LIBRARY.d,
+  'affirmation-flow': LIBRARY.c,
+  'frequency-528': LIBRARY.waves,
+  'frequency-432': LIBRARY.silk,
+  'frequency-777': LIBRARY.bowl,
+  'meditation-full-moon': LIBRARY.fullMoon,
+  'meditation-love-again': LIBRARY.b,
+  'meditation-wealth-vessel': LIBRARY.terrace,
+  'sleep-rain': LIBRARY.rain,
+  'sleep-star-sea': LIBRARY.e,
+};
+
+/** 끌어당김 노래 카드(Figma, 노래가 생기기 전 "곧 만나요") */
+export const songImages: ImageSourcePropType[] = [LIBRARY.song1, LIBRARY.song2, LIBRARY.song3];
+
 const LIBRARY_BY_CATEGORY: Record<LibraryCategory, ImageSourcePropType[]> = {
+  affirmation: [LIBRARY.a, LIBRARY.d, LIBRARY.c],
+  frequency: [LIBRARY.waves, LIBRARY.silk, LIBRARY.bowl],
+  sleep: [LIBRARY.rain, LIBRARY.e],
+  song: [LIBRARY.song1, LIBRARY.song2, LIBRARY.song3],
   money: [LIBRARY.e, LIBRARY.song3, LIBRARY.a],
   love: [LIBRARY.c, LIBRARY.b, LIBRARY.song2],
   career: [LIBRARY.feature, LIBRARY.d, LIBRARY.song1],
@@ -135,4 +168,18 @@ export function storyCover(storyId: string): ImageSourcePropType {
 export function libraryCover(category: LibraryCategory, index: number): ImageSourcePropType {
   const list = LIBRARY_BY_CATEGORY[category];
   return list[index % list.length]!;
+}
+
+/** 라이브러리 항목 사진: Figma가 정한 사진 → (소원 묶음 확언이면) 테마 사진 → 카테고리 사진 순 */
+export function libraryItemImage(
+  item: { seedKey: string; category: LibraryCategory; wishTheme: WishTheme | null },
+  index: number,
+): ImageSourcePropType {
+  return (
+    LIBRARY_BY_SEED_KEY[item.seedKey] ??
+    // 소원 묶음은 확언에 테마 사진, 명상·수면은 카테고리 사진(Figma L06)
+    (item.wishTheme && item.category === 'affirmation'
+      ? wishThemeImage[item.wishTheme]
+      : libraryCover(item.category, index))
+  );
 }

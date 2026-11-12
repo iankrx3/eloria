@@ -1,4 +1,4 @@
-import { libraryCategorySchema } from '@eloria/shared';
+import { libraryCategorySchema, wishThemeSchema } from '@eloria/shared';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -18,13 +18,16 @@ export function useRituals() {
       const { data, error } = await supabase
         .from('library_items')
         .select(
-          'category, sort, is_free, stories!inner(id, title, status, story_assets(type, duration_sec))',
+          'seed_key, category, wish_theme, sort, is_free, stories!inner(id, title, status, created_at, story_assets(type, duration_sec))',
         )
         .eq('stories.status', 'ready');
       if (error) throw error;
       return data.map((row) => ({
         storyId: row.stories.id,
+        seedKey: row.seed_key,
         category: libraryCategorySchema.parse(row.category),
+        wishTheme: row.wish_theme ? wishThemeSchema.parse(row.wish_theme) : null,
+        createdAt: row.stories.created_at,
         title: row.stories.title,
         durationSec: row.stories.story_assets.find((a) => a.type === 'audio')?.duration_sec ?? null,
         sort: row.sort,
