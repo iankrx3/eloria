@@ -75,6 +75,10 @@ export default function RootLayout() {
                   <Stack.Screen name="(tabs)" options={{ gestureEnabled: false }} />
                   <Stack.Screen name="manifest/[id]/progress" options={{ gestureEnabled: false }} />
                   <Stack.Screen name="stories/index" options={{ animation: 'slide_from_right' }} />
+                  <Stack.Screen
+                    name="saved-affirmations"
+                    options={{ animation: 'slide_from_right' }}
+                  />
                   <Stack.Screen name="paywall" options={{ presentation: 'fullScreenModal' }} />
                   <Stack.Screen name="story/[storyId]/text" options={{ presentation: 'modal' }} />
                   <Stack.Screen

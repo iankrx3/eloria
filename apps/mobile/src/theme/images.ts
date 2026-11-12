@@ -95,6 +95,14 @@ const LIBRARY = {
 } satisfies Record<string, ImageSourcePropType>;
 
 export const libraryFeatureImage = LIBRARY.feature;
+/** 확언 공유 배경(Figma A05 순서) */
+export const shareBackgrounds: ImageSourcePropType[] = [
+  LIBRARY.c,
+  LIBRARY.fullMoon,
+  LIBRARY.waves,
+  LIBRARY.silk,
+];
+
 /** 21일 챌린지 머리 사진(Figma H12 = library 보름달) */
 export const challengeHeroImage = LIBRARY.fullMoon;
 

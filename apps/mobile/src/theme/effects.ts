@@ -105,6 +105,37 @@ export const shadow = {
   playLarge: { boxShadow: '0px 8px 24px 0px rgba(0,0,0,0.25)' } as ViewStyle,
 };
 
+/** 확언 카드(Figma A01): 맨 앞 카드 면, 뒤 카드 그림자 */
+export const affirmationCard: ViewStyle = {
+  experimental_backgroundImage:
+    'linear-gradient(126.6deg, rgba(255,255,255,0.95) 14.286%, rgba(251,245,248,0.92) 50%, rgba(241,233,247,0.92) 85.714%)',
+  boxShadow: '0px 18px 40px 0px rgba(113,77,127,0.18), inset 0px 2px 8px 0px #FFFFFF',
+};
+export const affirmationBackCard: ViewStyle = {
+  boxShadow: '0px 10px 24px 0px rgba(113,77,127,0.1)',
+};
+
+/** 확언 완료 카드(Figma A03) */
+export const affirmationDoneCard: ViewStyle = {
+  experimental_backgroundImage:
+    'linear-gradient(136.6deg, rgba(255,255,255,0.9) 14.286%, rgba(241,233,247,0.88) 85.714%)',
+  boxShadow: '0px 18px 40px 0px rgba(113,77,127,0.18)',
+};
+
+/** 공유 시트(Figma A05): 시트 면, 미리보기 그림자, 그라디언트 배경 선택지 */
+export const shareSheet: ViewStyle = {
+  experimental_backgroundImage: 'linear-gradient(180deg, #F6F0FA 0%, #E9DDF3 100%)',
+};
+export const shareImageShadow: ViewStyle = { boxShadow: '0px 16px 36px 0px rgba(31,26,51,0.4)' };
+export const shareGradientBackground: ViewStyle = {
+  experimental_backgroundImage: 'linear-gradient(128.2deg, #F7E8EE 14.286%, #DCE0F5 85.714%)',
+};
+export const shareText: TextStyle = {
+  textShadowColor: 'rgba(46,33,64,0.4)',
+  textShadowOffset: { width: 0, height: 2 },
+  textShadowRadius: 10,
+};
+
 /** 사진 위 글자 그림자(Figma text-shadow) */
 export const photoText: TextStyle = {
   textShadowColor: 'rgba(42,29,51,0.35)',
