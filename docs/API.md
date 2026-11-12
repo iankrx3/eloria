@@ -38,6 +38,7 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | GET `/v1/stories/:id/media` | 서명 URL 발급(본인 스토리 또는 공용 리추얼, 1시간). 리추얼은 `canAccessLibraryItem`(페이월 전에는 모두 허용) | — | `{ audioUrl, coverUrl, expiresAt }`, 볼 수 없거나 음성이 없으면 `404`, 구독 필요 시 `403 FORBIDDEN` |
 | POST `/v1/daily` | 오늘의 순간 즉시 생성(없을 때) | — | `200 { storyId }` 또는 `202` |
 | GET `/v1/affirmations/today` | 오늘의 확언 10장(A01). 사용자 시간대의 날짜로 없으면 이 요청에서 만든다(작성 → 검수 → rewrite면 1회 재작성, 수 초). 검수를 끝내 통과 못 하거나 하루 상한·공급자 한도에 걸리면 기본 확언(`FALLBACK_AFFIRMATIONS`)을 저장한다. 사용자당 24시간 Gemini 기록 8행까지(D-45) | — | `{ day, items: [{ id, position, text, theme }] }`(`todayAffirmationsResponseSchema`) |
+| POST `/v1/profile/lifestyle-suggestions` | 라이프스타일 AI 추천(마이 ↻, `lifestyle@v1`). 퀴즈 답·프로필로 키워드 최대 6개, 이미 있는 칩·피할 것과 겹치면 뺀다. 저장은 앱이 한다. 사용자당 24시간 3회, 넘거나 서버 상한이면 `429 RATE_LIMITED` | — | `{ items: string[] }`(`lifestyleSuggestionsResponseSchema`) |
 | POST `/v1/affirmations/:id/audio` | 확언 음성(캐시 우선, ElevenLabs 후) | `{ voiceKey? }` | `{ audioUrl }` |
 | POST `/v1/push-tokens` | 푸시 토큰 등록(Expo 푸시 토큰, 멱등). 같은 토큰이 다른 계정에 있으면 지금 사용자로 옮긴다 | `{ token, platform }` | `204` |
 | POST `/v1/promo/redeem` | 크리에이터 코드 | `{ code }` | `{ grant }` |

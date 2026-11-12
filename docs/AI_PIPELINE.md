@@ -104,7 +104,13 @@ SafetyVerdict = {
 - 10개를 번호 붙인 한 글로 이어 `reviewSafety(…, 'script')`로 검수한다. rewrite면 이유를 넣어 1회 다시 쓰고, 그래도 통과 못 하면 기본 확언 10개(`FALLBACK_AFFIRMATIONS`, `prompt_version = fallback@v1`).
 - 2026-11-12 live 1회: 10개 4.2초, 입력 650·출력 394토큰, 약 $0.002. 검수 1.0초.
 
-### 4.5 수정(revise)
+### 4.5 라이프스타일 추천(`lifestyle@v1`, D-46)
+
+- 마이페이지 ↻. 확언 맥락 + 사는 곳·하는 일로 20자 이내 명사구 3~6개(`lifestyleSetSchema`). 브랜드·실존 인물·금액·의료·종교·정치·성적 지향 금지. 생각 수준 minimal.
+- 칩은 이야기 프롬프트의 "좋아하는 것"으로만 들어가고 사용자가 고친 뒤 저장되므로 따로 안전 검수를 부르지 않는다(무료 쿼터 절약).
+- 2026-11-12 live 1회: 1.5초, 입력 476·출력 64토큰, 약 $0.0006.
+
+### 4.6 수정(revise)
 
 입력 = 원본 ScenePlan + 원본 스크립트 + 수정 요청. 출력 = 새 ScenePlan과 스크립트, 그리고 `changedParagraphIndexes: number[]`(앱의 하이라이트용). 표지는 재사용한다.
 
