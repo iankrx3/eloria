@@ -199,6 +199,7 @@ export type Database = {
           status: string
           text: string
           user_id: string
+          visions: Json | null
         }
         Insert: {
           achieved_at?: string | null
@@ -208,6 +209,7 @@ export type Database = {
           status?: string
           text: string
           user_id: string
+          visions?: Json | null
         }
         Update: {
           achieved_at?: string | null
@@ -217,6 +219,7 @@ export type Database = {
           status?: string
           text?: string
           user_id?: string
+          visions?: Json | null
         }
         Relationships: []
       }
@@ -636,6 +639,7 @@ export type Database = {
       stories: {
         Row: {
           created_at: string
+          daily_on: string | null
           desire_id: string | null
           error_code: string | null
           id: string
@@ -651,10 +655,12 @@ export type Database = {
           updated_at: string
           user_id: string | null
           version: number
+          vision: Json | null
           voice_id: string | null
         }
         Insert: {
           created_at?: string
+          daily_on?: string | null
           desire_id?: string | null
           error_code?: string | null
           id?: string
@@ -670,10 +676,12 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           version?: number
+          vision?: Json | null
           voice_id?: string | null
         }
         Update: {
           created_at?: string
+          daily_on?: string | null
           desire_id?: string | null
           error_code?: string | null
           id?: string
@@ -689,6 +697,7 @@ export type Database = {
           updated_at?: string
           user_id?: string | null
           version?: number
+          vision?: Json | null
           voice_id?: string | null
         }
         Relationships: [
