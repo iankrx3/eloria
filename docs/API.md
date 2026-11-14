@@ -32,14 +32,14 @@ API 서버(`apps/api`, Hono)는 쓰기·생성·웹훅만 담당한다. 읽기�
 | POST `/v1/quiz/complete` | 퀴즈 완료, 프로필 반영(이름·연애 상태. 소중한 사람은 퀴즈 답 + 마음에 둔 사람(연인)으로 교체, D-39). 나이·성별 등 나머지 답은 quiz_answers에 남아 생성 파이프라인이 읽는다 | — | `{ profile }` |
 | POST `/v1/manifests` | 꿈 등록 + 첫 스토리 생성 | `{ text, category?, voiceKey?, tone? }` | `202 { desireId, storyId }` |
 | POST `/v1/desires/:id/stories` | 같은 꿈의 새 버전 | `{ tone? }` | `202 { storyId }` |
-| POST `/v1/stories/:id/revise` | 스토리 수정 | `{ request }`(≤200자) | `202 { storyId }` |
+| POST `/v1/stories/:id/revise` | 스토리 수정(D-50). 원본이 `text_ready`·`audio_ready`·`ready`일 때만 자식 스토리를 만든다. 직접 소원과 합쳐 한국 시간 하루 3회(진행 중 포함, 실패 제외) | `{ request }`(≤200자) | `202 { storyId }`, 원본을 고칠 수 없으면 `404`, 한도면 `429 QUOTA_EXCEEDED` |
 | POST `/v1/stories/:id/retry` | 실패한 단계 재시도 | — | `202` |
 | DELETE `/v1/stories/:id` | 스토리 삭제(본인 것, 생성이 끝난 것만). 음성·표지 파일과 행을 지우고, 남은 스토리가 없는 꿈도 지운다. 생성 기록은 남긴다 | — | `204`, 생성 중이면 `409 CONFLICT` |
 | GET `/v1/stories/:id/media` | 서명 URL 발급(본인 스토리 또는 공용 리추얼, 1시간). 리추얼은 `canAccessLibraryItem`(페이월 전에는 모두 허용) | — | `{ audioUrl, coverUrl, expiresAt }`, 볼 수 없거나 음성이 없으면 `404`, 구독 필요 시 `403 FORBIDDEN` |
-| POST `/v1/visions` | 비전 고르기(H04 → H05, D-48). 꿈을 등록하고 입력 검수 → 장면 4개 제안(Gemini 2회, 음성 없음). 막히면 장면 없이 `blocked`. 사용자당 24시간 기록 12행, 넘거나 서버 상한이면 `429` | `{ text, category? }` | `200 { desireId, blocked: null \| SAFETY_BLOCKED \| SAFETY_CRISIS, visions: [{ position, title, summary, place, timeOfDay, storyId }] }` |
-| POST `/v1/visions/:desireId/:position/story` | 고른 장면으로 이야기 생성 시작(`stories.vision`, scene-plan@v2). 같은 장면을 다시 누르면 같은 storyId | — | `202 { storyId }`, 남의 꿈·없는 장면이면 `404` |
-| POST `/v1/daily` | 오늘의 이야기(H01 매일 갱신, D-48). 사용자 시간대 새벽 5시 기준 날짜로 없으면 가장 최근 꿈으로 짧은 이야기(700자) 생성을 시작한다. `last_active_at`도 갱신 | — | `200 { day, storyId }`(꿈이 없으면 `storyId: null`) |
-| GET `/v1/affirmations/today` | 오늘의 확언 10장(A01). 사용자 시간대의 날짜로 없으면 이 요청에서 만든다(작성 → 검수 → rewrite면 1회 재작성, 수 초). 검수를 끝내 통과 못 하거나 하루 상한·공급자 한도에 걸리면 기본 확언(`FALLBACK_AFFIRMATIONS`)을 저장한다. 사용자당 24시간 Gemini 기록 8행까지(D-45) | — | `{ day, items: [{ id, position, text, theme }] }`(`todayAffirmationsResponseSchema`) |
+| POST `/v1/visions` | 비전 고르기(H04 → H05, D-51). 꿈을 등록하고 입력 검수 → 장면 4개 제안(Gemini 2회, 음성 없음, 하루 3회에 넣지 않음). 막히면 장면 없이 `blocked`. 사용자당 24시간 기록 12행, 넘거나 서버 상한이면 `429` | `{ text, category? }` | `200 { desireId, blocked: null \| SAFETY_BLOCKED \| SAFETY_CRISIS, visions: [{ position, title, hint, storyId }] }` |
+| POST `/v1/visions/:desireId/:position/story` | 고른 장면으로 아린 이야기 생성 시작(`stories.vision`, D-50). 같은 장면을 다시 누르면 같은 storyId라 한도를 다시 쓰지 않는다. 미리보기(`POST /v1/visions`)는 한도에 넣지 않는다 | — | `202 { storyId }`, 남의 꿈·없는 장면이면 `404`, 한국 시간 하루 3회를 넘으면 `429 QUOTA_EXCEEDED` |
+| POST `/v1/daily` | 오늘의 이야기(H01, D-50). 사용자 시간대 자정 기준 날짜로 없으면 퀴즈 소원으로 JSON 이야기 생성을 시작한다. 안 연 날은 만들지 않는다. `last_active_at`도 갱신. 직접 소원 3회와는 따로다 | — | `200 { day, storyId }`(꿈이 없으면 `storyId: null`) |
+| GET `/v1/affirmations/today` | 오늘의 확언 3장(A01, D-50). 이미 있으면 그대로 준다. 없으면 그날 오늘의 이야기 확언 3줄을 저장하고, 이야기가 아직 없으면 기본 확언 앞 3줄을 저장한다. Gemini를 부르지 않는다 | — | `{ day, items: [{ id, position, text, theme }] }`(`todayAffirmationsResponseSchema`) |
 | POST `/v1/profile/lifestyle-suggestions` | 라이프스타일 AI 추천(마이 ↻, `lifestyle@v1`). 퀴즈 답·프로필로 키워드 최대 6개, 이미 있는 칩·피할 것과 겹치면 뺀다. 저장은 앱이 한다. 사용자당 24시간 3회, 넘거나 서버 상한이면 `429 RATE_LIMITED` | — | `{ items: string[] }`(`lifestyleSuggestionsResponseSchema`) |
 | POST `/v1/affirmations/:id/audio` | 확언 음성(캐시 우선, ElevenLabs 후) | `{ voiceKey? }` | `{ audioUrl }` |
 | POST `/v1/push-tokens` | 푸시 토큰 등록(Expo 푸시 토큰, 멱등). 같은 토큰이 다른 계정에 있으면 지금 사용자로 옮긴다 | `{ token, platform }` | `204` |

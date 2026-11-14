@@ -43,7 +43,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 
 **people** (소중한 사람): user_id, name, relation text(partner, family, friend, pet, other), pronunciation text null
 
-**desires** (꿈): user_id, text(≤200자), category text(wealth, love, career, health, confidence, other), status text(active, achieved, archived), achieved_at timestamptz null, visions jsonb null(비전 고르기 장면 ≤4개, `visionSchema` — 서버가 쓰고 본인이 읽는다, 마이그레이션 20261112120000)
+**desires** (꿈): user_id, text(≤200자), category text(wealth, love, career, health, confidence, other), status text(active, achieved, archived), achieved_at timestamptz null, visions jsonb null(비전 고르기 장면 ≤4개, `visionSchema`의 title·hint·position·storyId. 예전 summary는 읽을 때 hint. 서버가 쓰고 본인이 읽는다, 마이그레이션 20261112120000)
 
 **consents**: user_id, kind text(privacy, marketing, ai_processing), version text, granted boolean, granted_at — 바꿀 때마다 새 행을 쌓고 가장 최근 행으로 판단한다(설정 P02 혜택·이벤트 소식, 버전 `marketing-v1`)
 
@@ -60,13 +60,16 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 | revision_request | text null | 수정 요청 원문 |
 | status | text | queued, planning, writing, reviewing, text_ready, audio_ready, ready, failed |
 | title | text | |
-| scene_plan | jsonb | `ScenePlan` 스키마(AI_PIPELINE 4.1) |
+| scene_plan | jsonb null | 라이브러리·첫 이야기는 `ScenePlan`(AI_PIPELINE 4.1). 아린 이야기는 null |
 | script | text | 최종 스크립트 |
 | script_chars | int | |
 | voice_id | uuid null → voices | tts 단계에서 정한다(voices 시드 전에도 생성 흐름을 돌리려고 null 허용) |
-| prompt_version | text | 예: scene-plan@v2+story@v1+safety@v1 |
-| vision | jsonb null | 비전 고르기에서 고른 장면(`visionSchema`). 장면 계획이 이 장면을 중심으로 한다 |
-| daily_on | date null | 데일리(kind = daily)의 날짜(사용자 시간대, 새벽 5시 기준). `(user_id, daily_on)` 유일 |
+| prompt_version | text | 라이브러리·첫 이야기 예: scene-plan@v2+story@v1+safety@v1. 아린 이야기(D-51)는 `arin-story@v1` |
+| vision | jsonb null | 비전 고르기에서 고른 장면(`visionSchema`: title, hint, position, storyId). 예전 행의 summary는 읽을 때 hint가 된다. 이 값이 있는 on_demand는 아린 JSON으로 쓰고, 한국 시간 하루 3회에 센다 |
+| image_hint | text null | 아린 이야기 배경 키 12개 중 하나(D-50, 마이그레이션 20261114120000). 앱은 번들 사진에 임시로 붙인다 |
+| arin_story | jsonb null | 아린 이야기 JSON 원문(D-51, 마이그레이션 20261114130000). 수정할 때 이전 이야기로 다시 보낸다 |
+| affirmations | jsonb null | 아린 이야기 확언 3줄. 원소 3개인 배열이거나 null |
+| daily_on | date null | 데일리(kind = daily)의 날짜(사용자 시간대 자정, D-50). `(user_id, daily_on)` 유일 |
 | error_code | text null | ENQUEUE_FAILED, SAFETY_BLOCKED, SAFETY_CRISIS(도움 안내 화면), TTS_FAILED(텍스트는 계속 읽기 가능), TTS_BUDGET(음성 크레딧 상한, 텍스트는 계속 읽기 가능, D-49), AI_BUSY(하루 호출 상한·공급자 한도), GENERATION_FAILED |
 | updated_at | timestamptz | 공통 트리거 |
 
@@ -80,7 +83,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 
 **library_items**: story_id unique → stories(kind=library, on delete cascade), category text(money, love, career, confidence, meditation, affirmation, frequency, sleep, song), wish_theme text null(exam, home, job, love, body, travel — L06 소원별로 듣기), seed_key text unique(시드 카탈로그 key), theme text(생성 테마, 1~200자), tone text(calm, excited, powerful), sort int(카테고리 안 순서), is_free boolean — 로그인 사용자 select, 쓰기는 service role(마이그레이션 20261004130000). 음성은 `story-audio/library/{story_id}/…`라 앱은 서버 서명 URL(`GET /v1/stories/:id/media`)로 받는다. 주파수(`frequency-*`)는 파이프라인 없이 합성 MP3를 올린 ready 스토리다(`story_assets.provider = synth`, D-47)
 
-**affirmations** (오늘의 확언 10장, A01): user_id, day date, position int(1~10), text(≤120자), theme text null, status text(approved, blocked), prompt_version text null, unique(user_id, day, position) — 서버(service role)만 쓰고 사용자는 본인의 `approved`만 select(마이그레이션 20261111120000)
+**affirmations** (오늘의 확언, A01): user_id, day date, position int(1~10, 지금은 1~3만 저장), text(≤120자), theme text null, status text(approved, blocked), prompt_version text null, unique(user_id, day, position) — 서버(service role)만 쓰고 사용자는 본인의 `approved`만 select(마이그레이션 20261111120000). 내용은 그날 이야기 확언 3줄이거나 기본 3줄(D-50)
 
 **saved_affirmations**: user_id, affirmation_id, saved_at, primary key(user_id, affirmation_id) — 본인 행 RLS
 
@@ -91,7 +94,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 **favorites**: user_id, story_id, unique(user_id, story_id) — RLS: 본인 select·delete, insert는 볼 수 있는 스토리(본인 또는 library)에만. 앱이 직접 쓴다(마이그레이션 20261003150000)
 **play_events**: user_id, story_id, event text(start, progress_25, progress_50, progress_75, progress_90, complete), position_sec, occurred_at, platform
 **gratitude_entries** (감사 일기, 마이 보관함): user_id, day date, lines text[](1~3줄, 줄당 ≤100자는 앱 `cleanGratitudeLines`), unique(user_id, day) — 본인 행 RLS, 앱이 직접 upsert
-**activity_days** (연속 기록, H11): user_id, day date, stories_listened int, affirmations_done int, primary key(user_id, day) — 본인 행 RLS, 앱이 직접 기록. 그날 이야기 1개를 끝까지(90%) 듣거나 확언 10장을 넘기면 기록한 날(`ACTIVITY_RULE`, `packages/shared/src/activity.ts`)
+**activity_days** (연속 기록, H11): user_id, day date, stories_listened int, affirmations_done int, primary key(user_id, day) — 본인 행 RLS, 앱이 직접 기록. 그날 이야기 1개를 끝까지(90%) 듣거나 확언 3장을 넘기면 기록한 날(`ACTIVITY_RULE`, `packages/shared/src/activity.ts`)
 **challenge_missions** (21일 챌린지, H12): day int(1~21) primary key, kind text(affirm, gratitude, visualize, listen, write), title, body — 로그인 사용자 select, 시드는 마이그레이션 20261111140000
 **challenge_progress**: user_id, day → challenge_missions, completed_at, note text null, primary key(user_id, day) — 본인 행 RLS. 하루 1개씩 열리고 놓친 날은 이어서 진행(`challengeState`)
 **wall_entries**: user_id, desire_id null, title, note, photo_path null, achieved_on date
