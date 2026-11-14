@@ -216,7 +216,7 @@ export async function runStoryPipeline(
  */
 /** 하루 호출 상한·공급자 한도로 멈춘 실패는 따로 표시한다(앱은 "잠시 후 다시" 안내, D-45). */
 function failureCode(error: Error) {
-  return /[(BUDGET_EXCEEDED|RATE_LIMITED)]/.test(error.message) ? 'AI_BUSY' : 'GENERATION_FAILED';
+  return /\[(BUDGET_EXCEEDED|RATE_LIMITED)\]/.test(error.message) ? 'AI_BUSY' : 'GENERATION_FAILED';
 }
 
 export async function handlePipelineFailure(repo: PipelineRepo, storyId: string, error: Error) {

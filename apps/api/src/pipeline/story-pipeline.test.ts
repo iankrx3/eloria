@@ -250,6 +250,10 @@ describe('handlePipelineFailure', () => {
     fake.state.status = 'planning';
     await handlePipelineFailure(fake.repo, STORY, new Error('[RATE_LIMITED] gemini 429'));
     expect(fake.state.errorCode).toBe('AI_BUSY');
+    // 대문자가 섞인 다른 오류를 AI_BUSY로 오인하지 않는다.
+    fake.state.status = 'planning';
+    await handlePipelineFailure(fake.repo, STORY, new Error('[UPSTREAM] TIMEOUT'));
+    expect(fake.state.errorCode).toBe('GENERATION_FAILED');
   });
 });
 
