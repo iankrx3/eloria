@@ -1,4 +1,5 @@
 import type { DesireCategory, StoryStatus } from '@eloria/shared';
+import { countCustomWishSlots as countSlots } from '../quota/custom-wish';
 import type { AdminClient } from '../lib/supabase-admin';
 
 /** 재생할 파일 정보. owner = 본인 스토리, library = 공용 리추얼 */
@@ -22,6 +23,17 @@ export interface StoryRepo {
     userId: string,
     storyId: string,
   ): Promise<{ status: StoryStatus; errorCode: string | null } | null>;
+  /** 오늘(한국 시간) 직접 소원·수정이 잡고 있는 자리. */
+  countCustomWishSlots(userId: string, now: Date): Promise<number>;
+  /**
+   * 끝난 본인 이야기를 수정 요청으로 다시 만든다.
+   * 없거나, 남의 것이거나, 아직 글이 없으면 null.
+   */
+  createRevision(
+    userId: string,
+    storyId: string,
+    request: string,
+  ): Promise<{ storyId: string } | null>;
   /**
    * 스토리와 그 음성·표지 파일을 지운다. 좋아요·에셋은 FK cascade로 같이 지워지고,
    * 생성 기록(generation_jobs)은 원가·한도 집계를 위해 남는다. 남은 스토리가 없는 꿈도 지운다.
@@ -82,6 +94,49 @@ export function createSupabaseStoryRepo(db: AdminClient): StoryRepo {
         .maybeSingle();
       if (error) throw error;
       return data ? { status: data.status as StoryStatus, errorCode: data.error_code } : null;
+    },
+
+    countCustomWishSlots(userId, now) {
+      return countSlots(db, userId, now);
+    },
+
+    async createRevision(userId, storyId, request) {
+      const { data: parent, error: readError } = await db
+        .from('stories')
+        .select('desire_id, vision, version, status')
+        .eq('id', storyId)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (readError) throw readError;
+      if (!parent) return null;
+      if (parent.status !== 'text_ready' && parent.status !== 'audio_ready' && parent.status !== 'ready') {
+        return null;
+      }
+
+      const { data: story, error: storyError } = await db
+        .from('stories')
+        .insert({
+          user_id: userId,
+          desire_id: parent.desire_id,
+          kind: 'on_demand',
+          version: parent.version + 1,
+          parent_story_id: storyId,
+          revision_request: request,
+          vision: parent.vision,
+        })
+        .select('id')
+        .single();
+      if (storyError) throw storyError;
+
+      const { error: jobError } = await db.from('generation_jobs').insert({
+        user_id: userId,
+        story_id: story.id,
+        kind: 'revision',
+        step: 'queued',
+        status: 'pending',
+      });
+      if (jobError) throw jobError;
+      return { storyId: story.id };
     },
 
     async deleteStory(userId, storyId) {

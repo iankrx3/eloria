@@ -1,20 +1,22 @@
 import {
   AFFIRMATION_V1,
   affirmationPromptV1,
+  arinScenePrompt,
+  arinStoryPrompt,
   lifestylePromptV1,
   STORY_PROMPT_VERSION,
   safetyPromptV1,
   scenePlanPromptV2,
-  visionPromptV1,
   storyPromptV1,
   type PromptMessages,
 } from '@eloria/prompts';
 import {
   affirmationSetSchema,
+  arinSceneSetSchema,
+  arinStorySchema,
   lifestyleSetSchema,
   safetyVerdictSchema,
   scenePlanSchema,
-  visionSetSchema,
 } from '@eloria/shared';
 import { ApiError, GoogleGenAI, ThinkingLevel } from '@google/genai';
 import { z } from 'zod';
@@ -39,8 +41,10 @@ export type GeminiRequest = {
   messages: PromptMessages;
   /** 있으면 JSON으로만 답하게 한다(구조화 출력). */
   jsonSchema?: unknown;
-  thinking: 'minimal' | 'low' | 'medium';
+  thinking: 'minimal' | 'low' | 'medium' | 'high';
   maxOutputTokens: number;
+  /** 이 호출만 클라이언트 기본(60초) 대신 쓰는 타임아웃. 이야기 작성은 120초. */
+  timeoutMs?: number;
 };
 
 export type GeminiResponse = { text: string; promptTokens: number; outputTokens: number };
@@ -60,7 +64,11 @@ const THINKING: Record<GeminiRequest['thinking'], ThinkingLevel> = {
   minimal: ThinkingLevel.MINIMAL,
   low: ThinkingLevel.LOW,
   medium: ThinkingLevel.MEDIUM,
+  high: ThinkingLevel.HIGH,
 };
+
+/** 이야기 JSON 한 편. 사고 수준이 높아 60초를 넘길 수 있다. */
+export const ARIN_STORY_TIMEOUT_MS = 120_000;
 
 /**
  * `@google/genai` 호출. 재시도(408·429·5xx, 최대 3회)와 타임아웃은 SDK의 httpOptions로 맡긴다.
@@ -87,6 +95,7 @@ export function createGenAiGenerate(opts: { apiKey: string; timeoutMs?: number }
           systemInstruction: req.messages.system,
           maxOutputTokens: req.maxOutputTokens,
           thinkingConfig: { thinkingLevel: THINKING[req.thinking] },
+          ...(req.timeoutMs !== undefined && { httpOptions: { timeout: req.timeoutMs } }),
           ...(req.jsonSchema !== undefined && {
             responseMimeType: 'application/json',
             responseJsonSchema: req.jsonSchema,
@@ -117,6 +126,7 @@ export type GeminiModels = { story: string; safety: string };
 const MAX_OUTPUT = {
   plan: 4_000,
   story: 8_000,
+  arinStory: 16_000,
   safety: 1_000,
   affirmation: 2_000,
   lifestyle: 600,
@@ -206,6 +216,16 @@ export function createGeminiStoryModel(opts: {
       });
       return { script: text, usage };
     },
+    async writeArinStory(req) {
+      const { value, usage } = await run.json(arinStorySchema, {
+        model: story,
+        messages: arinStoryPrompt(req),
+        thinking: 'high',
+        maxOutputTokens: MAX_OUTPUT.arinStory,
+        timeoutMs: ARIN_STORY_TIMEOUT_MS,
+      });
+      return { story: value, usage };
+    },
     async reviewSafety(text, target) {
       const { value, usage } = await run.json(safetyVerdictSchema, {
         model: safety,
@@ -267,10 +287,10 @@ export function createGeminiVisionModel(opts: {
 }): VisionModel {
   const run = createGeminiRunner(opts.generate, opts.budget);
   return {
-    async suggest(ctx) {
-      const { value, usage } = await run.json(visionSetSchema, {
+    async suggest(info) {
+      const { value, usage } = await run.json(arinSceneSetSchema, {
         model: opts.model,
-        messages: visionPromptV1(ctx),
+        messages: arinScenePrompt(info),
         thinking: 'low',
         maxOutputTokens: MAX_OUTPUT.vision,
       });

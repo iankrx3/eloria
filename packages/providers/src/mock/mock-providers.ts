@@ -1,5 +1,5 @@
 import { FALLBACK_AFFIRMATIONS } from '@eloria/prompts';
-import type { SafetyVerdict, ScenePlan } from '@eloria/shared';
+import { sampleArinStory, type SafetyVerdict, type ScenePlan } from '@eloria/shared';
 import type { Providers, StoryContext, Usage } from '../types';
 import { chimeWav } from './chime-wav';
 
@@ -103,6 +103,15 @@ export function createMockProviders(opts: { delayMs?: number } = {}): Providers 
         await wait();
         return { script: scriptFor(plan, ctx), usage: usage({ inputTokens: 0, outputTokens: 0 }) };
       },
+      async writeArinStory(req) {
+        await wait();
+        const story = sampleArinStory();
+        const wish = req.info.today_wish.trim();
+        return {
+          story: wish ? { ...story, title: wish.slice(0, 30) } : story,
+          usage: usage({ inputTokens: 0, outputTokens: 0 }),
+        };
+      },
       async reviewSafety(text) {
         await wait();
         const verdict: SafetyVerdict = CRISIS_PATTERN.test(text)
@@ -127,29 +136,17 @@ export function createMockProviders(opts: { delayMs?: number } = {}): Providers 
       },
     },
     vision: {
-      async suggest(ctx) {
+      async suggest(info) {
         await wait();
-        const dream = ctx.dream.slice(0, 20);
-        const scenes = [
-          {
-            place: '햇살이 드는 내 방',
-            timeOfDay: 'morning' as const,
-            title: '창을 열고 맞는 첫 아침',
-          },
-          {
-            place: '좋아하는 작업 공간',
-            timeOfDay: 'afternoon' as const,
-            title: '몰입하는 오후의 책상',
-          },
-          { place: '노을 진 강변', timeOfDay: 'evening' as const, title: '노을을 걷는 저녁 산책' },
-          { place: '조용한 창가', timeOfDay: 'night' as const, title: '하루를 돌아보는 밤' },
-        ];
+        const head = (info.today_wish.trim() || '이 소원').slice(0, 8);
         return {
           set: {
-            visions: scenes.map((sc) => ({
-              ...sc,
-              summary: `${dream}, 그 삶을 사는 내가 ${sc.place}에서 보내는 시간`,
-            })),
+            scenes: [
+              { title: `${head}\n창을 연다`, hint: '손에 닿는 따뜻한 결' },
+              { title: `${head}\n앉아 있는다`, hint: '창가의 고요한 온기' },
+              { title: `${head}\n불을 켠다`, hint: '켜지는 순간의 벅참' },
+              { title: `${head}\n문을 연다`, hint: '익숙해진 공기의 무게' },
+            ],
           },
           usage: usage({ inputTokens: 0, outputTokens: 0 }),
         };

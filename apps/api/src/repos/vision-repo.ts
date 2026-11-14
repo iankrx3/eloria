@@ -1,4 +1,5 @@
 import { visionListSchema, type DesireCategory, type Vision } from '@eloria/shared';
+import { countCustomWishSlots as countSlots } from '../quota/custom-wish';
 import type { AdminClient } from '../lib/supabase-admin';
 
 export interface VisionRepo {
@@ -8,6 +9,10 @@ export interface VisionRepo {
   findVisions(userId: string, desireId: string): Promise<Vision[] | null>;
   /** 고른 장면으로 스토리(on_demand, vision)와 생성 작업 행을 만든다. */
   createVisionStory(userId: string, desireId: string, vision: Vision): Promise<string>;
+  /** 오늘(한국 시간) 직접 소원·수정이 잡고 있는 자리. 실패는 빠진다. */
+  countCustomWishSlots(userId: string, now: Date): Promise<number>;
+  /** 큐에 넣기 실패로 자리를 돌려줄 때. 스토리 상태 실패는 StoryRepo.markFailed가 한다. */
+  releaseWishSlot(storyId: string): Promise<void>;
 }
 
 export function createSupabaseVisionRepo(db: AdminClient): VisionRepo {
@@ -57,6 +62,14 @@ export function createSupabaseVisionRepo(db: AdminClient): VisionRepo {
       });
       if (jobError) throw jobError;
       return story.id;
+    },
+
+    async countCustomWishSlots(userId, now) {
+      return countSlots(db, userId, now);
+    },
+
+    releaseWishSlot() {
+      return Promise.resolve();
     },
   };
 }

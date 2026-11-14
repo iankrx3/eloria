@@ -15,6 +15,8 @@ export const LIMITS = {
   MAX_CONCURRENT_TTS: 8,
   /** 사용자당 생성 요청 분당 한도(docs/ARCHITECTURE.md 6절) */
   GENERATION_REQUESTS_PER_MINUTE: 3,
+  /** 직접 소원 + 이야기 수정. 한국 시간 하루, 성공·진행 중만 센다. 오늘의 이야기는 빼다. */
+  CUSTOM_WISHES_PER_DAY: 3,
 } as const;
 
 export type LimitKey = keyof typeof LIMITS;

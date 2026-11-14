@@ -34,7 +34,7 @@ export type AppDeps = {
   storyRepo: StoryRepo;
   pushRepo: PushRepo;
   accountRepo: AccountRepo;
-  /** 오늘의 확언: 저장소와 글 어댑터(Gemini 또는 mock) */
+  /** 오늘의 확언: 그날 이야기 3줄 또는 기본 3줄. Gemini를 부르지 않는다. */
   affirmations: TodayDeps;
   /** 라이프스타일 추천: 같은 저장소와 글 어댑터 */
   profile: LifestyleDeps;
@@ -64,15 +64,18 @@ export function createApp(deps: AppDeps) {
   v1.route('/health', health);
   // health를 제외한 /v1 경로는 모두 Supabase JWT가 필요하다.
   v1.use('*', requireAuth(deps.verifyToken));
+  const generationLimiter =
+    deps.generationLimiter ??
+    createRateLimiter({ limit: LIMITS.GENERATION_REQUESTS_PER_MINUTE, windowMs: 60_000 });
   v1.route('/quiz', createQuizRoutes(deps.quizRepo));
-  v1.route('/stories', createStoryRoutes(deps.storyRepo));
+  v1.route(
+    '/stories',
+    createStoryRoutes(deps.storyRepo, { events: deps.storyEvents, limiter: generationLimiter }),
+  );
   v1.route('/push-tokens', createPushTokenRoutes(deps.pushRepo));
   v1.route('/account', createAccountRoutes(deps.accountRepo));
   v1.route('/affirmations', createAffirmationRoutes(deps.affirmations));
   v1.route('/profile', createProfileRoutes(deps.profile));
-  const generationLimiter =
-    deps.generationLimiter ??
-    createRateLimiter({ limit: LIMITS.GENERATION_REQUESTS_PER_MINUTE, windowMs: 60_000 });
   v1.route(
     '/visions',
     createVisionRoutes({

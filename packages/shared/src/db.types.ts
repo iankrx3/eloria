@@ -638,11 +638,14 @@ export type Database = {
       }
       stories: {
         Row: {
+          affirmations: Json | null
+          arin_story: Json | null
           created_at: string
           daily_on: string | null
           desire_id: string | null
           error_code: string | null
           id: string
+          image_hint: string | null
           kind: string
           parent_story_id: string | null
           prompt_version: string | null
@@ -659,11 +662,14 @@ export type Database = {
           voice_id: string | null
         }
         Insert: {
+          affirmations?: Json | null
+          arin_story?: Json | null
           created_at?: string
           daily_on?: string | null
           desire_id?: string | null
           error_code?: string | null
           id?: string
+          image_hint?: string | null
           kind: string
           parent_story_id?: string | null
           prompt_version?: string | null
@@ -680,11 +686,14 @@ export type Database = {
           voice_id?: string | null
         }
         Update: {
+          affirmations?: Json | null
+          arin_story?: Json | null
           created_at?: string
           daily_on?: string | null
           desire_id?: string | null
           error_code?: string | null
           id?: string
+          image_hint?: string | null
           kind?: string
           parent_story_id?: string | null
           prompt_version?: string | null

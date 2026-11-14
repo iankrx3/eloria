@@ -1,6 +1,6 @@
 import { apiErrorResponseSchema, storyMediaResponseSchema, type StoryStatus } from '@eloria/shared';
 import { describe, expect, it } from 'vitest';
-import { createFakeStoryRepo, createTestApp, sign } from '../test/fakes';
+import { createFakeStoryEvents, createFakeStoryRepo, createTestApp, sign } from '../test/fakes';
 
 const OWNER = '11111111-1111-4111-8111-111111111111';
 const OTHER = '22222222-2222-4222-8222-222222222222';
@@ -103,5 +103,57 @@ describe('GET /v1/stories/:id/media', () => {
     expect((await media(createTestApp({ storyRepo: store.repo }), OWNER, LIBRARY)).status).toBe(
       404,
     );
+  });
+});
+
+describe('POST /v1/stories/:id/revise', () => {
+  async function revise(app: ReturnType<typeof createTestApp>, body: unknown) {
+    const token = await sign({ sub: OWNER });
+    return app.request(`/v1/stories/${STORY}/revise`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  }
+
+  it('끝난 이야기를 고치면 새 이야기를 만들고 생성 이벤트를 보낸다', async () => {
+    const store = createFakeStoryRepo();
+    store.stories.set(STORY, { userId: OWNER, desireId: 'd1', status: 'ready' });
+    const events = createFakeStoryEvents();
+    const app = createTestApp({ storyRepo: store.repo, storyEvents: events.events });
+    const res = await revise(app, { request: '마지막을 더 조용히' });
+    expect(res.status).toBe(202);
+    const body = (await res.json()) as { storyId: string };
+    expect(store.stories.get(body.storyId)?.countsAsWish).toBe(true);
+    expect(events.sent).toEqual([{ storyId: body.storyId, userId: OWNER }]);
+  });
+
+  it('글이 없는 이야기와 한도를 넘긴 날은 고치지 않는다', async () => {
+    const pending = createFakeStoryRepo();
+    pending.stories.set(STORY, { userId: OWNER, desireId: 'd1', status: 'writing' });
+    expect((await revise(createTestApp({ storyRepo: pending.repo }), { request: '고쳐 줘' })).status).toBe(
+      404,
+    );
+
+    const full = createFakeStoryRepo();
+    full.stories.set(STORY, { userId: OWNER, desireId: 'd1', status: 'text_ready' });
+    for (const n of [1, 2, 3]) {
+      full.stories.set(`slot-${n}`, {
+        userId: OWNER,
+        desireId: 'd1',
+        status: 'ready',
+        countsAsWish: true,
+      });
+    }
+    const blocked = await revise(createTestApp({ storyRepo: full.repo }), { request: '고쳐 줘' });
+    expect(blocked.status).toBe(429);
+  });
+
+  it('실패한 수정은 한도에서 빠진다', async () => {
+    const store = createFakeStoryRepo();
+    store.stories.set(STORY, { userId: OWNER, desireId: 'd1', status: 'ready' });
+    const made = await store.repo.createRevision(OWNER, STORY, '한 번');
+    await store.repo.markFailed(made!.storyId, 'GENERATION_FAILED');
+    expect(await store.repo.countCustomWishSlots(OWNER, new Date())).toBe(0);
   });
 });

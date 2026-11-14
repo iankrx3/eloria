@@ -1,5 +1,12 @@
+import { buildArinUserInfo } from '@eloria/prompts';
 import { ProviderError, type Providers, type Usage } from '@eloria/providers';
-import { isCrisis, type Vision, type VisionsRequest, type VisionsResponse } from '@eloria/shared';
+import {
+  LIMITS,
+  isCrisis,
+  type Vision,
+  type VisionsRequest,
+  type VisionsResponse,
+} from '@eloria/shared';
 import type { StoryEvents } from '../inngest/events';
 import { ApiError } from '../lib/errors';
 import type { RateLimiter } from '../lib/rate-limit';
@@ -74,11 +81,23 @@ export async function createVisions(
       };
     }
 
-    const { context } = await deps.personal.loadUser(userId);
-    const { set } = await call('suggest', () =>
-      deps.providers.vision.suggest({ ...context, dream: body.text }),
-    );
-    const visions: Vision[] = set.visions.map((v, i) => ({ ...v, position: i + 1, storyId: null }));
+    const user = await deps.personal.loadUser(userId);
+    const info = buildArinUserInfo({
+      displayName: user.context.displayName,
+      todayWish: body.text,
+      quiz: user.quiz,
+      people: user.context.people,
+      lifestyle: user.context.likes ?? [],
+      exclude: user.context.dislikes ?? [],
+      recentLines: user.recentLines,
+    });
+    const { set } = await call('suggest', () => deps.providers.vision.suggest(info));
+    const visions: Vision[] = set.scenes.map((scene, i) => ({
+      title: scene.title,
+      hint: scene.hint,
+      position: i + 1,
+      storyId: null,
+    }));
     await deps.repo.saveVisions(desireId, visions);
     return { desireId, blocked: null, visions };
   } catch (error) {
@@ -105,6 +124,12 @@ export async function startVisionStory(
   if (vision.storyId) return { storyId: vision.storyId };
   if (!deps.limiter.take(userId)) throw new ApiError('RATE_LIMITED', '잠시 후 다시 시도해 주세요.');
 
+  const now = (deps.now ?? (() => new Date()))();
+  const used = await deps.repo.countCustomWishSlots(userId, now);
+  if (used >= LIMITS.CUSTOM_WISHES_PER_DAY) {
+    throw new ApiError('QUOTA_EXCEEDED', '오늘 만들 수 있는 이야기를 다 썼어요. 내일 다시 시도해 주세요.');
+  }
+
   const storyId = await deps.repo.createVisionStory(userId, desireId, vision);
   await deps.repo.saveVisions(
     desireId,
@@ -114,6 +139,7 @@ export async function startVisionStory(
     await deps.events.requestGeneration({ storyId, userId });
   } catch (e) {
     await deps.stories.markFailed(storyId, 'ENQUEUE_FAILED');
+    await deps.repo.releaseWishSlot(storyId);
     throw e;
   }
   return { storyId };

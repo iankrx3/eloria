@@ -2,13 +2,13 @@ import { z } from 'zod';
 
 /**
  * 연속 기록·21일 챌린지 규칙(Figma H11·H12, DECISIONS D-44).
- * - 그날 기록: 이야기 1개를 끝까지 들었거나(재생 90% 이상) 확언 10장을 모두 넘겼을 때
+ * - 그날 기록: 이야기 1개를 끝까지 들었거나(재생 90% 이상) 확언 3장을 모두 넘겼을 때
  * - 챌린지: 하루 1개 미션. 전날까지 완료했으면 다음 미션이 열리고, 놓쳐도 이어서 진행한다
  * 날짜는 사용자 시간대(기본 Asia/Seoul)의 YYYY-MM-DD 문자열로 다룬다.
  */
 export const ACTIVITY_RULE = {
   STORIES_PER_DAY: 1,
-  AFFIRMATIONS_PER_DAY: 10,
+  AFFIRMATIONS_PER_DAY: 3,
   /** 이 비율 이상 들으면 "끝까지 들음" */
   LISTENED_RATIO: 0.9,
 } as const;
@@ -123,10 +123,18 @@ export function cleanGratitudeLines(lines: readonly string[]): string[] {
     .slice(0, GRATITUDE_LINES);
 }
 
-/** "당신을 위한 이야기"가 바뀌는 시각(사용자 시간대, H01 카운트다운). */
-export const DAILY_REFRESH_HOUR = 5;
+/** "당신을 위한 이야기"가 바뀌는 시각(사용자 시간대). 한국 시간 자정. */
+export const DAILY_REFRESH_HOUR = 0;
 
-/** 데일리 날짜: 새벽 5시 전이면 아직 어제의 데일리다. */
+/** 데일리 날짜. 자정 전이면 아직 그날의 이야기다. */
 export function dailyDay(now: Date, timezone?: string) {
   return localDay(new Date(now.getTime() - DAILY_REFRESH_HOUR * 60 * 60 * 1000), timezone);
+}
+
+/** 한국 시간 하루의 [시작, 끝). 직접 소원 한도를 이 구간으로 센다. */
+export function seoulDayRange(now: Date): { start: string; end: string } {
+  const day = localDay(now, DEFAULT_TIMEZONE);
+  const start = new Date(`${day}T00:00:00+09:00`);
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  return { start: start.toISOString(), end: end.toISOString() };
 }

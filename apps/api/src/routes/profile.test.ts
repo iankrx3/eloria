@@ -13,6 +13,8 @@ function repoWithLikes() {
     async loadUser() {
       return {
         timezone: 'Asia/Seoul',
+        quiz: {},
+        recentLines: [],
         context: {
           dream: '바닷가 책방',
           displayName: '서아',

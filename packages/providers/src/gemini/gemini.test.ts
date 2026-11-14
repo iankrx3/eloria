@@ -1,10 +1,13 @@
 import type { StoryContext } from '@eloria/prompts';
+import { sampleArinStory } from '@eloria/shared';
 import { describe, expect, it } from 'vitest';
 import { createProviders } from '../index';
 import { resolveProviderModes } from '../mode';
 import { createDailyBudget, createMemoryBudget } from './budget';
 import {
+  ARIN_STORY_TIMEOUT_MS,
   createGeminiStoryModel,
+  createGeminiVisionModel,
   ProviderError,
   type GeminiGenerate,
   type GeminiRequest,
@@ -80,6 +83,82 @@ describe('createGeminiStoryModel', () => {
     expect(script).toBe('서아 님, 천천히 눈을 떠 보세요.');
     expect(fake.calls[0]?.model).toBe('gemini-3.6-flash');
     expect(fake.calls[0]?.jsonSchema).toBeUndefined();
+    expect(fake.calls[0]?.thinking).toBe('low');
+  });
+
+  it('이야기 JSON은 story 모델, 사고 수준 high, 120초로 받는다', async () => {
+    const sample = sampleArinStory();
+    const fake = fakeGemini([JSON.stringify(sample)]);
+    const model = createGeminiStoryModel({ generate: fake.generate, models: MODELS });
+    const { story } = await model.writeArinStory({
+      info: {
+        name: '서연',
+        age: 27,
+        gender: '여성',
+        today_wish: '람보르기니',
+        quiz: {
+          wish: '',
+          why: '',
+          obstacle: '',
+          love: '',
+          love_included: false,
+          desired_love: '',
+          specific_person: '',
+          people: [],
+          mornings: [],
+          dream_day: '',
+        },
+        lifestyle: [],
+        exclude: [],
+      },
+    });
+    expect(story.title).toBe(sample.title);
+    expect(fake.calls[0]).toMatchObject({
+      model: 'gemini-3.6-flash',
+      thinking: 'high',
+      timeoutMs: ARIN_STORY_TIMEOUT_MS,
+      maxOutputTokens: 16_000,
+    });
+    expect(fake.calls[0]?.messages.user.startsWith('[사용자 정보]')).toBe(true);
+  });
+
+  it('장면 미리보기는 사용자 정보와 생각 수준 low로 받는다', async () => {
+    const fake = fakeGemini([
+      JSON.stringify({
+        scenes: [
+          { title: '창을\n연다', hint: '따뜻한 결' },
+          { title: '앉아\n있는다', hint: '고요한 온기' },
+          { title: '불을\n켠다', hint: '켜지는 벅참' },
+          { title: '문을\n연다', hint: '익숙한 공기' },
+        ],
+      }),
+    ]);
+    const model = createGeminiVisionModel({ generate: fake.generate, model: 'gemini-3.6-flash' });
+    const { set } = await model.suggest({
+      name: '서연',
+      age: 27,
+      gender: '여성',
+      today_wish: '에테르노 청담',
+      quiz: {
+        wish: '',
+        why: '',
+        obstacle: '',
+        love: '',
+        love_included: false,
+        desired_love: '',
+        specific_person: '',
+        people: [],
+        mornings: [],
+        dream_day: '',
+      },
+      lifestyle: [],
+      exclude: [],
+    });
+    expect(set.scenes).toHaveLength(4);
+    expect(fake.calls[0]).toMatchObject({ model: 'gemini-3.6-flash', thinking: 'low' });
+    expect(fake.calls[0]?.timeoutMs).toBeUndefined();
+    expect(fake.calls[0]?.messages.system.startsWith('너는 ARIN(아린)의 이야기 작가다.')).toBe(true);
+    expect(fake.calls[0]?.messages.user.startsWith('[사용자 정보]')).toBe(true);
   });
 
   it('상한에 닿으면 Gemini를 부르지 않는다', async () => {

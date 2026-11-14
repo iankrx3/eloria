@@ -15,9 +15,15 @@ import {
   safetyPromptV1,
   scenePlanPromptV1,
   scenePlanPromptV2,
+  ARIN_SCENE_SYSTEM,
+  ARIN_STORY_SYSTEM,
+  arinScenePrompt,
+  arinStoryPrompt,
+  buildArinUserInfo,
   visionPromptV1,
   STORY_PROMPT_VERSION,
   storyPromptV1,
+  type ArinUserInfo,
   type StoryContext,
 } from './index';
 
@@ -266,5 +272,85 @@ describe('scene-plan v2 · vision v1', () => {
     const { system, user } = visionPromptV1(ctx);
     expect(system).toContain('4개');
     expect(user).toContain('<dream>바다가 보이는 작업실</dream>');
+  });
+});
+
+const arinInfo: ArinUserInfo = {
+  name: '서아',
+  age: 28,
+  gender: '여성',
+  today_wish: '에테르노 청담',
+  quiz: {
+    wish: '집',
+    why: '',
+    obstacle: '',
+    love: '',
+    love_included: false,
+    desired_love: '',
+    specific_person: '',
+    people: [],
+    mornings: [],
+    dream_day: '',
+  },
+  lifestyle: [],
+  exclude: [],
+};
+
+describe('arin story prompt', () => {
+  it('9번 본문을 그대로 두고 10절은 넣지 않는다', () => {
+    expect(ARIN_STORY_SYSTEM).toContain('[입력]');
+    expect(ARIN_STORY_SYSTEM).toContain('공백 제외 1,400~1,600자');
+    expect(ARIN_STORY_SYSTEM).toContain('\\n');
+    expect(ARIN_STORY_SYSTEM).not.toContain('[수정 모드]');
+    expect(ARIN_STORY_SYSTEM).not.toContain('작업 체크리스트');
+  });
+
+  it('고른 장면은 사용자 JSON 밖 부록이다', () => {
+    const { user } = arinStoryPrompt({
+      info: arinInfo,
+      chosenScene: { title: '창을\n연다', hint: '따뜻한 결' },
+    });
+    expect(user).toContain('[선택한 장면]');
+    expect(user).toContain('제목: 창을\n연다');
+    expect(user).toContain('설명: 따뜻한 결');
+    expect(user).toContain('이 장면을 이야기의 중심으로 쓰고, 제목은 이 제목을 그대로 쓴다.');
+    expect(user).not.toContain('chosen_scene');
+  });
+
+  it('수정은 수정 모드와 이전 이야기를 붙인다', () => {
+    const { system, user } = arinStoryPrompt({
+      info: arinInfo,
+      previousStory: { title: '옛 제목' },
+      revisionRequest: '결을 더',
+    });
+    expect(system).toContain('[수정 모드]');
+    expect(system).toContain('요청한 부분만 고치고');
+    expect(user).toContain('[이전 이야기]');
+    expect(user).toContain('[수정 요청]');
+    expect(user).toContain('결을 더');
+  });
+
+  it('빈 최근 문장은 사용자 정보에서 뺀다', () => {
+    const info = buildArinUserInfo({
+      displayName: '서아',
+      todayWish: '에테르노 청담',
+      quiz: { desire: '집' },
+      people: [],
+      lifestyle: [],
+      exclude: [],
+      recentLines: [],
+    });
+    expect(info.recent_lines).toBeUndefined();
+    expect(info.wish_facts).toBeUndefined();
+    expect(info.today_wish).toBe('에테르노 청담');
+    expect(info.quiz.wish).toBe('집');
+  });
+
+  it('장면 미리보기는 10-1 문장으로 시작한다', () => {
+    const { system, user } = arinScenePrompt(arinInfo);
+    expect(system).toBe(ARIN_SCENE_SYSTEM);
+    expect(system.startsWith('너는 ARIN(아린)의 이야기 작가다.')).toBe(true);
+    expect(system).toContain('"scenes"');
+    expect(user.startsWith('[사용자 정보]')).toBe(true);
   });
 });

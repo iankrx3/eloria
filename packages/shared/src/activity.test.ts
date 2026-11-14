@@ -3,6 +3,7 @@ import {
   challengeState,
   cleanGratitudeLines,
   dailyDay,
+  seoulDayRange,
   GRATITUDE_LINE_MAX,
   isRecordedDay,
   localDay,
@@ -10,14 +11,14 @@ import {
 } from './activity';
 
 describe('isRecordedDay', () => {
-  it('이야기 1개 또는 확언 10장이면 기록', () => {
+  it('이야기 1개 또는 확언 3장이면 기록', () => {
     expect(isRecordedDay({ day: '2026-11-11', storiesListened: 1, affirmationsDone: 0 })).toBe(
       true,
     );
-    expect(isRecordedDay({ day: '2026-11-11', storiesListened: 0, affirmationsDone: 10 })).toBe(
+    expect(isRecordedDay({ day: '2026-11-11', storiesListened: 0, affirmationsDone: 3 })).toBe(
       true,
     );
-    expect(isRecordedDay({ day: '2026-11-11', storiesListened: 0, affirmationsDone: 9 })).toBe(
+    expect(isRecordedDay({ day: '2026-11-11', storiesListened: 0, affirmationsDone: 2 })).toBe(
       false,
     );
   });
@@ -84,8 +85,16 @@ describe('cleanGratitudeLines', () => {
 });
 
 describe('dailyDay', () => {
-  it('새벽 5시(서울) 전에는 전날', () => {
-    expect(dailyDay(new Date('2026-11-12T19:30:00Z'), 'Asia/Seoul')).toBe('2026-11-12'); // 13일 04:30
-    expect(dailyDay(new Date('2026-11-12T20:30:00Z'), 'Asia/Seoul')).toBe('2026-11-13'); // 13일 05:30
+  it('한국 시간 자정에 날짜가 바뀐다', () => {
+    expect(dailyDay(new Date('2026-11-12T14:59:00Z'), 'Asia/Seoul')).toBe('2026-11-12'); // 23:59
+    expect(dailyDay(new Date('2026-11-12T15:00:00Z'), 'Asia/Seoul')).toBe('2026-11-13'); // 00:00
+  });
+});
+
+describe('seoulDayRange', () => {
+  it('자정부터 다음 자정 전까지', () => {
+    const range = seoulDayRange(new Date('2026-11-12T15:30:00Z')); // 서울 13일 00:30
+    expect(range.start).toBe('2026-11-12T15:00:00.000Z');
+    expect(range.end).toBe('2026-11-13T15:00:00.000Z');
   });
 });

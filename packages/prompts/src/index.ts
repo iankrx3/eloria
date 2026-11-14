@@ -30,3 +30,13 @@ export { scenePlanPromptV1 } from './scene-plan/v1';
 export { scenePlanPromptV2 } from './scene-plan/v2';
 export { VISION_V1, visionPromptV1 } from './vision/v1';
 export { storyPromptV1, type StoryPromptOptions } from './story/v1';
+export {
+  ARIN_REVISE_ADDON,
+  ARIN_STORY_PROMPT_VERSION,
+  ARIN_STORY_SYSTEM,
+  arinStoryPrompt,
+  type ArinStoryRequest,
+  type ArinUserInfo,
+} from './arin-story/pending';
+export { ARIN_SCENE_PROMPT_VERSION, ARIN_SCENE_SYSTEM, arinScenePrompt } from './arin-story/scene';
+export { buildArinUserInfo, type ArinUserSource } from './arin-story/user-info';

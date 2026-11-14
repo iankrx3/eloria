@@ -46,7 +46,7 @@ const app = createApp({
   quizRepo: createSupabaseQuizRepo(db),
   storyRepo: createSupabaseStoryRepo(db),
   accountRepo: createSupabaseAccountRepo(db),
-  affirmations: { repo: affirmationRepo, providers },
+  affirmations: { repo: affirmationRepo },
   profile: { repo: affirmationRepo, providers },
   visions: { repo: createSupabaseVisionRepo(db), providers },
   daily: { repo: dailyRepo },

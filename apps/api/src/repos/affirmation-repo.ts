@@ -1,9 +1,20 @@
 import type { LifestyleContext } from '@eloria/prompts';
 import type { Usage } from '@eloria/providers';
-import { collectQuizAnswers, type AffirmationItem } from '@eloria/shared';
+import {
+  collectQuizAnswers,
+  recentLineFromStory,
+  type AffirmationItem,
+  type QuizAnswers,
+} from '@eloria/shared';
+import { z } from 'zod';
 import type { AdminClient } from '../lib/supabase-admin';
 
-export type AffirmationUserContext = { timezone: string | null; context: LifestyleContext };
+export type AffirmationUserContext = {
+  timezone: string | null;
+  context: LifestyleContext;
+  quiz: Partial<QuizAnswers>;
+  recentLines: string[];
+};
 
 /** 사용자 한 명이 부르는 Gemini 기능(generation_jobs.kind) */
 export type PersonalJobKind = 'affirmation' | 'lifestyle' | 'vision';
@@ -14,6 +25,8 @@ export interface AffirmationRepo {
   loadUser(userId: string): Promise<AffirmationUserContext>;
   /** 그날의 통과한 확언(position 순) */
   listForDay(userId: string, day: string): Promise<AffirmationItem[]>;
+  /** 그날 오늘의 이야기에 들어 있는 확언 3개. 없거나 아직 글이 없으면 null. */
+  dailyAffirmations(userId: string, day: string): Promise<string[] | null>;
   /** 이 기능으로 부른 Gemini 호출 기록 수(시도 상한용) */
   countCallsSince(userId: string, kind: PersonalJobKind, sinceIso: string): Promise<number>;
   recordCall(call: {
@@ -58,9 +71,28 @@ export function createSupabaseAffirmationRepo(db: AdminClient): AffirmationRepo 
       if (quiz.error) throw quiz.error;
       if (desire.error) throw desire.error;
 
+      const recent = await db
+        .from('stories')
+        .select('title, script, affirmations')
+        .eq('user_id', userId)
+        .in('status', ['text_ready', 'audio_ready', 'ready'])
+        .order('created_at', { ascending: false })
+        .limit(3);
+      if (recent.error) throw recent.error;
+
       const answers = collectQuizAnswers(quiz.data);
       return {
         timezone: profile.data.timezone,
+        quiz: answers,
+        recentLines: (recent.data ?? []).map((row) =>
+          recentLineFromStory({
+            title: row.title,
+            script: row.script,
+            affirmations: Array.isArray(row.affirmations)
+              ? row.affirmations.filter((line): line is string => typeof line === 'string')
+              : null,
+          }),
+        ),
         context: {
           // 퀴즈의 "이루고 싶은 것"이 먼저, 없으면 가장 최근 꿈
           dream: answers.desire ?? desire.data?.text ?? '',
@@ -81,6 +113,20 @@ export function createSupabaseAffirmationRepo(db: AdminClient): AffirmationRepo 
           occupation: profile.data.occupation,
         },
       };
+    },
+
+    async dailyAffirmations(userId, day) {
+      const { data, error } = await db
+        .from('stories')
+        .select('affirmations')
+        .eq('user_id', userId)
+        .eq('kind', 'daily')
+        .eq('daily_on', day)
+        .in('status', ['text_ready', 'audio_ready', 'ready'])
+        .maybeSingle();
+      if (error) throw error;
+      const parsed = z.array(z.string().min(1)).length(3).safeParse(data?.affirmations);
+      return parsed.success ? parsed.data : null;
     },
 
     async listForDay(userId, day) {

@@ -1,5 +1,5 @@
 import { createMockProviders, ProviderError, type Providers } from '@eloria/providers';
-import { LIMITS, type SafetyVerdict, type StoryStatus, type Vision } from '@eloria/shared';
+import { type SafetyVerdict, type StoryStatus, type Vision } from '@eloria/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { PipelineRepo, StoryJobContext } from '../repos/pipeline-repo';
 import { audioCacheKey, handlePipelineFailure, runStoryPipeline } from './story-pipeline';
@@ -14,6 +14,8 @@ function createFakePipelineRepo(
     daily?: boolean;
     vision?: Vision;
     voice?: { id: string; providerVoiceId: string };
+    revisionRequest?: string;
+    previousStory?: unknown;
   } = {},
 ) {
   const statuses: StoryStatus[] = [];
@@ -21,6 +23,7 @@ function createFakePipelineRepo(
     status: 'queued' as StoryStatus,
     errorCode: null as string | null,
     script: null as string | null,
+    arinStory: null as unknown,
     calls: [] as string[],
     audioHashes: [] as string[],
     owners: [] as (string | null)[],
@@ -39,6 +42,10 @@ function createFakePipelineRepo(
     quiz: { dream_home: ['jeju_sea'] },
     kind: opts.library ? 'library' : opts.daily ? 'daily' : 'on_demand',
     vision: opts.vision ?? null,
+    revisionRequest: opts.revisionRequest ?? null,
+    previousScript: null,
+    previousStory: opts.previousStory ?? null,
+    recentLines: [],
   };
 
   const repo: PipelineRepo = {
@@ -49,8 +56,9 @@ function createFakePipelineRepo(
       if (errorCode !== undefined) state.errorCode = errorCode;
     },
     getStatus: async () => state.status,
-    saveText: async (_id, { script }) => {
+    saveText: async (_id, { script, arinStory }) => {
       state.script = script;
+      state.arinStory = arinStory ?? null;
       state.status = 'text_ready';
       statuses.push('text_ready');
     },
@@ -315,34 +323,76 @@ describe('audioCacheKey', () => {
 describe('비전·데일리(D-48)', () => {
   const vision: Vision = {
     position: 2,
-    title: '노을 진 작업실의 저녁',
-    summary: '창밖 바다를 보며 하루를 정리한다',
-    place: '바닷가 작업실',
-    timeOfDay: 'evening',
+    title: '노을 진\n작업실',
+    hint: '창밖 바다를 보며 하루를 정리한다',
     storyId: null,
   };
 
-  it('고른 장면을 입력 검수와 장면 계획에 넘긴다', async () => {
+  it('고른 장면은 장면 계획 없이 JSON 한 편으로 쓰고 입력 검수에 장면 제목을 넣는다', async () => {
     const fake = createFakePipelineRepo({ vision });
     const providers = createMockProviders();
     const review = vi.spyOn(providers.story, 'reviewSafety');
     const plan = vi.spyOn(providers.story, 'planScenes');
+    const write = vi.spyOn(providers.story, 'writeArinStory');
     await runStoryPipeline({ repo: fake.repo, providers }, { storyId: STORY }, (_id, fn) => fn());
-    expect(review.mock.calls[0]?.[0]).toContain('노을 진 작업실의 저녁');
-    expect(plan.mock.calls[0]?.[0].vision).toMatchObject({
-      place: '바닷가 작업실',
-      timeOfDay: 'evening',
+    expect(review.mock.calls[0]?.[0]).toContain('노을 진\n작업실');
+    expect(plan).not.toHaveBeenCalled();
+    expect(write.mock.calls[0]?.[0].chosenScene).toMatchObject({
+      title: '노을 진\n작업실',
+      hint: '창밖 바다를 보며 하루를 정리한다',
     });
+    expect(write.mock.calls[0]?.[0].info.today_wish).toBe('바다가 보이는 작업실');
+    expect(write.mock.calls[0]?.[0].info.recent_lines).toBeUndefined();
+    expect(fake.state.script).toContain('\n\n');
+    expect(fake.state.arinStory).toMatchObject({ title: vision.title });
   });
 
-  it('데일리는 짧은 목표 길이로 쓴다', async () => {
+  it('데일리는 퀴즈 소원으로 JSON 한 편을 쓰고 장면 계획을 부르지 않는다', async () => {
     const fake = createFakePipelineRepo({ daily: true });
     const providers = createMockProviders();
-    const write = vi.spyOn(providers.story, 'writeStory');
+    const plan = vi.spyOn(providers.story, 'planScenes');
+    const write = vi.spyOn(providers.story, 'writeArinStory');
     await runStoryPipeline({ repo: fake.repo, providers }, { storyId: STORY }, (_id, fn) => fn());
-    expect(write.mock.calls[0]?.[2]).toMatchObject({
-      targetChars: LIMITS.DAILY_TARGET_CHARS,
-      maxChars: LIMITS.DAILY_MAX_CHARS,
+    expect(plan).not.toHaveBeenCalled();
+    expect(write.mock.calls[0]?.[0].info.today_wish).toBe('바다가 보이는 작업실');
+    expect(write.mock.calls[0]?.[0].info.quiz.wish).toBe('');
+  });
+
+  it('안전 검수가 다시 쓰라면 방금 쓴 이야기를 넘기고 수정 모드는 쓰지 않는다', async () => {
+    const fake = createFakePipelineRepo({ vision });
+    const providers = createMockProviders();
+    let n = 0;
+    providers.story.reviewSafety = async () => {
+      n += 1;
+      return {
+        verdict:
+          n === 2
+            ? { verdict: 'rewrite', reasons: ['guaranteed_outcome'] }
+            : { verdict: 'pass', reasons: [] },
+        usage: { provider: 'mock', model: 'mock', estCostUsd: 0 },
+      };
+    };
+    const write = vi.spyOn(providers.story, 'writeArinStory');
+    await runStoryPipeline({ repo: fake.repo, providers }, { storyId: STORY }, (_id, fn) => fn());
+    expect(write).toHaveBeenCalledTimes(2);
+    expect(write.mock.calls[0]?.[0].revisionRequest).toBeUndefined();
+    expect(write.mock.calls[0]?.[0].safetyFeedback).toBeUndefined();
+    expect(write.mock.calls[1]?.[0].revisionRequest).toBeUndefined();
+    expect(write.mock.calls[1]?.[0].safetyFeedback).toEqual(['guaranteed_outcome']);
+    expect(write.mock.calls[1]?.[0].previousStory).toMatchObject({ title: vision.title });
+  });
+
+  it('수정은 이전 이야기 JSON과 요청을 같이 넘긴다', async () => {
+    const previous = { title: '옛 제목', theme: '기타' };
+    const fake = createFakePipelineRepo({
+      vision,
+      revisionRequest: '창을 더 가까이',
+      previousStory: previous,
     });
+    const providers = createMockProviders();
+    const write = vi.spyOn(providers.story, 'writeArinStory');
+    await runStoryPipeline({ repo: fake.repo, providers }, { storyId: STORY }, (_id, fn) => fn());
+    expect(write.mock.calls[0]?.[0].revisionRequest).toBe('창을 더 가까이');
+    expect(write.mock.calls[0]?.[0].previousStory).toBe(previous);
   });
 });

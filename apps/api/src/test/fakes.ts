@@ -74,6 +74,7 @@ export function createFakeStoryRepo() {
       status: StoryStatus;
       errorCode?: string;
       audioPath?: string;
+      countsAsWish?: boolean;
     }
   >();
   /** 공용 리추얼 스토리(storyId → 무료 여부, 음성 경로) */
@@ -98,6 +99,31 @@ export function createFakeStoryRepo() {
       return story && story.userId === userId
         ? { status: story.status, errorCode: story.errorCode ?? null }
         : null;
+    },
+    async countCustomWishSlots(userId) {
+      return [...stories.values()].filter(
+        (s) => s.userId === userId && s.countsAsWish && s.status !== 'failed',
+      ).length;
+    },
+    async createRevision(userId, storyId, request) {
+      const parent = stories.get(storyId);
+      if (!parent || parent.userId !== userId) return null;
+      if (
+        parent.status !== 'text_ready' &&
+        parent.status !== 'audio_ready' &&
+        parent.status !== 'ready'
+      ) {
+        return null;
+      }
+      const nextId = uuid();
+      stories.set(nextId, {
+        userId,
+        desireId: parent.desireId,
+        status: 'queued',
+        countsAsWish: true,
+        errorCode: request,
+      });
+      return { storyId: nextId };
     },
     async deleteStory(_userId, storyId) {
       stories.delete(storyId);
@@ -165,7 +191,9 @@ export function createFakeAccountRepo() {
 }
 
 /** 메모리 확언 저장소. 같은 날 다시 저장하면 무시한다(실제 upsert ignoreDuplicates와 같게). */
-export function createFakeAffirmationRepo(opts: { callsSoFar?: number; timezone?: string } = {}) {
+export function createFakeAffirmationRepo(
+  opts: { callsSoFar?: number; timezone?: string; dailyLines?: string[] | null } = {},
+) {
   const days = new Map<string, (AffirmationItem & { promptVersion: string })[]>();
   const calls: string[] = [];
   let counter = 0;
@@ -173,8 +201,13 @@ export function createFakeAffirmationRepo(opts: { callsSoFar?: number; timezone?
     async loadUser() {
       return {
         timezone: opts.timezone ?? 'Asia/Seoul',
+        quiz: {},
+        recentLines: [],
         context: { dream: '바닷가 책방', displayName: '서아', tone: 'calm', people: [] },
       };
+    },
+    async dailyAffirmations() {
+      return opts.dailyLines ?? null;
     },
     async listForDay(userId, day) {
       return (days.get(`${userId}:${day}`) ?? []).map(({ promptVersion: _, ...item }) => item);
@@ -209,7 +242,7 @@ export function createFakeAffirmationRepo(opts: { callsSoFar?: number; timezone?
 /** 메모리 비전 저장소 */
 export function createFakeVisionRepo() {
   const desires = new Map<string, { userId: string; text: string; visions: Vision[] }>();
-  const stories: { storyId: string; desireId: string; vision: Vision }[] = [];
+  const stories: { storyId: string; userId: string; desireId: string; vision: Vision; failed: boolean }[] = [];
   let n = 0;
   const id = () => `00000000-0000-4000-9000-${String(++n).padStart(12, '0')}`;
   const repo: VisionRepo = {
@@ -226,10 +259,17 @@ export function createFakeVisionRepo() {
       const d = desires.get(desireId);
       return d && d.userId === userId ? d.visions : null;
     },
-    async createVisionStory(_userId, desireId, vision) {
+    async createVisionStory(userId, desireId, vision) {
       const storyId = id();
-      stories.push({ storyId, desireId, vision });
+      stories.push({ storyId, userId, desireId, vision, failed: false });
       return storyId;
+    },
+    async countCustomWishSlots(userId) {
+      return stories.filter((s) => s.userId === userId && !s.failed).length;
+    },
+    async releaseWishSlot(storyId) {
+      const story = stories.find((s) => s.storyId === storyId);
+      if (story) story.failed = true;
     },
   };
   return { repo, desires, stories };
@@ -277,7 +317,7 @@ export function createTestApp(overrides: Partial<AppDeps> = {}) {
     storyEvents: createFakeStoryEvents().events,
     pushRepo: createFakePushRepo().repo,
     accountRepo: createFakeAccountRepo().repo,
-    affirmations: { repo: createFakeAffirmationRepo().repo, providers: createMockProviders() },
+    affirmations: { repo: createFakeAffirmationRepo().repo },
     profile: { repo: createFakeAffirmationRepo().repo, providers: createMockProviders() },
     visions: { repo: createFakeVisionRepo().repo, providers: createMockProviders() },
     daily: { repo: createFakeDailyRepo().repo },

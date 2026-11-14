@@ -2,6 +2,7 @@ import { createMockProviders, type SafetyTarget } from '@eloria/providers';
 import { visionsResponseSchema, type SafetyVerdict } from '@eloria/shared';
 import { describe, expect, it } from 'vitest';
 import { ensureDaily, pregenerateDailies } from '../daily/daily';
+import { createRateLimiter, type RateLimiter } from '../lib/rate-limit';
 import {
   createFakeAffirmationRepo,
   createFakeDailyRepo,
@@ -13,7 +14,7 @@ import {
 
 const auth = async (sub = 'user-1') => ({ Authorization: `Bearer ${await sign({ sub })}` });
 
-function setup(verdict?: SafetyVerdict) {
+function setup(verdict?: SafetyVerdict, generationLimiter?: RateLimiter) {
   const visions = createFakeVisionRepo();
   const personal = createFakeAffirmationRepo();
   const events = createFakeStoryEvents();
@@ -32,8 +33,9 @@ function setup(verdict?: SafetyVerdict) {
   };
   const app = createTestApp({
     visions: { repo: visions.repo, providers },
-    affirmations: { repo: personal.repo, providers },
+    affirmations: { repo: personal.repo },
     storyEvents: events.events,
+    generationLimiter,
   });
   return { app, visions, personal, events };
 }
@@ -110,6 +112,39 @@ describe('POST /v1/visions/:desireId/:position/story', () => {
       headers: await auth('user-2'),
     });
     expect(res.status).toBe(404);
+  });
+
+  it('오늘 직접 소원 3편을 넘기면 만들지 않는다', async () => {
+    // 분당 3회와 겹치지 않게, 이 테스트만 한도를 넉넉히 둔다.
+    const { app, visions } = setup(
+      undefined,
+      createRateLimiter({ limit: 10, windowMs: 60_000 }),
+    );
+    const created = visionsResponseSchema.parse(
+      await (
+        await app.request('/v1/visions', {
+          method: 'POST',
+          headers: { ...(await auth()), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: '책방' }),
+        })
+      ).json(),
+    );
+    for (const position of [1, 2, 3]) {
+      const res = await app.request(`/v1/visions/${created.desireId}/${position}/story`, {
+        method: 'POST',
+        headers: await auth(),
+      });
+      expect(res.status).toBe(202);
+    }
+    const blocked = await app.request(`/v1/visions/${created.desireId}/4/story`, {
+      method: 'POST',
+      headers: await auth(),
+    });
+    expect(blocked.status).toBe(429);
+    expect(((await blocked.json()) as { error: { code: string } }).error.code).toBe(
+      'QUOTA_EXCEEDED',
+    );
+    expect(visions.stories.filter((s) => !s.failed)).toHaveLength(3);
   });
 });
 

@@ -1,9 +1,13 @@
 import { createHash } from 'node:crypto';
+import { ARIN_STORY_PROMPT_VERSION, buildArinUserInfo } from '@eloria/prompts';
 import {
   isCrisis,
   LIMITS,
   scenePlanSchema,
+  scriptFromArinStory,
+  type ArinStory,
   type SafetyVerdict,
+  type ScenePlan,
   type StoryGenerateRequested,
 } from '@eloria/shared';
 import { ProviderError, type Providers, type StoryContext, type Usage } from '@eloria/providers';
@@ -54,20 +58,12 @@ function toStoryContext(ctx: StoryJobContext, tone: StoryContext['tone']): Story
     dreamDays: ctx.quiz.dream_days,
     likes: ctx.likes,
     dislikes: ctx.dislikes,
-    ...(ctx.vision && {
-      vision: {
-        title: ctx.vision.title,
-        summary: ctx.vision.summary,
-        place: ctx.vision.place,
-        timeOfDay: ctx.vision.timeOfDay,
-      },
-    }),
   };
 }
 
 /** 입력 검수 대상: 꿈 + (있으면) 고른 장면. 장면 글도 사용자가 고칠 수 있는 데이터라 함께 본다. */
 function inputText(ctx: StoryJobContext) {
-  return ctx.vision ? `${ctx.dream}\n${ctx.vision.title}\n${ctx.vision.summary}` : ctx.dream;
+  return ctx.vision ? `${ctx.dream}\n${ctx.vision.title}\n${ctx.vision.hint}` : ctx.dream;
 }
 
 /**
@@ -126,50 +122,121 @@ export async function runStoryPipeline(
     return { outcome: 'blocked', errorCode };
   }
 
-  const plan = await step('plan', async () => {
-    const { plan } = await call(ctx, 'plan', () => providers.story.planScenes(storyCtx));
-    return scenePlanSchema.parse(plan);
-  });
-
-  const write = (id: string, safetyFeedback?: SafetyVerdict) =>
-    step(id, async () => {
-      await repo.setStatus(storyId, 'writing');
-      const { script } = await call(ctx, id, () =>
-        providers.story.writeStory(plan, storyCtx, {
-          targetChars: ctx.kind === 'daily' ? LIMITS.DAILY_TARGET_CHARS : LIMITS.STORY_TARGET_CHARS,
-          maxChars: ctx.kind === 'daily' ? LIMITS.DAILY_MAX_CHARS : LIMITS.STORY_MAX_CHARS,
-          safetyFeedback,
-        }),
-      );
-      return script;
-    });
   const review = (id: string, script: string) =>
     step(id, async () => {
       await repo.setStatus(storyId, 'reviewing');
       return (await call(ctx, id, () => providers.story.reviewSafety(script, 'script'))).verdict;
     });
 
-  let script = await write('write');
-  let verdict = await review('review', script);
-  if (verdict.verdict === 'rewrite') {
-    script = await write('rewrite', verdict);
-    verdict = await review('review-rewrite', script);
-  }
-  if (verdict.verdict !== 'pass') {
-    const errorCode = blockCode(verdict);
-    await step('block-script', async () => {
-      await repo.setStatus(storyId, 'failed', errorCode);
-      await repo.updateStoryJob(storyId, 'review', 'failed', errorCode);
+  // 리추얼과 퀴즈 직후 첫 이야기는 장면 계획 → 본문을 유지한다.
+  // 오늘의 이야기, 고른 장면, 수정은 JSON 한 편이다.
+  const useArin =
+    ctx.kind !== 'library' &&
+    (ctx.kind === 'daily' || ctx.vision != null || Boolean(ctx.revisionRequest));
+
+  let script: string;
+  let title: string;
+  let scenePlan: ScenePlan | null = null;
+  let imageHint: ArinStory['image_hint'] | undefined;
+  let affirmations: string[] | undefined;
+  let arinStory: ArinStory | undefined;
+  let promptVersion: string;
+
+  if (!useArin) {
+    const plan = await step('plan', async () => {
+      const { plan } = await call(ctx, 'plan', () => providers.story.planScenes(storyCtx));
+      return scenePlanSchema.parse(plan);
     });
-    return { outcome: 'blocked', errorCode };
+    const write = (id: string, safetyFeedback?: SafetyVerdict) =>
+      step(id, async () => {
+        await repo.setStatus(storyId, 'writing');
+        const { script: written } = await call(ctx, id, () =>
+          providers.story.writeStory(plan, storyCtx, {
+            targetChars:
+              ctx.kind === 'daily' ? LIMITS.DAILY_TARGET_CHARS : LIMITS.STORY_TARGET_CHARS,
+            maxChars: ctx.kind === 'daily' ? LIMITS.DAILY_MAX_CHARS : LIMITS.STORY_MAX_CHARS,
+            safetyFeedback,
+          }),
+        );
+        return written;
+      });
+    script = await write('write');
+    let verdict = await review('review', script);
+    if (verdict.verdict === 'rewrite') {
+      script = await write('rewrite', verdict);
+      verdict = await review('review-rewrite', script);
+    }
+    if (verdict.verdict !== 'pass') {
+      const errorCode = blockCode(verdict);
+      await step('block-script', async () => {
+        await repo.setStatus(storyId, 'failed', errorCode);
+        await repo.updateStoryJob(storyId, 'review', 'failed', errorCode);
+      });
+      return { outcome: 'blocked', errorCode };
+    }
+    title = plan.title;
+    scenePlan = plan;
+    promptVersion = providers.story.promptVersion;
+  } else {
+    const write = (id: string, safetyFeedback?: SafetyVerdict, previous?: ArinStory) =>
+      step(id, async () => {
+        await repo.setStatus(storyId, 'writing');
+        const info = buildArinUserInfo({
+          displayName: ctx.displayName,
+          todayWish: ctx.kind === 'daily' ? (ctx.quiz.desire ?? ctx.dream) : ctx.dream,
+          quiz: ctx.quiz,
+          people: ctx.people,
+          lifestyle: ctx.likes,
+          exclude: ctx.dislikes,
+          recentLines: ctx.recentLines,
+        });
+        const { story } = await call(ctx, id, () =>
+          providers.story.writeArinStory({
+            info,
+            chosenScene: ctx.vision
+              ? { title: ctx.vision.title, hint: ctx.vision.hint }
+              : undefined,
+            previousStory: previous ?? ctx.previousStory ?? undefined,
+            revisionRequest: ctx.revisionRequest ?? undefined,
+            safetyFeedback: safetyFeedback?.reasons,
+          }),
+        );
+        // 고른 장면의 제목을 그대로 쓴다. 모델이 다른 제목을 내도 카드와 맞춘다.
+        return ctx.vision ? { ...story, title: ctx.vision.title } : story;
+      });
+    let story = await write('write');
+    script = scriptFromArinStory(story);
+    let verdict = await review('review', script);
+    if (verdict.verdict === 'rewrite') {
+      story = await write('rewrite', verdict, story);
+      script = scriptFromArinStory(story);
+      verdict = await review('review-rewrite', script);
+    }
+    if (verdict.verdict !== 'pass') {
+      const errorCode = blockCode(verdict);
+      await step('block-script', async () => {
+        await repo.setStatus(storyId, 'failed', errorCode);
+        await repo.updateStoryJob(storyId, 'review', 'failed', errorCode);
+      });
+      return { outcome: 'blocked', errorCode };
+    }
+    title = story.title;
+    imageHint = story.image_hint;
+    affirmations = story.affirmations;
+    arinStory = story;
+    promptVersion = ARIN_STORY_PROMPT_VERSION;
   }
 
   // 여기부터 앱은 "먼저 읽어보기"를 연다(text_ready).
   await step('save-text', () =>
     repo.saveText(storyId, {
-      scenePlan: plan,
+      scenePlan,
       script,
-      promptVersion: providers.story.promptVersion,
+      promptVersion,
+      title,
+      imageHint,
+      affirmations,
+      arinStory,
     }),
   );
 
@@ -217,7 +284,7 @@ export async function runStoryPipeline(
   if (notifier && owner) {
     await step('notify', async () => {
       try {
-        await notifier.storyReady(owner, storyId, plan.title);
+        await notifier.storyReady(owner, storyId, title);
         return { sent: true };
       } catch (error) {
         console.warn('[notify] story_ready push failed', storyId, error);

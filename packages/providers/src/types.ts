@@ -1,15 +1,18 @@
 import type {
   AffirmationContext,
+  ArinStoryRequest,
+  ArinUserInfo,
   LifestyleContext,
   SafetyTarget,
   StoryContext,
 } from '@eloria/prompts';
 import type {
   AffirmationSet,
+  ArinSceneSet,
+  ArinStory,
   LifestyleSet,
   SafetyVerdict,
   ScenePlan,
-  VisionSet,
 } from '@eloria/shared';
 
 export type { AffirmationContext, LifestyleContext, SafetyTarget, StoryContext };
@@ -36,6 +39,11 @@ export interface StoryModel {
       safetyFeedback?: SafetyVerdict;
     },
   ): Promise<{ script: string; usage: Usage }>;
+  /**
+   * 오늘의 이야기·직접 소원·수정. 장면 계획 없이 JSON 한 편을 받는다.
+   * 리추얼과 평가 세트는 writeStory를 그대로 쓴다.
+   */
+  writeArinStory(req: ArinStoryRequest): Promise<{ story: ArinStory; usage: Usage }>;
   /** 꿈 입력과 생성된 스크립트는 판정 기준이 다르다(AI_PIPELINE 4.3). */
   reviewSafety(
     text: string,
@@ -75,9 +83,9 @@ export interface LifestyleModel {
   suggest(ctx: LifestyleContext): Promise<{ set: LifestyleSet; usage: Usage }>;
 }
 
-/** 비전 고르기(H05): 한 꿈에 장면 4개 */
+/** 비전 고르기(H05): 한 소원에 장면 4개 */
 export interface VisionModel {
-  suggest(ctx: StoryContext): Promise<{ set: VisionSet; usage: Usage }>;
+  suggest(info: ArinUserInfo): Promise<{ set: ArinSceneSet; usage: Usage }>;
 }
 
 export type Providers = {

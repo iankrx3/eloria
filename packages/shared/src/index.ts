@@ -1,4 +1,5 @@
 export * from './ai/affirmation';
+export * from './ai/arin-story';
 export * from './ai/lifestyle';
 export * from './ai/safety-verdict';
 export * from './ai/vision';
