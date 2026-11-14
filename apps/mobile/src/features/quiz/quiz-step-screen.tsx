@@ -79,12 +79,13 @@ export function QuizStepScreen({ step }: { step: number }) {
 
   const scaffold = { item: question.key, title: '', error };
   // 문항을 오갈 때 이전 화면의 입력 상태가 남지 않게 문항마다 새로 그린다.
-  const common = { key: question.key, pending };
+  const common = { pending };
 
   switch (question.key) {
     case 'name':
       return (
         <TextStep
+          key={question.key}
           {...common}
           scaffold={{ ...scaffold, title: q.name.title }}
           initial={initial.name}
@@ -97,6 +98,7 @@ export function QuizStepScreen({ step }: { step: number }) {
     case 'age':
       return (
         <NumberStep
+          key={question.key}
           {...common}
           scaffold={{ ...scaffold, title: q.age.title(name) }}
           initial={initial.age}
@@ -106,6 +108,7 @@ export function QuizStepScreen({ step }: { step: number }) {
     case 'gender':
       return (
         <SingleStep
+          key={question.key}
           {...common}
           scaffold={{ ...scaffold, title: q.gender.title }}
           initial={initial.gender}
@@ -121,6 +124,7 @@ export function QuizStepScreen({ step }: { step: number }) {
       const copy = q[key];
       return (
         <TextStep
+          key={question.key}
           {...common}
           scaffold={{
             ...scaffold,
@@ -138,6 +142,7 @@ export function QuizStepScreen({ step }: { step: number }) {
     case 'relationship_status':
       return (
         <SingleStep
+          key={question.key}
           {...common}
           scaffold={{ ...scaffold, title: q.relationship_status.title }}
           initial={initial.relationship_status}
@@ -148,6 +153,7 @@ export function QuizStepScreen({ step }: { step: number }) {
     case 'love_desired':
       return (
         <SkippableTextStep
+          key={question.key}
           {...common}
           scaffold={{ ...scaffold, title: q.love_desired.title }}
           initial={initial.love_desired}
@@ -160,6 +166,7 @@ export function QuizStepScreen({ step }: { step: number }) {
     case 'has_person':
       return (
         <SingleStep
+          key={question.key}
           {...common}
           scaffold={{ ...scaffold, title: q.has_person.title }}
           initial={initial.has_person}
@@ -170,6 +177,7 @@ export function QuizStepScreen({ step }: { step: number }) {
     case 'person_name':
       return (
         <TextStep
+          key={question.key}
           {...common}
           scaffold={{ ...scaffold, title: q.person_name.title }}
           initial={initial.person_name}
@@ -181,6 +189,7 @@ export function QuizStepScreen({ step }: { step: number }) {
     case 'people':
       return (
         <PeopleStep
+          key={question.key}
           {...common}
           scaffold={{ ...scaffold, title: q.people.title(name) }}
           initial={initial.people}
@@ -190,6 +199,7 @@ export function QuizStepScreen({ step }: { step: number }) {
     case 'dream_home':
       return (
         <GridStep
+          key={question.key}
           {...common}
           scaffold={{ ...scaffold, title: q.dream_home.title }}
           initial={initial.dream_home}

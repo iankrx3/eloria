@@ -1,4 +1,4 @@
-import type { Person, QuizQuestionKey } from '@eloria/shared';
+import { quizAnswerForStorage, type Person, type QuizQuestionKey } from '@eloria/shared';
 import type { AdminClient } from '../lib/supabase-admin';
 
 export type ProfileUpdate = {
@@ -30,7 +30,7 @@ export function createSupabaseQuizRepo(db: AdminClient): QuizRepo {
       const { error } = await db
         .from('quiz_answers')
         .upsert(
-          { user_id: userId, question_key: key, answer: answer as never },
+          { user_id: userId, question_key: key, answer: quizAnswerForStorage(answer) as never },
           { onConflict: 'user_id,question_key' },
         );
       if (error) throw error;

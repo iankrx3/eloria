@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { quizAnswerRequestSchema } from './api/quiz';
 import { LIMITS, resolveLimits } from './config/limits';
 import {
+  QUIZ_ANSWER_SKIPPED,
   QUIZ_QUESTIONS,
   collectQuizAnswers,
   firstUnansweredStep,
@@ -9,6 +10,7 @@ import {
   nextQuizStep,
   peopleFromQuizAnswers,
   profileFromQuizAnswers,
+  quizAnswerForStorage,
   quizQuestionKeySchema,
 } from './quiz';
 
@@ -75,6 +77,14 @@ describe('collectQuizAnswers / firstUnansweredStep', () => {
     ]);
     expect(answers).toEqual({ name: '서아', age: 27 });
     expect(firstUnansweredStep(answers)).toBe(3);
+  });
+
+  it('건너뛰기 표식은 null로 되돌린다', () => {
+    expect(quizAnswerForStorage(null)).toEqual(QUIZ_ANSWER_SKIPPED);
+    expect(quizAnswerForStorage('다정한 사람')).toBe('다정한 사람');
+    expect(
+      collectQuizAnswers([{ question_key: 'love_desired', answer: QUIZ_ANSWER_SKIPPED }]),
+    ).toEqual({ love_desired: null });
   });
 
   it('건너뛴 조건부 문항은 미응답으로 보지 않는다', () => {

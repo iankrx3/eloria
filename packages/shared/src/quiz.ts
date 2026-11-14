@@ -142,6 +142,22 @@ export function parseQuizAnswer<K extends QuizQuestionKey>(
   return quizAnswerSchemas[key].parse(answer) as QuizAnswers[K];
 }
 
+/**
+ * quiz_answers.answer는 jsonb NOT NULL이다. JSON null은 PostgREST가 SQL NULL로 넣어
+ * 건너뛰기 저장이 23502로 실패하므로, 건너뛰기는 이 객체로 저장하고 읽을 때 null로 돌린다.
+ */
+export const QUIZ_ANSWER_SKIPPED = { skipped: true } as const;
+
+export function quizAnswerForStorage(answer: unknown): unknown {
+  return answer === null ? QUIZ_ANSWER_SKIPPED : answer;
+}
+
+function isSkippedQuizAnswer(answer: unknown): boolean {
+  if (!answer || typeof answer !== 'object' || Array.isArray(answer)) return false;
+  const record = answer as Record<string, unknown>;
+  return record.skipped === true && Object.keys(record).length === 1;
+}
+
 /** DB에서 읽은 답변 행들을 키별 객체로 모은다. 형식이 맞지 않는 답변(이전 퀴즈 포함)은 버린다. */
 export function collectQuizAnswers(
   rows: readonly { question_key: string; answer: unknown }[],
@@ -150,7 +166,9 @@ export function collectQuizAnswers(
   for (const row of rows) {
     const key = quizQuestionKeySchema.safeParse(row.question_key);
     if (!key.success) continue;
-    const parsed = quizAnswerSchemas[key.data].safeParse(row.answer);
+    const parsed = quizAnswerSchemas[key.data].safeParse(
+      isSkippedQuizAnswer(row.answer) ? null : row.answer,
+    );
     if (parsed.success) result[key.data] = parsed.data;
   }
   return result as Partial<QuizAnswers>;

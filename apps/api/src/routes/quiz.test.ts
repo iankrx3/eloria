@@ -29,6 +29,15 @@ describe('POST /v1/quiz/answers', () => {
     expect(fake.answers.get('user-1')?.get('gender')).toBe('female');
   });
 
+  it('사랑을 건너뛰면 null을 저장한다', async () => {
+    const res = await post('/v1/quiz/answers', 'user-1', {
+      questionKey: 'love_desired',
+      answer: null,
+    });
+    expect(res.status).toBe(204);
+    expect(fake.answers.get('user-1')?.get('love_desired')).toBeNull();
+  });
+
   it('형식이 틀린 답은 VALIDATION_FAILED로 거부하고 저장하지 않는다', async () => {
     const res = await post('/v1/quiz/answers', 'user-1', {
       questionKey: 'dream_home',
