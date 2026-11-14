@@ -3,8 +3,8 @@ import { estimateGeminiCostUsd, estimateTtsCostUsd, UnknownModelPriceError } fro
 
 describe('pricing', () => {
   it('AI_PIPELINE 6절 예시와 같은 값을 낸다', () => {
-    expect(estimateTtsCostUsd('eleven_v3', 3200)).toBe(0.32);
-    expect(estimateTtsCostUsd('eleven_flash_v2_5', 700)).toBe(0.035);
+    expect(estimateTtsCostUsd('eleven_v3', 3200)).toBe(0.256);
+    expect(estimateTtsCostUsd('eleven_flash_v2_5', 700)).toBe(0.028);
     expect(estimateGeminiCostUsd('gemini-3-flash-preview', 9000, 7500)).toBe(0.027);
   });
 

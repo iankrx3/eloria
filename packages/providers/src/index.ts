@@ -6,10 +6,14 @@ import {
   createGeminiVisionModel,
   type CallBudget,
 } from './gemini/gemini';
+import type { TtsCreditBudget } from './elevenlabs/credits';
+import { createElevenLabsTts } from './elevenlabs/elevenlabs';
 import { createMockProviders } from './mock/mock-providers';
 import { resolveProviderModes } from './mode';
 import type { Providers } from './types';
 
+export * from './elevenlabs/credits';
+export * from './elevenlabs/elevenlabs';
 export * from './gemini/budget';
 export * from './gemini/gemini';
 export * from './mode';
@@ -26,13 +30,17 @@ export const GEMINI_DEFAULT_MODELS = {
   safety: 'gemini-3.1-flash-lite',
 } as const;
 
+/** 음성 모델 기본값(docs/AI_PIPELINE.md 1절, 2026-11-14 공식 문서 확인). */
+export const ELEVENLABS_DEFAULT_MODEL = 'eleven_v3';
+
 /**
- * 환경에 맞는 어댑터를 고른다. 글은 Gemini(live) 또는 mock, 음성은 ElevenLabs 연결 전이라 mock만 있다.
- * live Gemini는 `budget`(하루 호출 상한)을 꼭 받는다. 무료 쿼터를 다 쓰지 않게 하기 위해서다(D-45).
+ * 환경에 맞는 어댑터를 고른다. 글은 Gemini(live) 또는 mock, 음성은 ElevenLabs(live) 또는 mock.
+ * live Gemini는 `budget`(하루 호출 상한), live 음성은 `ttsBudget`(회당·월 크레딧 상한)을 꼭 받는다.
+ * 무료 쿼터를 다 쓰지 않게 하기 위해서다(D-45, D-49).
  */
 export function createProviders(
   env: Record<string, string | undefined>,
-  opts: { budget?: CallBudget } = {},
+  opts: { budget?: CallBudget; ttsBudget?: TtsCreditBudget } = {},
 ): Providers {
   const modes = resolveProviderModes(env);
   const mock = createMockProviders({ delayMs: 800 });
@@ -63,8 +71,22 @@ export function createProviders(
     vision = createGeminiVisionModel({ generate, model: storyModel, budget: opts.budget });
   }
 
+  let tts = mock.tts;
   if (modes.tts === 'live') {
-    throw new Error('ElevenLabs 어댑터는 아직 없습니다. TTS_MODE=mock을 쓰세요.');
+    if (!env.ELEVENLABS_API_KEY)
+      throw new Error('TTS_MODE=live에는 ELEVENLABS_API_KEY가 필요합니다');
+    if (!env.ELEVENLABS_DEFAULT_VOICE_ID) {
+      throw new Error(
+        'TTS_MODE=live에는 ELEVENLABS_DEFAULT_VOICE_ID가 필요합니다(`pnpm --filter @eloria/api tts:check`로 보이스 확인)',
+      );
+    }
+    if (!opts.ttsBudget) throw new Error('live 음성에는 크레딧 상한(ttsBudget)이 필요합니다');
+    tts = createElevenLabsTts({
+      apiKey: env.ELEVENLABS_API_KEY,
+      model: env.ELEVENLABS_STORY_MODEL || ELEVENLABS_DEFAULT_MODEL,
+      defaultVoiceId: env.ELEVENLABS_DEFAULT_VOICE_ID,
+      budget: opts.ttsBudget,
+    });
   }
-  return { story, vision, affirmation, lifestyle, tts: mock.tts };
+  return { story, vision, affirmation, lifestyle, tts };
 }

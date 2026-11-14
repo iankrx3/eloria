@@ -10,7 +10,8 @@
     "test": "vitest run",
     "eval:story": "tsx --env-file-if-exists=.env src/scripts/eval-story.ts",
     "seed:soundscapes": "tsx --env-file-if-exists=.env src/scripts/seed-soundscapes.ts",
-    "seed:library": "tsx --env-file-if-exists=.env src/scripts/seed-library.ts"
+    "seed:library": "tsx --env-file-if-exists=.env src/scripts/seed-library.ts",
+    "tts:check": "tsx --env-file-if-exists=.env src/scripts/tts-check.ts"
   },
   "dependencies": {
     "@eloria/prompts": "workspace:*",

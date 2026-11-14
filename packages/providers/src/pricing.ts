@@ -11,9 +11,12 @@ export const GEMINI_PRICING_PER_MTOK: Record<string, { input: number; output: nu
   'gemini-3.1-flash-lite': { input: 0.25, output: 1.5 },
 };
 
+/** API 단가(1,000자당 USD, 2026-11-14 elevenlabs.io/pricing/api). 유료 플랜의 API는 크레딧이 아니라 달러로 청구된다. */
 export const ELEVENLABS_PRICING_PER_KCHAR: Record<string, number> = {
-  eleven_v3: 0.1,
-  eleven_flash_v2_5: 0.05,
+  eleven_v3: 0.08,
+  eleven_multilingual_v2: 0.08,
+  eleven_flash_v2_5: 0.04,
+  eleven_turbo_v2_5: 0.04,
 };
 
 export class UnknownModelPriceError extends Error {

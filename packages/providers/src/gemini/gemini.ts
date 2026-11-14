@@ -24,7 +24,8 @@ import type { AffirmationModel, LifestyleModel, StoryModel, Usage, VisionModel }
 /** 공급자 호출 실패. code로 재시도·사용자 안내를 고른다. */
 export class ProviderError extends Error {
   constructor(
-    public readonly code: 'BUDGET_EXCEEDED' | 'RATE_LIMITED' | 'UPSTREAM' | 'BAD_OUTPUT',
+    public readonly code:
+      'BUDGET_EXCEEDED' | 'RATE_LIMITED' | 'UPSTREAM' | 'BAD_OUTPUT' | 'TOO_LONG',
     message: string,
   ) {
     // Inngest가 에러를 직렬화해도 종류를 알 수 있게 메시지 앞에 code를 붙인다.

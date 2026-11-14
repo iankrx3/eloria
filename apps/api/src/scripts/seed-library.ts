@@ -47,7 +47,7 @@ const pipelineRepo = createSupabasePipelineRepo(db);
 
 const providers = args.live
   ? createProviders(
-      { ...process.env, PROVIDER_MODE: 'mock', GEMINI_MODE: 'live' },
+      { ...process.env, PROVIDER_MODE: 'mock', GEMINI_MODE: 'live', TTS_MODE: 'mock' },
       { budget: createMemoryBudget(Number(args['max-calls'])) },
     )
   : createMockProviders();

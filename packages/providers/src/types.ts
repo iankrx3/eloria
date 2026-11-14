@@ -48,6 +48,11 @@ export interface StoryModel {
 export interface TtsProvider {
   /** 음성 모델 ID. 캐시 키와 비용 계산에 쓴다. */
   readonly model: string;
+  /**
+   * voices.provider_voice_id(없으면 null)를 실제로 부를 보이스 ID로 바꾼다. 캐시 키에도 이 값을 쓴다.
+   * live는 자리 보이스(`mock-*`)를 기본 보이스로 바꾼다.
+   */
+  resolveVoiceId(providerVoiceId: string | null): string;
   synthesize(input: { text: string; voiceId: string }): Promise<{
     audio: Uint8Array;
     mime: 'audio/mpeg' | 'audio/wav';

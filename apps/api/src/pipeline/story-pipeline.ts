@@ -6,7 +6,7 @@ import {
   type SafetyVerdict,
   type StoryGenerateRequested,
 } from '@eloria/shared';
-import type { Providers, StoryContext, Usage } from '@eloria/providers';
+import { ProviderError, type Providers, type StoryContext, type Usage } from '@eloria/providers';
 import type { StoryNotifier } from '../notifications/story-notifier';
 import type { PipelineRepo, StoryJobContext } from '../repos/pipeline-repo';
 
@@ -21,7 +21,13 @@ export type PipelineDeps = {
 };
 
 export type PipelineResult =
-  { outcome: 'ready' } | { outcome: 'blocked'; errorCode: 'SAFETY_BLOCKED' | 'SAFETY_CRISIS' };
+  | { outcome: 'ready' }
+  | { outcome: 'text_only'; errorCode: 'TTS_BUDGET' }
+  | { outcome: 'blocked'; errorCode: 'SAFETY_BLOCKED' | 'SAFETY_CRISIS' };
+
+/** 크레딧 상한·글자 수 초과는 다시 해도 같은 결과다. 재시도하지 않고 글만 둔다(D-49). */
+const isTtsLimit = (error: unknown) =>
+  error instanceof ProviderError && (error.code === 'BUDGET_EXCEEDED' || error.code === 'TOO_LONG');
 
 /** 꿈 입력 차단 사유를 앱이 구분할 수 있게 한다. 위기 신호는 도움 안내 화면으로 간다(AI_PIPELINE 4.3). */
 const blockCode = (v: SafetyVerdict) => (isCrisis(v) ? 'SAFETY_CRISIS' : 'SAFETY_BLOCKED');
@@ -167,14 +173,24 @@ export async function runStoryPipeline(
     }),
   );
 
-  await step('tts', async () => {
-    const voiceId = (await repo.resolveVoiceId(event.voiceKey, ctx.preferredVoiceId)) ?? 'default';
+  const voiced = await step('tts', async () => {
+    const voice = await repo.resolveVoice(event.voiceKey, ctx.preferredVoiceId);
+    const voiceId = providers.tts.resolveVoiceId(voice?.providerVoiceId ?? null);
     const hash = audioCacheKey(providers.tts.model, voiceId, script);
     if (await repo.reuseAudio(storyId, ctx.userId, hash)) {
       await repo.setStatus(storyId, 'audio_ready');
-      return;
+      return true;
     }
-    const audio = await call(ctx, 'tts', () => providers.tts.synthesize({ text: script, voiceId }));
+    let audio;
+    try {
+      audio = await call(ctx, 'tts', () => providers.tts.synthesize({ text: script, voiceId }));
+    } catch (error) {
+      if (!isTtsLimit(error)) throw error;
+      // 읽기는 계속 열어 둔다(text_ready + 오류 코드 = 음성 단계 끝, 앱은 "글로 읽기").
+      await repo.setStatus(storyId, 'text_ready', 'TTS_BUDGET');
+      await repo.updateStoryJob(storyId, 'tts', 'failed', (error as Error).message.slice(0, 500));
+      return false;
+    }
     await repo.saveAudio({
       userId: ctx.userId,
       storyId,
@@ -186,7 +202,9 @@ export async function runStoryPipeline(
       model: audio.usage.model,
     });
     await repo.setStatus(storyId, 'audio_ready');
+    return true;
   });
+  if (!voiced) return { outcome: 'text_only', errorCode: 'TTS_BUDGET' };
 
   await step('finish', async () => {
     await repo.setStatus(storyId, 'ready');

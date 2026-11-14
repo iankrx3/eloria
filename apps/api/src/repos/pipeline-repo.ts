@@ -67,10 +67,11 @@ export interface PipelineRepo {
   /** 같은 해시의 음성이 이미 있으면 그 파일을 새 경로로 복사해 쓴다(재생성 없음). */
   reuseAudio(storyId: string, userId: string | null, contentHash: string): Promise<boolean>;
   saveAudio(asset: AudioAsset): Promise<void>;
-  resolveVoiceId(
+  /** 고른 보이스(key) → 프로필 기본 보이스 순. voices 행의 공급자 보이스 ID를 돌려준다. */
+  resolveVoice(
     voiceKey: string | undefined,
     preferredVoiceId: string | null,
-  ): Promise<string | null>;
+  ): Promise<{ id: string; providerVoiceId: string } | null>;
 }
 
 const audioPath = (userId: string | null, storyId: string, assetId: string, ext: string) =>
@@ -274,12 +275,21 @@ export function createSupabasePipelineRepo(db: AdminClient): PipelineRepo {
       if (error) throw error;
     },
 
-    async resolveVoiceId(voiceKey, preferredVoiceId) {
-      if (voiceKey) {
-        const { data } = await db.from('voices').select('id').eq('key', voiceKey).maybeSingle();
-        if (data) return data.id;
-      }
-      return preferredVoiceId;
+    async resolveVoice(voiceKey, preferredVoiceId) {
+      const pick = async (column: 'key' | 'id', value: string) => {
+        const { data, error } = await db
+          .from('voices')
+          .select('id, provider_voice_id')
+          .eq(column, value)
+          .eq('is_active', true)
+          .maybeSingle();
+        if (error) throw error;
+        return data && { id: data.id, providerVoiceId: data.provider_voice_id };
+      };
+      return (
+        (voiceKey ? await pick('key', voiceKey) : null) ??
+        (preferredVoiceId ? await pick('id', preferredVoiceId) : null)
+      );
     },
   };
 }

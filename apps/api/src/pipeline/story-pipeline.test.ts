@@ -8,7 +8,13 @@ const STORY = '33333333-3333-4333-8333-333333333333';
 const USER = '11111111-1111-4111-8111-111111111111';
 
 function createFakePipelineRepo(
-  opts: { cachedAudio?: boolean; library?: boolean; daily?: boolean; vision?: Vision } = {},
+  opts: {
+    cachedAudio?: boolean;
+    library?: boolean;
+    daily?: boolean;
+    vision?: Vision;
+    voice?: { id: string; providerVoiceId: string };
+  } = {},
 ) {
   const statuses: StoryStatus[] = [];
   const state = {
@@ -56,7 +62,7 @@ function createFakePipelineRepo(
       state.audioHashes.push(a.contentHash);
       state.owners.push(a.userId);
     },
-    resolveVoiceId: async () => null,
+    resolveVoice: async () => opts.voice ?? null,
   };
   return { repo, state, statuses };
 }
@@ -211,6 +217,47 @@ describe('runStoryPipeline', () => {
     expect(result).toEqual({ outcome: 'ready' });
     expect(library.state.owners).toEqual([null]);
     expect(storyReady).not.toHaveBeenCalled();
+  });
+
+  it('고른 보이스의 공급자 ID로 음성을 만들고 캐시 키에도 쓴다', async () => {
+    const voiced = createFakePipelineRepo({
+      voice: { id: '44444444-4444-4444-8444-444444444444', providerVoiceId: 'el-voice-1' },
+    });
+    const providers = createMockProviders();
+    const synthesize = vi.spyOn(providers.tts, 'synthesize');
+    await runStoryPipeline({ repo: voiced.repo, providers }, event, run as never);
+
+    expect(synthesize.mock.calls[0]?.[0].voiceId).toBe('el-voice-1');
+    expect(voiced.state.audioHashes).toEqual([
+      audioCacheKey('mock-chime', 'el-voice-1', voiced.state.script!),
+    ]);
+  });
+
+  it('음성 크레딧 상한에 걸리면 재시도 없이 글만 두고(TTS_BUDGET) 푸시하지 않는다', async () => {
+    const providers = createMockProviders();
+    vi.spyOn(providers.tts, 'synthesize').mockRejectedValue(
+      new ProviderError('BUDGET_EXCEEDED', '음성 1회 크레딧 상한(1000)을 넘습니다'),
+    );
+    const storyReady = vi.fn(async () => {});
+    const result = await runStoryPipeline(
+      { repo: fake.repo, providers, notifier: { storyReady } },
+      event,
+      run as never,
+    );
+
+    expect(result).toEqual({ outcome: 'text_only', errorCode: 'TTS_BUDGET' });
+    expect(fake.state).toMatchObject({ status: 'text_ready', errorCode: 'TTS_BUDGET' });
+    expect(fake.state.job).toMatchObject({ step: 'tts', status: 'failed' });
+    expect(fake.statuses).not.toContain('ready');
+    expect(storyReady).not.toHaveBeenCalled();
+  });
+
+  it('그 밖의 음성 오류는 던져서 Inngest가 재시도하게 한다', async () => {
+    const providers = createMockProviders();
+    vi.spyOn(providers.tts, 'synthesize').mockRejectedValue(new ProviderError('UPSTREAM', '503'));
+    await expect(
+      runStoryPipeline({ repo: fake.repo, providers }, event, run as never),
+    ).rejects.toMatchObject({ code: 'UPSTREAM' });
   });
 
   it('차단된 스토리는 푸시하지 않는다', async () => {
