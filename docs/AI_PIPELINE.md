@@ -9,7 +9,7 @@
 | 장면 계획·스토리·확언 | `GEMINI_STORY_MODEL` | `gemini-3.6-flash` | 안정판(2026-11-12 공식 문서). 블라인드 테스트로 3.8 Flash와 비교 후 확정. 생각 수준 low |
 | 안전 검수·분류 | `GEMINI_SAFETY_MODEL` | `gemini-3.1-flash-lite` | JSON 출력, 생각 수준 minimal |
 | 스토리 음성 | `ELEVENLABS_STORY_MODEL` | `eleven_v3` | 요청당 5,000자 한도, 요청 스티칭 불가 |
-| 짧은 음성(확언·데일리 후보) | `ELEVENLABS_SHORT_MODEL` | `eleven_flash_v2_5` | 비용 절반 |
+| 짧은 음성(확언·데일리 후보) | `ELEVENLABS_SHORT_MODEL` | `eleven_flash_v2_5` | 비용·크레딧 절반(글자당 0.5크레딧), 40,000자 |
 | 긴 콘텐츠 예비 | `ELEVENLABS_LONG_MODEL` | `eleven_multilingual_v2` | 10,000자, 스티칭 가능 |
 | 표지 이미지 | `ELEVENLABS_IMAGE_MODEL` | `gemini-3.1-flash-image` | Image API는 ElevenLabs Pro 플랜 이상 필요 |
 
@@ -24,7 +24,7 @@
 | plan | 꿈, 프로필, 사람, 퀴즈, 톤, (수정 요청) | `ScenePlan` JSON | 재시도 2회 → failed |
 | write | ScenePlan, 톤, 목표 길이 | 스크립트 텍스트 | 재시도 2회 |
 | review | 스크립트 | `SafetyVerdict` JSON | `rewrite`면 write 1회 재실행, 그래도 실패면 failed(`SAFETY_BLOCKED`) |
-| tts | 스크립트, 보이스 | MP3 → `story-audio` | 재시도 2회, 실패해도 텍스트는 유지(status=text_ready) |
+| tts | 스크립트, 보이스 | MP3 → `story-audio` | 재시도 2회, 실패해도 텍스트는 유지(status=text_ready). 크레딧 상한·글자 수 초과는 재시도 없이 `TTS_BUDGET`(D-49) |
 | cover | ScenePlan.imagePrompt | 이미지 → `story-covers` | 실패 시 카테고리 기본 이미지 사용 |
 
 ## 3. 상태 전이
@@ -143,6 +143,8 @@ SafetyVerdict = {
 | `SUB_VERSIONS_PER_DESIRE` | 3 | 꿈당 버전 수 |
 | `DAILY_PREGEN_ACTIVE_DAYS` | 3 | 최근 N일 활성 구독자만 데일리 사전 생성 |
 | `MAX_CONCURRENT_TTS` | 8 | ElevenLabs 플랜 동시성보다 낮게 |
+| `ELEVENLABS_MAX_CREDITS_PER_CALL` | 1,000 | 음성 1회 크레딧 상한(env). 크레딧 = 글자 수 × 모델 배수(v3·Multilingual v2 = 1, Flash·Turbo v2.5 = 0.5). 넘으면 호출하지 않는다(D-49) |
+| `ELEVENLABS_MONTHLY_CREDIT_LIMIT` | 10,000 | 이번 달(UTC) 음성 크레딧 상한(env). `generation_jobs`의 elevenlabs 행으로 센다. 무료 플랜 월 한도 |
 | `GEMINI_DAILY_CALL_LIMIT` | 50 | 서버 전체 하루(UTC) Gemini 호출 상한(env). `generation_jobs`의 gemini 행과 이 프로세스가 가져간 수 중 큰 값으로 센다. 무료 쿼터 보호(D-45) |
 | `AFFIRMATION_CALLS_PER_DAY` | 8 | 사용자당 24시간 확언 생성 기록 행(작성·검수·재작성·재검수 = 최대 4행, 2회 시도) |
 
@@ -151,8 +153,8 @@ SafetyVerdict = {
 | 항목 | 단가 | 1회 추정 |
 | --- | --- | --- |
 | Gemini 3 Flash | 입력 $0.50 / 출력 $3.00 (100만 토큰당) | 스토리 1회 약 $0.03 |
-| ElevenLabs v3 | 1,000자당 $0.10 | 3,200자 약 $0.32 |
-| ElevenLabs Flash v2.5 | 1,000자당 $0.05 | 데일리 700자 약 $0.035 |
+| ElevenLabs v3·Multilingual v2 (API) | 1,000자당 $0.08 (2026-11-14) | 3,200자 약 $0.26 |
+| ElevenLabs Flash v2.5 (API) | 1,000자당 $0.04 (2026-11-14) | 데일리 700자 약 $0.028 |
 | 표지 이미지 | 크레딧제 | 콘솔에서 확인 |
 
 `est_cost_usd`는 어댑터가 위 단가 표(`packages/providers/src/pricing.ts`)로 계산해 `generation_jobs`에 기록한다. 지원서의 1회 $0.12~0.20 가정은 음성 1,200~2,000자일 때 성립하므로, 5분 분량을 유지하면 원가가 더 높다(열린 질문 Q-02).
@@ -161,6 +163,8 @@ SafetyVerdict = {
 
 - **음성 캐시 키**: `sha256(model + voiceId + normalizedText + settingsJson)`. `story_assets.content_hash`, `affirmations.audio_hash`에 저장하고 같은 키면 재사용.
 - **이름 발음**: `people.pronunciation`, `profiles.name_pronunciation`이 있으면 스크립트에 그 표기로 넣는다. 부족하면 ElevenLabs 발음 사전(v3에서 한국어 IPA 지원)을 사용자별로 만든다(P1).
-- **출력 형식**: MP3 44.1kHz 128kbps. `duration_sec`는 파일에서 계산해 저장.
+- **출력 형식**: MP3 44.1kHz 128kbps(무료 플랜 가능, 192kbps는 Creator 이상). `duration_sec`는 고정 비트레이트로 바이트 수에서 계산해 저장.
+- **어댑터**(`packages/providers/src/elevenlabs`, D-49): REST `POST /v1/text-to-speech/{voice_id}`를 `fetch`로 부른다. `language_code: 'ko'`(Multilingual v2는 받지 않아 뺀다). 재시도는 408·429·5xx만 최대 2회, 클라이언트 타임아웃(180초)은 재시도하지 않는다(이미 만들어졌으면 크레딧이 두 번 나감). `quota_exceeded`는 `BUDGET_EXCEEDED`.
+- **보이스**: voices의 `provider_voice_id`를 쓴다. 시드 자리 값(`mock-*`)이나 미선택이면 `ELEVENLABS_DEFAULT_VOICE_ID`. 예전 기본(premade) 보이스는 2026-03 이전 계정에만 있고 2026-12-31에 없어지며, 무료 플랜은 Voice Library 일부를 못 쓴다. 그래서 `tts:check`로 그 계정이 쓸 수 있는 보이스를 보고 고른다.
 - **이미지 프롬프트 규칙**: 영어, 세로 9:16, 따뜻한 필름 톤, 인물은 뒷모습·실루엣·손만, 텍스트·로고·브랜드 금지. 결과 URL은 약 1시간 후 만료되므로 웹훅 수신 즉시 내려받는다.
 - **배경 사운드**: ElevenLabs Sound Effects·Music으로 한 번 만들어 `soundscapes` 버킷에 올린다(`apps/api/src/scripts/seed-soundscapes.ts`, `pnpm --filter @eloria/api seed:soundscapes [--dry-run]`). 런타임 생성 없음. 지금은 같은 스크립트가 합성 루프(mock)를 올린다(D-35).

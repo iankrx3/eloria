@@ -67,7 +67,7 @@ Supabase Postgres가 단일 원천이다. 모든 테이블은 `id uuid primary k
 | prompt_version | text | 예: scene-plan@v2+story@v1+safety@v1 |
 | vision | jsonb null | 비전 고르기에서 고른 장면(`visionSchema`). 장면 계획이 이 장면을 중심으로 한다 |
 | daily_on | date null | 데일리(kind = daily)의 날짜(사용자 시간대, 새벽 5시 기준). `(user_id, daily_on)` 유일 |
-| error_code | text null | ENQUEUE_FAILED, SAFETY_BLOCKED, SAFETY_CRISIS(도움 안내 화면), TTS_FAILED(텍스트는 계속 읽기 가능), GENERATION_FAILED |
+| error_code | text null | ENQUEUE_FAILED, SAFETY_BLOCKED, SAFETY_CRISIS(도움 안내 화면), TTS_FAILED(텍스트는 계속 읽기 가능), TTS_BUDGET(음성 크레딧 상한, 텍스트는 계속 읽기 가능, D-49), AI_BUSY(하루 호출 상한·공급자 한도), GENERATION_FAILED |
 | updated_at | timestamptz | 공통 트리거 |
 
 `stories`는 Realtime 발행(`supabase_realtime`)에 들어 있다. 생성 진행 화면이 상태 변화를 구독한다. RLS: 본인 스토리와 `kind = library`만 select. 제약: library는 `user_id`가 null, 그 외는 not null.

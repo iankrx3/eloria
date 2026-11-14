@@ -27,7 +27,7 @@
 ## M2. 생성 루프와 플레이어 (2~3주차)
 
 - [x] 마이그레이션: stories, story_assets, voices, soundscapes, generation_jobs, 스토리지 버킷과 정책 — staging 적용, Realtime(stories), 서버 전용 `generation_quota` 뷰
-- [ ] `packages/providers`: Gemini(구조화 출력), ElevenLabs TTS, 비용 계산, 재시도·타임아웃 — 어댑터 인터페이스(StoryModel·TtsProvider)와 mock 어댑터 완료. Gemini·ElevenLabs live 어댑터는 유료 키 후
+- [x] `packages/providers`: Gemini(구조화 출력), ElevenLabs TTS, 비용 계산, 재시도·타임아웃 — 어댑터 인터페이스(StoryModel·TtsProvider)와 mock 어댑터 완료. Gemini live(D-45), ElevenLabs live(D-49, 회당·월 크레딧 상한, `tts:check`) 완료. 실제 키로 v3 한국어 샘플 생성 확인, 개발 기본 보이스 Sarah(2026-11-14). 무료 플랜 회당 1,000크레딧이라 5분 스토리는 음성 없이 글만(`TTS_BUDGET`), 유료 전환 때 상한을 올린다
 - [ ] `packages/prompts`: scene-plan v1, story v1, safety v1 + 평가 세트 30개 + `pnpm eval:story` — 프롬프트 3종, 평가 세트 30개(위험 5개), 스크립트 점검(`checkScript`), 실행기(`--mock`으로 동작 확인, D-36)까지 완료. live Gemini 어댑터를 붙여 실제로 돌리고 위험 입력 5개 통과·사람 채점을 확인하면 체크
 - [x] `POST /v1/manifests`, Inngest `generateStory`(plan → write → review → tts), 상태 전이와 `generation_jobs` 기록 — mock 어댑터로 staging에서 queued → ready까지 확인(음성 업로드·서명 URL·generation_jobs 기록). 무료·구독 한도 검사는 M5
 - [x] 앱 내비게이션 뼈대: 온보딩 그룹(퀴즈·첫 꿈·계정 연결·페이월 자리), 하단 탭 4개(D-24), 온보딩 미완료 시 퀴즈로 리디렉트(D-25)
