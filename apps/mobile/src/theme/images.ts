@@ -1,4 +1,4 @@
-import type { LibraryCategory, WishTheme } from '@eloria/shared';
+import type { ImageHint, LibraryCategory, WishTheme } from '@eloria/shared';
 import type { ImageSourcePropType } from 'react-native';
 import bedroomImg from '../../assets/images/scenes/bedroom.webp';
 import cityNightImg from '../../assets/images/scenes/city-night.webp';
@@ -154,6 +154,25 @@ const LIBRARY_BY_CATEGORY: Record<LibraryCategory, ImageSourcePropType[]> = {
   ],
 };
 
+/**
+ * 이야기 JSON의 image_hint를 이미 있는 번들 사진에 임시로 붙인다(D-50).
+ * dinner만 식탁 장면이고, 나머지는 이야기 풀이다. 새 사진은 만들지 않는다.
+ */
+const IMAGE_HINT_PHOTO: Record<ImageHint, ImageSourcePropType> = {
+  penthouse: story01Img,
+  dressroom: story02Img,
+  contract: story03Img,
+  cafe: story04Img,
+  coffee: story05Img,
+  dinner: dinnerImg,
+  wedding: story06Img,
+  paris: story07Img,
+  jeju: story08Img,
+  yoga: story09Img,
+  brunch: story10Img,
+  drive: story11Img,
+};
+
 /** 같은 id면 항상 같은 그림이 나오도록 문자열 해시로 고른다. */
 function hash(id: string) {
   let h = 0;
@@ -161,7 +180,10 @@ function hash(id: string) {
   return Math.abs(h);
 }
 
-export function storyCover(storyId: string): ImageSourcePropType {
+export function storyCover(storyId: string, imageHint?: string | null): ImageSourcePropType {
+  if (imageHint && imageHint in IMAGE_HINT_PHOTO) {
+    return IMAGE_HINT_PHOTO[imageHint as ImageHint];
+  }
   return STORY_POOL[hash(storyId) % STORY_POOL.length]!;
 }
 

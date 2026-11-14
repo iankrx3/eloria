@@ -1,3 +1,5 @@
+import { splitSentences } from '@eloria/shared';
+
 /** 초를 "m:ss"로. 음수·NaN은 0으로 본다. */
 export function formatTime(seconds: number): string {
   const s = Number.isFinite(seconds) && seconds > 0 ? Math.floor(seconds) : 0;
@@ -11,9 +13,13 @@ export function splitParagraphs(script: string): string[] {
     .filter(Boolean);
 }
 
+/** 자막 한 줄. 문단을 문장으로 나눈다. 음성은 문단 사이에서만 쉰다. */
+export function subtitleLines(script: string): string[] {
+  return splitParagraphs(script).flatMap((paragraph) => splitSentences(paragraph));
+}
+
 /**
- * 재생 위치에 해당하는 문단 번호. 문단별 낭독 시간을 글자 수에 비례한다고 보고 고른다.
- * 실제 단어 타이밍(ElevenLabs alignment)을 받기 전까지의 근사치다.
+ * 재생 위치에 해당하는 줄 번호. 줄별 낭독 시간을 글자 수에 비례한다고 보고 고른다.
  */
 export function paragraphAt(paragraphs: readonly string[], currentTime: number, duration: number) {
   if (paragraphs.length === 0 || !(duration > 0)) return 0;

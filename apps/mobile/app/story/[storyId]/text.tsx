@@ -5,7 +5,7 @@ import { ActivityIndicator, Image, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayer } from '@/audio/player-provider';
 import { usePlayerStore } from '@/audio/player-store';
-import { paragraphAt, splitParagraphs } from '@/audio/timeline';
+import { paragraphAt, subtitleLines } from '@/audio/timeline';
 import { RoundButton } from '@/components/ui';
 import { useStory } from '@/features/story/use-story';
 import { ko } from '@/i18n/ko';
@@ -16,7 +16,7 @@ import { type } from '@/theme/typography';
 
 /**
  * 전체 이야기(Figma H08 시트형 가사). 안전 검수를 통과한 text_ready 이후에만 본문을 보여 준다.
- * 이 이야기를 재생 중이면 지금 읽는 문단을 진하게, 나머지는 옅게 보여 준다.
+ * 이 이야기를 재생 중이면 지금 읽는 문장을 진하게, 나머지는 옅게 보여 준다.
  */
 export default function StoryText() {
   const { storyId } = useLocalSearchParams<{ storyId: string }>();
@@ -24,8 +24,8 @@ export default function StoryText() {
   const readable = story.data && canReadStory(story.data.status) && story.data.script;
   const { status } = usePlayer();
   const playing = usePlayerStore((s) => s.track?.storyId === storyId);
-  const paragraphs = useMemo(() => splitParagraphs(story.data?.script ?? ''), [story.data?.script]);
-  const currentIndex = playing ? paragraphAt(paragraphs, status.currentTime, status.duration) : -1;
+  const lines = useMemo(() => subtitleLines(story.data?.script ?? ''), [story.data?.script]);
+  const currentIndex = playing ? paragraphAt(lines, status.currentTime, status.duration) : -1;
 
   return (
     <View className="flex-1" style={dawnScreen}>
@@ -34,7 +34,7 @@ export default function StoryText() {
           <View className="h-1 w-9 rounded-full bg-plum-deep/20" />
         </View>
         <View className="flex-row items-center gap-3 px-gutter pb-2 pt-4">
-          <Image source={storyCover(storyId)} className="h-11 w-11 rounded-xl" />
+          <Image source={storyCover(storyId, story.data?.imageHint)} className="h-11 w-11 rounded-xl" />
           <View className="flex-1">
             <Text className={`${type.labelSmall} text-plum`}>{ko.story.fullText}</Text>
             <Text numberOfLines={1} className={`${type.bodyMedium} text-plum-deep`}>
@@ -49,8 +49,8 @@ export default function StoryText() {
             <ActivityIndicator color={tokens.colors.plum} />
           </View>
         ) : (
-          <ScrollView contentContainerClassName="gap-6 px-gutter pb-12 pt-4">
-            {paragraphs.map((p, i) => (
+          <ScrollView contentContainerClassName="gap-3 px-gutter pb-12 pt-4">
+            {lines.map((p, i) => (
               <Text
                 key={i}
                 className={`font-serif text-[22px] leading-[34px] tracking-[-0.22px] ${

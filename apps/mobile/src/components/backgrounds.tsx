@@ -36,12 +36,13 @@ export function PhotoBackground({
   // 사진(과 오버레이)을 흐림 대상으로 감싸, 위의 유리 요소(GlassView)가 사진을 흐리게 비추게 한다.
   const target = useRef<View>(null);
   return (
-    <View className="flex-1 bg-twilight">
-      <BlurTargetView ref={target} style={StyleSheet.absoluteFill}>
+    <View className="flex-1 overflow-hidden bg-twilight">
+      <BlurTargetView ref={target} collapsable={false} style={StyleSheet.absoluteFill}>
         <Image
           source={source}
           resizeMode="cover"
-          style={StyleSheet.absoluteFill}
+          // absoluteFill만 주면 Android의 BlurTargetView 자식이 원본 픽셀 크기로 커진다.
+          style={{ width: '100%', height: '100%' }}
           accessible={false}
           onError={logImageError}
         />

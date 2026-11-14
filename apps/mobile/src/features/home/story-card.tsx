@@ -38,7 +38,7 @@ export function HomeStoryCard({ story }: { story: LibraryStory }) {
       className="h-[340px] w-[260px] overflow-hidden rounded-[24px]"
       style={shadow.storyCard}
     >
-      <Image source={storyCover(story.id)} resizeMode="cover" style={StyleSheet.absoluteFill} />
+      <Image source={storyCover(story.id, story.imageHint)} resizeMode="cover" style={StyleSheet.absoluteFill} />
       <View pointerEvents="none" style={[StyleSheet.absoluteFill, storyCardOverlay]} />
 
       {playable && (

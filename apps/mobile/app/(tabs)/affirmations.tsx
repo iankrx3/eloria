@@ -29,8 +29,8 @@ import { type } from '@/theme/typography';
 const t = ko.affirmations;
 
 /**
- * 확언 탭(Figma A01~A03, PRD F-22). 오늘의 확언 10장을 카드로 넘기고, 저장·공유한다.
- * 10장을 다 넘기면 완료 화면과 함께 그날 활동(확언 10장 = 연속 기록)을 남긴다.
+ * 확언 탭(Figma A01~A03, PRD F-22). 오늘의 확언 3장을 카드로 넘기고, 저장·공유한다.
+ * 3장을 다 넘기면 완료 화면과 함께 그날 활동(확언 3장 = 연속 기록)을 남긴다.
  */
 export default function Affirmations() {
   const today = useTodayAffirmations();
@@ -216,7 +216,7 @@ export default function Affirmations() {
   );
 }
 
-/** 오늘 10장을 다 읽은 화면(Figma A03) */
+/** 오늘 3장을 다 읽은 화면(Figma A03) */
 function Done({
   streak,
   time,

@@ -8,6 +8,7 @@ export type LibraryStory = {
   errorCode: string | null;
   desire: { id: string; text: string } | null;
   durationSec: number | null;
+  imageHint?: string | null;
 };
 
 export type StorySection = { key: string; title: string | null; data: LibraryStory[] };

@@ -5,7 +5,7 @@ import { ActivityIndicator, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePlayer } from '@/audio/player-provider';
 import { usePlayerStore } from '@/audio/player-store';
-import { paragraphAt, readCharsInParagraph, splitParagraphs } from '@/audio/timeline';
+import { paragraphAt, readCharsInParagraph, subtitleLines } from '@/audio/timeline';
 import { PhotoBackground } from '@/components/backgrounds';
 import { GlassPill, RoundButton } from '@/components/ui';
 import { PlayerControls, RepeatToggle, SeekBar } from '@/features/player/player-controls';
@@ -26,7 +26,7 @@ const subtitleShadow = {
 
 /**
  * 풀 플레이어(Figma H07, PRD F-06). 열면 이 이야기를 재생하고, 닫아도 미니 플레이어로 이어진다.
- * 자막은 문단 단위 근사치다(ElevenLabs 타임스탬프를 받으면 문장 단위로 바꾼다).
+ * 자막은 문단 안 글자 비율로 나눈다.
  */
 export default function Player() {
   const { storyId, loop } = useLocalSearchParams<{ storyId: string; loop?: string }>();
@@ -54,21 +54,21 @@ export default function Player() {
     }
   }, [current, storyId]);
 
-  const paragraphs = useMemo(() => splitParagraphs(story.data?.script ?? ''), [story.data?.script]);
+  const lines = useMemo(() => subtitleLines(story.data?.script ?? ''), [story.data?.script]);
   const isThisTrack = current?.storyId === storyId;
-  const index = isThisTrack ? paragraphAt(paragraphs, status.currentTime, status.duration) : 0;
-  const subtitle = paragraphs[index] ?? '';
-  // 읽은 부분은 흰색, 아직 읽지 않은 부분은 흰 42%(Figma H07)
+  const index = isThisTrack ? paragraphAt(lines, status.currentTime, status.duration) : 0;
+  const subtitle = lines[index] ?? '';
+  // 읽은 부분은 흰색, 아직 읽지 않은 부분은 흰 42%(Figma H07). 글자 수 비율로 나눈다.
   const read = isThisTrack
-    ? readCharsInParagraph(paragraphs, index, status.currentTime, status.duration)
+    ? readCharsInParagraph(lines, index, status.currentTime, status.duration)
     : 0;
-  const nextLine = paragraphs[index + 1];
+  const nextLine = lines[index + 1];
 
   const notice =
     story.data && !playable ? ko.player.notReady : audio.isError ? ko.player.loadFailed : undefined;
 
   return (
-    <PhotoBackground source={storyCover(storyId)} overlay={playerOverlay}>
+    <PhotoBackground source={storyCover(storyId, story.data?.imageHint)} overlay={playerOverlay}>
       <SafeAreaView className="flex-1 px-gutter pb-5 pt-2">
         <View className="flex-row items-center justify-between">
           <RoundButton

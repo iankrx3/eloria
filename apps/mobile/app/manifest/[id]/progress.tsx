@@ -94,7 +94,7 @@ export default function ManifestProgress() {
   // 완성(H06): 이야기 사진 위에 제목, 들어보기
   if (state.kind === 'done') {
     return (
-      <PhotoBackground source={storyCover(storyId)} overlay={progressOverlay}>
+      <PhotoBackground source={storyCover(storyId, story.data?.imageHint)} overlay={progressOverlay}>
         <SafeAreaView className="flex-1 px-gutter pb-9 pt-2">
           <View className="items-end">
             <RoundButton icon="close" label={ko.progress.home} tone="photo" onPress={home} />

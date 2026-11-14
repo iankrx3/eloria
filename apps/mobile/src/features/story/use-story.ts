@@ -1,4 +1,10 @@
-import { STORY_KIND, storyStatusSchema, type StoryStatus } from '@eloria/shared';
+import {
+  IMAGE_HINTS,
+  STORY_KIND,
+  storyStatusSchema,
+  type ImageHint,
+  type StoryStatus,
+} from '@eloria/shared';
 import { z } from 'zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
@@ -12,11 +18,12 @@ export type StoryView = {
   status: StoryStatus;
   title: string | null;
   script: string | null;
+  imageHint: ImageHint | null;
   errorCode: string | null;
 };
 
 const storyKey = (id: string) => ['story', id] as const;
-const COLUMNS = 'id, kind, status, title, script, error_code';
+const COLUMNS = 'id, kind, status, title, script, image_hint, error_code';
 
 function toView(row: {
   id: string;
@@ -24,14 +31,17 @@ function toView(row: {
   status: string;
   title: string | null;
   script: string | null;
+  image_hint: string | null;
   error_code: string | null;
 }): StoryView {
+  const hint = IMAGE_HINTS.find((key) => key === row.image_hint) ?? null;
   return {
     id: row.id,
     kind: kindSchema.parse(row.kind),
     status: storyStatusSchema.parse(row.status),
     title: row.title,
     script: row.script,
+    imageHint: hint,
     errorCode: row.error_code,
   };
 }

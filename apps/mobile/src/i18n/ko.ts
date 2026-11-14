@@ -219,7 +219,7 @@ export const ko = {
     loading: '오늘의 확언을 준비하고 있어요',
     failed: '확언을 불러오지 못했어요.',
     doneTitle: '오늘의 확언을\n모두 읽었어요',
-    doneBody: (time: string) => `내일 ${time}에\n새로운 확언 10개가 도착해요`,
+    doneBody: (time: string) => `내일 ${time}에\n새로운 확언 3개가 도착해요`,
     streak: (days: number) => `연속 ${days}일째`,
     viewSaved: '저장한 확언 보기',
     changeTime: '알림 시간 바꾸기',

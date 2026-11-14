@@ -15,7 +15,7 @@ function useUserId() {
 /** saved-affirmations로 시작하는 키(개수·목록)를 저장·해제 때 함께 새로 읽는다. */
 const SAVED_KEY = 'saved-affirmations';
 
-/** 오늘의 확언 10장(A01). 그날 처음 부르면 서버가 만든다(수 초). */
+/** 오늘의 확언 3장(A01). 그날 처음이면 서버가 오늘 이야기 또는 기본 문장을 저장한다. */
 export function useTodayAffirmations() {
   const userId = useUserId();
   return useQuery({
@@ -91,7 +91,7 @@ type Progress = { day: string; index: number; done: boolean };
 const PROGRESS_KEY = 'affirmations.progress';
 
 /**
- * 오늘 몇 번째 카드까지 봤는지(앱을 다시 열어도 이어서), 10장을 다 넘겼는지. 기기에만 둔다.
+ * 오늘 몇 번째 카드까지 봤는지(앱을 다시 열어도 이어서), 3장을 다 넘겼는지. 기기에만 둔다.
  * 날이 바뀌면 처음부터.
  */
 export function useAffirmationProgress(day: string | undefined) {

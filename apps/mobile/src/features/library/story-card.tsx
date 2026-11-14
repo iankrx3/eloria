@@ -64,7 +64,7 @@ export function StoryCard({ story }: { story: LibraryStory }) {
       className={`flex-row items-center gap-3 rounded-[22px] border border-glass-border bg-glass py-[13px] pl-[13px] ${remove.isPending ? 'opacity-50' : ''}`}
       style={shadow.glass}
     >
-      <Image source={storyCover(story.id)} className="h-14 w-14 rounded-[14px]" />
+      <Image source={storyCover(story.id, story.imageHint)} className="h-14 w-14 rounded-[14px]" />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={ko.stories.openStory(title)}

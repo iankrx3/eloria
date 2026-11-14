@@ -1,4 +1,10 @@
-import { formatTime, paragraphAt, readCharsInParagraph, splitParagraphs } from './timeline';
+import {
+  formatTime,
+  paragraphAt,
+  readCharsInParagraph,
+  splitParagraphs,
+  subtitleLines,
+} from './timeline';
 
 describe('formatTime', () => {
   it('m:ss로 바꾸고 잘못된 값은 0:00', () => {
@@ -12,6 +18,16 @@ describe('formatTime', () => {
 describe('splitParagraphs', () => {
   it('빈 줄로 나누고 빈 문단은 버린다', () => {
     expect(splitParagraphs('가\n\n나\n \n\n다')).toEqual(['가', '나', '다']);
+  });
+});
+
+describe('subtitleLines', () => {
+  it('문단을 문장으로 나눈다', () => {
+    expect(subtitleLines('나는 창을 연다. 빛이 들어온다.\n\n커피가 따뜻하다.')).toEqual([
+      '나는 창을 연다.',
+      '빛이 들어온다.',
+      '커피가 따뜻하다.',
+    ]);
   });
 });
 

@@ -23,7 +23,7 @@ function localSeconds(now: Date, timeZone?: string) {
 }
 
 /**
- * 다음 이야기까지 남은 시간(Figma H01 "Daily refresh"). 매일 새벽 5시(DAILY_REFRESH_HOUR)에
+ * 다음 이야기까지 남은 시간(Figma H01 "Daily refresh"). 사용자 시간대 자정(DAILY_REFRESH_HOUR)에
  * 오늘의 이야기가 바뀐다. 막대는 오늘 주기에서 지난 비율.
  */
 export function DailyRefresh() {

@@ -27,7 +27,7 @@ export function useMyStories() {
       const { data, error } = await supabase
         .from('stories')
         .select(
-          'id, status, title, created_at, error_code, desires(id, text), story_assets(type, duration_sec)',
+          'id, status, title, created_at, error_code, image_hint, desires(id, text), story_assets(type, duration_sec)',
         )
         .eq('user_id', userId!)
         .neq('kind', 'library')
@@ -42,6 +42,7 @@ export function useMyStories() {
         errorCode: row.error_code,
         desire: row.desires ? { id: row.desires.id, text: row.desires.text } : null,
         durationSec: row.story_assets.find((a) => a.type === 'audio')?.duration_sec ?? null,
+        imageHint: row.image_hint,
       }));
     },
   });

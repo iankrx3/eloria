@@ -217,9 +217,14 @@ function VisionCard({
         </Text>
       </View>
       <View className="gap-[18px] px-[22px] pb-[22px] pt-5">
-        <Text numberOfLines={2} className={`${type.h2} text-plum-deep`}>
-          {vision.title}
-        </Text>
+        <View className="gap-2">
+          <Text numberOfLines={3} className={`${type.h2} text-plum-deep`}>
+            {vision.title}
+          </Text>
+          <Text numberOfLines={2} className={`${type.caption} text-ink-soft`}>
+            {vision.hint}
+          </Text>
+        </View>
         <View className="flex-row items-center justify-between">
           <Pressable
             accessibilityRole="button"
